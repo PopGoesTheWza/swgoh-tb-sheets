@@ -1,0 +1,32 @@
+{
+  "name": "swgoh-tb-sheets",
+  "version": "1.0.0",
+  "description": "SWGoH Territory Battles Spreadsheet",
+  "author": {
+    "name": "Guillaume Contesso",
+    "email": "popgoesthewza@gmail.com",
+    "url": "https://discord.gg/ywzJEaQ"
+  },
+  "homepage": "https://discord.gg/ywzJEaQ",
+  "license": "MIT",
+  "main": "dist/Code.ts",
+  "scripts": {
+    "upload": "clasp push"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PopGoesTheWza/swgoh-help-api.git"
+  },
+  "keywords": [
+    "google-apps-script",
+    "gas",
+    "star wars",
+    "swgoh"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@google/clasp": "^1.5.3",
+    "@types/google-apps-script": "^0.0.27",
+    "gas-lib": "^2.0.2"
+  }
+}
