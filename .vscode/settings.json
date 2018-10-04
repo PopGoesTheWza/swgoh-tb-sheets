@@ -1,11 +1,26 @@
 {
     "git.enabled": true,
-    "eslint.alwaysShowStatus": true,
     "editor.formatOnSave": false,
-    "eslint.autoFixOnSave": true,
     "files.autoSave": "onFocusChange",
-    "eslint.validate": [
-        "javascript",
-        "typescript"
-    ]
+    "tsimporter.doubleQuotes": false,
+    "tsimporter.spaceBetweenBraces": true,
+    "tsimporter.emitSemicolon": true,
+    "tsimporter.preferRelative": true,
+    "typescriptHero.imports.disableImportSorting": false,
+    "typescriptHero.imports.disableImportRemovalOnOrganize": false,
+    "typescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,
+    "typescriptHero.imports.insertSemicolons": true,
+    "typescriptHero.imports.multiLineTrailingComma": false,
+    "typescriptHero.imports.multiLineWrapThreshold": 100,
+    "typescriptHero.imports.organizeOnSave": true,
+    "typescriptHero.imports.organizeSortsByFirstSpecifier": true,
+    "typescriptHero.imports.stringQuoteStyle": "'",
+    "git.promptToSaveFilesBeforeCommit": true,
+    "prettier.printWidth": 100,
+    "prettier.arrowParens": "always",
+    "typescript.preferences.quoteStyle": "single",
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.format.insertSpaceAfterTypeAssertion": true,
+    "javascript.preferences.quoteStyle": "single",
+    "javascript.preferences.importModuleSpecifier": "relative",
 }

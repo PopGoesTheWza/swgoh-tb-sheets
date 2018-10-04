@@ -1,4 +1,4 @@
 **/**
 !*.md
-!dist/appsscript.json
-!dist/*.ts
+!src/appsscript.json
+!src/*.ts
