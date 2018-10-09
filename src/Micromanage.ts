@@ -57,15 +57,14 @@ function unit_label_(unit, slot) {
 
 // Send a Webhook to Discord
 function sendMicroByPlayerWebhook() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Platoon');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
 
   // get the webhook
   const webhookURL = getWebhook();
   if (webhookURL.length === 0) {
     // we need a url to proceed
-    const ui = SpreadsheetApp.getUi();
-    ui.alert('Discord Webhook not found (Discord!E1)', ui.ButtonSet.OK);
+    UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
     return;
   }
 
@@ -222,11 +221,10 @@ function urlFetchExecute_(webhookURL, params) {
     Logger.log(e);
 
     // error sending to Discord
-    const ui = SpreadsheetApp.getUi();
-    ui.alert(
+    UI.alert(
       `Error sending webhook to Discord.
       Make sure Platoons are populated and can be filled by the guild.`,
-      ui.ButtonSet.OK,
+      UI.ButtonSet.OK,
     );
   }
 }

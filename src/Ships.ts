@@ -4,7 +4,7 @@
 
 // Populate the Ships list with Member data
 function populateShipsList(members) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Ships');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
   // Build a Ship Index by BaseID
   const baseIDs = sheet
@@ -16,8 +16,8 @@ function populateShipsList(members) {
   });
 
   // Build a Member index by Name
-  const mList = SpreadsheetApp.getActive()
-    .getSheetByName('Roster')
+  const mList = SPREADSHEET
+    .getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as string[][];
   const pIdx = [];
@@ -67,7 +67,7 @@ function populateShipsList(members) {
 // Initialize the list of ships
 function updateShipsList(ships) {
   // update the sheet
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Ships');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
   // clear the old content
   sheet.getRange(1, 1, 300, SHIP_PLAYER_COL_OFFSET - 1).clearContent();
@@ -91,7 +91,7 @@ function updateShipsList(ships) {
     }
 
     // insert the needed count
-    const formula = Utilities.formatString('=COUNTIF(Platoon!$2:$16,A%s)', row);
+    const formula = Utilities.formatString(`=COUNTIF(${SHEETS.PLATOONS}!$2:$16,A%s)`, row);
 
     hMap.push(formula);
 
@@ -183,14 +183,14 @@ function populateShipList() {
     });
 
     // insdert the needed count
-    const formula = Utilities.formatString('=COUNTIF(Platoon!$2:$16,A%s)', row);
+    const formula = Utilities.formatString(`=COUNTIF(${SHEETS.PLATOONS}!$2:$16,A%s)`, row);
 
     result.push(formula);
     return result;
   });
 
   // update the sheet
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Ships');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
   sheet.getRange(2, 1, units.length, 9).setValues(units);
 
   return units;

@@ -1,6 +1,6 @@
 // Get the list of exclusions
 function get_exclusions_() {
-  const excludeSheet = SpreadsheetApp.getActive().getSheetByName('Exclusions');
+  const excludeSheet = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS);
   const excludeData = excludeSheet
     .getDataRange()
     .getValues()

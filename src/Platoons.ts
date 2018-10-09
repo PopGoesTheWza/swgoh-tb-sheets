@@ -16,7 +16,7 @@ function init_platoon_phases_() {
   const tagFilter = getTagFilter_();
 
   // Names of Territories, # of Platoons
-  if (tagFilter === 'Light Side') {
+  if (isLight_(tagFilter)) {
     PLATOON_PHASES = [
       ['', 'Rebel Base', ''],
       ['', 'Ion Cannon', 'Overlook'],
@@ -61,7 +61,7 @@ function setZoneName(phase, zone, sheet, platoonRow) {
 
 // Populate platoon with slices if available
 function fillSlice(phase, zone, platoon, range) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Slices');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
   const tagFilter = getTagFilter_();
 
   // format the cell name
@@ -86,7 +86,7 @@ function fillSlice(phase, zone, platoon, range) {
 
 // Clear out a platoon
 function resetPlatoon(phase, zone, platoonRow, rows, show) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Platoon');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
 
   if (show) {
     sheet.showRows(platoonRow, MAX_PLATOON_HEROES);
@@ -114,7 +114,7 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
 
 // Clear the full chart
 function resetPlatoons() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Platoon');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue();
   init_platoon_phases_();
 
@@ -268,8 +268,8 @@ function platoonUnit(name, row, count, pCount) {
 
 // Recommend players for each Platoon
 function recommendPlatoons() {
-  const heroesSheet = SpreadsheetApp.getActive().getSheetByName('Heroes');
-  const shipsSheet = SpreadsheetApp.getActive().getSheetByName('Ships');
+  const heroesSheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
+  const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
   // see how many heroes are listed
   const heroCount = getCharacterCount_();
@@ -302,7 +302,7 @@ function recommendPlatoons() {
   usedShips = resetUsedUnits(shipData);
 
   // setup platoon phases
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Platoon');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const unavailable = sheet.getRange(56, 4, MAX_PLAYERS, 1).getValues();
   const phase = sheet.getRange(2, 1).getValue();
   init_platoon_phases_();

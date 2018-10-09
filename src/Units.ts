@@ -35,7 +35,7 @@ function load_unit_lookup_(type) {
 
 // Populate the Hero list with Member data
 function populateHeroesList(members) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Heroes');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
 
   // Build a Hero Index by BaseID
   const baseIDs = sheet
@@ -47,8 +47,8 @@ function populateHeroesList(members) {
   });
 
   // Build a Member index by Name
-  const mList = SpreadsheetApp.getActive()
-    .getSheetByName('Roster')
+  const mList = SPREADSHEET
+    .getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as string[][];
   const pIdx = [];
@@ -115,7 +115,7 @@ function populateHeroesList(members) {
 // Initialize the list of heroes
 function updateHeroesList(heroes) {
   // update the sheet
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Heroes');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
 
   const result = heroes.map((e, i) => {
     const hMap = [e[0], e[1], e[2]];
@@ -136,7 +136,7 @@ function updateHeroesList(heroes) {
     }
 
     // insdert the needed count
-    const formula = Utilities.formatString('=COUNTIF(Platoon!$20:$52,A%s)', row);
+    const formula = Utilities.formatString(`=COUNTIF(${SHEETS.PLATOONS}!$20:$52,A%s)`, row);
 
     hMap.push(formula);
 
@@ -232,7 +232,7 @@ function get_hero_list_() {
     }
 
     // insdert the needed count
-    const formula = Utilities.formatString('=COUNTIF(Platoon!$20:$52,A%s)', row);
+    const formula = Utilities.formatString(`=COUNTIF(${SHEETS.PLATOONS}!$20:$52,A%s)`, row);
 
     result.push(formula);
 
@@ -247,7 +247,7 @@ function populate_hero_list_() {
   const heroes = get_hero_list_();
 
   // update the sheet
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Heroes');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   sheet.getRange(2, 1, heroes.length, 9).setValues(heroes);
 
   return heroes;
@@ -407,7 +407,7 @@ function get_all_units_(json, members, dupNames, unitType, sheetName) {
   const lookup = load_unit_lookup_(isHero ? 'characters' : 'ships');
 
   // clear the sheet
-  const unitsSheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  const unitsSheet = SPREADSHEET.getSheetByName(sheetName);
   unitsSheet
     .getRange(1, 1, 300, HERO_PLAYER_COL_OFFSET + MAX_PLAYERS)
     .clearContent();
@@ -547,7 +547,7 @@ function debugPlayerNames(json) {
 // Get all units for the guild
 function getGuildUnitsFromJson_(json) {
   // get the member list
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Roster');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   const members = sheet.getRange(2, 2, MAX_PLAYERS, 2).getValues() as string[][];
 
   if (DEBUG_PLAYERS) {
@@ -571,8 +571,8 @@ function getGuildUnitsFromJson_(json) {
   });
   /*.map(function(e) { return 0; })*/
 
-  const heroes = get_all_units_(json, members, dupNames, 'Hero', 'Heroes');
-  get_all_units_(json, members, dupNames, 'Ship', 'Ships');
+  const heroes = get_all_units_(json, members, dupNames, 'Hero', SHEETS.HEROES);
+  get_all_units_(json, members, dupNames, 'Ship', SHEETS.SHIPS);
 
   return heroes;
 }
@@ -580,7 +580,7 @@ function getGuildUnitsFromJson_(json) {
 // Get all units for the guild
 function getGuildUnits() {
   // get the guild link
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Meta');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const guildLink = sheet.getRange(2, META_GUILD_COL).getValue() as string;
 
   // get the guild units
@@ -602,8 +602,8 @@ function getGuildUnits() {
       );
 
       // Early SCORPIO support
-      const jsonLink = SpreadsheetApp.getActive()
-        .getSheetByName('Meta')
+      const jsonLink = SPREADSHEET
+        .getSheetByName(SHEETS.META)
         .getRange(44, META_GUILD_COL)
         .getValue() as string;
       if (jsonLink && jsonLink.trim && jsonLink.trim().length >= 0) {

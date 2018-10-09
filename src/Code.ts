@@ -2,9 +2,33 @@
  * @OnlyCurrentDoc
  */
 
-// ****************************************
-// Global Variables
-// ****************************************
+/**
+ * Global Variables
+ */
+
+enum SHEETS {
+  ROSTER = 'Roster',
+  TB = 'TB',
+  PLATOONS = 'Platoon',
+  BREAKDOWN = 'Breakdown',
+  ESTIMATE = 'Estimate',
+  LSMISSIONS = 'LS Missions',
+  DSMISSIONS = 'DS Missions',
+  SNAPSHOT = 'Snapshot',
+  EXCLUSIONS = 'Exclusions',
+  HEROES = 'Heroes',
+  SHIPS = 'Ships',
+  RAREUNITS = 'Rare Units',
+  SEARCHUNITS = 'Search Units',
+  SLICES = 'Slices',
+  MAP = 'map',
+  DISCORD = 'Discord',
+  META = 'Meta',
+  INSTRUCTIONS = 'Instructions',
+}
+
+const SPREADSHEET = SpreadsheetApp.getActive();
+const UI = SpreadsheetApp.getUi();
 
 // const DEBUG_HOTH = false
 
@@ -64,19 +88,19 @@ const META_TB_COL_OFFSET = 10;
 
 function fullClear() {
   let sheet: GoogleAppsScript.Spreadsheet.Sheet;
-  sheet = SpreadsheetApp.getActive().getSheetByName('Roster');
+  sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   sheet.getRange(2, 2, MAX_PLAYERS, 9).clearContent();
 
-  sheet = SpreadsheetApp.getActive().getSheetByName('TB');
+  sheet = SPREADSHEET.getSheetByName(SHEETS.TB);
   sheet.getRange(1, META_TB_COL_OFFSET, 50, MAX_PLAYERS).clearContent();
   sheet.getRange(2, 1, 50, META_TB_COL_OFFSET - 1).clearContent();
 
   resetPlatoons();
 
-  sheet = SpreadsheetApp.getActive().getSheetByName('Heroes');
+  sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   sheet.getRange(1, 1, 300, MAX_PLAYERS + HERO_PLAYER_COL_OFFSET).clearContent();
 
-  sheet = SpreadsheetApp.getActive().getSheetByName('Ships');
+  sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
   sheet.getRange(1, 1, 300, MAX_PLAYERS + SHIP_PLAYER_COL_OFFSET).clearContent();
 }
 
@@ -86,48 +110,48 @@ function getSubstringRe_(string: string, re: RegExp) {
 }
 
 function getTagFilter_() {
-  const value = SpreadsheetApp.getActive()
-    .getSheetByName('Meta')
+  const value = SPREADSHEET
+    .getSheetByName(SHEETS.META)
     .getRange(META_FILTER_ROW, META_FILTER_COL)
     .getValue() as string;
   return value;
 }
 
 function getCharacterCount_() {
-  const value = SpreadsheetApp.getActive()
-    .getSheetByName('Meta')
+  const value = SPREADSHEET
+    .getSheetByName(SHEETS.META)
     .getRange(META_HEROES_COUNT_ROW, META_UNIT_COUNTS_COL)
     .getValue() as number;
   return value;
 }
 
 function getShipCount_() {
-  const value = SpreadsheetApp.getActive()
-    .getSheetByName('Meta')
+  const value = SPREADSHEET
+    .getSheetByName(SHEETS.META)
     .getRange(META_SHIPS_COUNT_ROW, META_UNIT_COUNTS_COL)
     .getValue() as number;
   return value;
 }
 
 function get_character_tag_() {
-  const value = SpreadsheetApp.getActive()
-    .getSheetByName('Meta')
+  const value = SPREADSHEET
+    .getSheetByName(SHEETS.META)
     .getRange(META_TAG_ROW, META_TAG_COL)
     .getValue() as string;
   return value;
 }
 
 function get_minimum_gear_level_() {
-  const value = SpreadsheetApp.getActive()
-    .getSheetByName('Meta')
+  const value = SPREADSHEET
+    .getSheetByName(SHEETS.META)
     .getRange(META_UNDERGEAR_ROW, META_UNDERGEAR_COL)
     .getValue() as number;
   return value;
 }
 
 function get_minimum_character_gp_() {
-  const value = SpreadsheetApp.getActive()
-    .getSheetByName('Meta')
+  const value = SPREADSHEET
+    .getSheetByName(SHEETS.META)
     .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)
     .getValue() as number;
   return value;
@@ -137,7 +161,7 @@ function get_minimum_character_gp_() {
 function get_minimun_player_gp_() {
 
   // get the undergeared value
-  var sheet = SpreadsheetApp.getActive().getSheetByName("Meta")
+  var sheet = SPREADSHEET.getSheetByName("Meta")
   var value = sheet.getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL).getValue()
 
   return value
@@ -145,22 +169,22 @@ function get_minimun_player_gp_() {
 */
 
 function getMaximumPlatoonDonation_() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Meta');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const value = sheet.getRange(META_UNIT_PER_PLAYER_ROW, META_UNDERGEAR_COL).getValue();
 
   return value;
 }
 
 function getSortRoster_() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Meta');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const value = sheet.getRange(2, META_SORT_ROSTER_COL).getValue();
 
   return value === 'Yes';
 }
 
 function getExclusionId_() {
-  const value = SpreadsheetApp.getActive()
-    .getSheetByName('Meta')
+  const value = SPREADSHEET
+    .getSheetByName(SHEETS.META)
     .getRange(7, META_GUILD_COL)
     .getValue() as string;
   return value;
@@ -169,7 +193,7 @@ function getExclusionId_() {
 function getUseSwgohggApi_() {
   // should we use the swgoh.gg API?
   /*
-  var sheet = SpreadsheetApp.getActive().getSheetByName("Meta")
+  var sheet = SPREADSHEET.getSheetByName("Meta")
   var value = sheet.getRange(14, META_UNDERGEAR_COL).getValue()
 
   return value == "Yes"
@@ -178,14 +202,14 @@ function getUseSwgohggApi_() {
 }
 
 function get_data_source_() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Meta');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const value = sheet.getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL).getValue();
 
   return value;
 }
 
 function getGuildSize_() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Roster');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   return Number(sheet.getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL).getValue());
 }
 
@@ -407,7 +431,7 @@ function fixDuplicatesFromJson_(json) {
 /*
 function GetGuildRosterFromJson_(json) {
 
-  var sheet = SpreadsheetApp.getActive().getSheetByName("Roster")
+  var sheet = SPREADSHEET.getSheetByName("Roster")
 
   // get the list of members to add and remove
   // NOT SUPPORTED WITH SCORPIO ROSTER
@@ -494,14 +518,14 @@ function GetGuildRosterFromJson_(json) {
 /*
 function GetGuildRoster() {
 
-  var sheet = SpreadsheetApp.getActive().getSheetByName("Meta")
+  var sheet = SPREADSHEET.getSheetByName("Meta")
   var guildLink =
   Utilities.formatString(
     "%sgp/",
     sheet.getRange(2, META_GUILD_COL).getValue()
   )
 
-  sheet = SpreadsheetApp.getActive().getSheetByName("Roster")
+  sheet = SPREADSHEET.getSheetByName("Roster")
 
   var response = UrlFetchApp.fetch(guildLink)
   var text = response.getContentText()
@@ -555,23 +579,19 @@ function GetGuildRoster() {
 // ****************************************
 
 function find_in_list_(name, list) {
-  const result = list.findIndex((e) => {
-    return name === e[0];
-  });
-
-  return result;
+  return list.findIndex((e) => { name === e[0]; });
 }
 
 function get_player_link_() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Snapshot');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
   let playerLink = sheet.getRange(2, 1).getValue() as string;
 
   if (playerLink.length === 0) {
     // no player link supplied, check for guild member
     const memberName = sheet.getRange(5, 1).getValue();
 
-    const members = SpreadsheetApp.getActive()
-      .getSheetByName('Roster')
+    const members = SPREADSHEET
+      .getSheetByName(SHEETS.ROSTER)
       .getRange(2, 2, MAX_PLAYERS, 2)
       .getValues() as string[][];
 
@@ -584,44 +604,41 @@ function get_player_link_() {
   return playerLink;
 }
 
-function get_metas_() {
-  const tagFilter = getTagFilter_(); // TODO: potentially broken if TB not sync
-  const isLight = tagFilter === 'Light Side';
-  let col = isLight ? META_HEROES_COL : META_HEROES_DS_COL;
-  col = col + 2;
+function isLight_(tagFilter: string): boolean {
+  return tagFilter === 'Light Side';
+}
 
-  const meta = [];
-  const metaSheet = SpreadsheetApp.getActive().getSheetByName('Meta');
+function get_metas_(tagFilter) {
+  const col = (isLight_(tagFilter) ? META_HEROES_COL : META_HEROES_DS_COL) + 2;
+  const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
-  const lastRow = metaSheet.getLastRow();
-  const numRows = lastRow - row + 1;
-  const m = metaSheet.getRange(row, col, numRows).getValues() as string[][];
-  m.filter((e: string[]) => e[0].trim().length > 0).forEach((e) => {
-    const name = e[0];
-    if (-1 === find_in_list_(name, meta)) {
-      // store the meta data
-      meta.push([name, null]);
-    }
-  });
+  const numRows = metaSheet.getLastRow() - row + 1;
+
+  const values = metaSheet.getRange(row, col, numRows).getValues() as string[][];
+  const meta = values
+  .filter((e) => { typeof e[0] === 'string' && e[0].trim().length > 0; })  // not empty
+  .map(e => e[0])  // TODO: .reduce()
+  .unique()
+  .map(e => [e, undefined]);
 
   return meta;
 }
 
 // Create a Snapshot of a Player based on criteria tracked in the workbook
 function playerSnapshot() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Snapshot');
-  const heroesSheet = SpreadsheetApp.getActive().getSheetByName('Heroes');
-  // const metaSheet = SpreadsheetApp.getActive().getSheetByName("Meta")
-
-  // clear the sheet
-  sheet.getRange(1, 3, 50, 2).clearContent();
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
+  const heroesSheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
+  // const metaSheet = SPREADSHEET.getSheetByName("Meta")
 
   const tagFilter = getTagFilter_(); // TODO: potentially broken if TB not sync
   const encodedTagFilter = tagFilter.replace(' ', '+');
   const characterTag = get_character_tag_(); // TODO: potentially broken if TB not sync
 
+  // clear the sheet
+  sheet.getRange(1, 3, 50, 2).clearContent();
+
   // collect the meta data for the heroes
-  const meta = get_metas_();
+  const meta = get_metas_(tagFilter);
 
   // cache the matrix of hero data
   const heroCount = getCharacterCount_();
@@ -706,25 +723,23 @@ function playerSnapshot() {
 
 // Setup new menu items when the spreadsheet opens
 function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-
-  ui.createMenu('SWGoH')
-    .addItem('Refresh TB', 'setupTBSide')
+  UI.createMenu('SWGoH')
+    .addItem('Refresh TB', setupTBSide.name)
     .addSubMenu(
-      ui
+      UI
         .createMenu('Platoons')
-        .addItem('Reset', 'resetPlatoons')
-        .addItem('Recommend', 'recommendPlatoons')
+        .addItem('Reset', resetPlatoons.name)
+        .addItem('Recommend', recommendPlatoons.name)
         .addSeparator()
-        .addItem('Send Warning to Discord', 'allRareUnitsWebhook')
-        .addItem('Send Rare by Unit', 'sendPlatoonSimplifiedByUnitWebhook')
-        .addItem('Send Rare by Player', 'sendPlatoonSimplifiedByPlayerWebhook')
+        .addItem('Send Warning to Discord', allRareUnitsWebhook.name)
+        .addItem('Send Rare by Unit', sendPlatoonSimplifiedByUnitWebhook.name)
+        .addItem('Send Rare by Player', sendPlatoonSimplifiedByPlayerWebhook.name)
         .addSeparator()
-        .addItem('Send Micromanaged by Platoon', 'sendPlatoonDepthWebhook')
-        .addItem('Send Micromanaged by Player', 'sendMicroByPlayerWebhook')
+        .addItem('Send Micromanaged by Platoon', sendPlatoonDepthWebhook.name)
+        .addItem('Send Micromanaged by Player', sendMicroByPlayerWebhook.name)
         .addSeparator()
-        .addItem('Register Warning Timer', 'registerWebhookTimer'),
+        .addItem('Register Warning Timer', registerWebhookTimer.name),
     )
-    .addItem('Player Snapshot', 'playerSnapshot')
+    .addItem('Player Snapshot', playerSnapshot.name)
     .addToUi();
 }

@@ -15,8 +15,8 @@ const WEBHOOK_CLEAR_ROW: number = 15;
 
 // Get the webhook address
 function getWebhook(): string {
-  const value: string = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
+  const value: string = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
     .getRange(1, DISCORD_WEBHOOK_COL)
     .getValue() as string;
 
@@ -25,8 +25,8 @@ function getWebhook(): string {
 
 // Get the role to mention
 function getRole(): string {
-  const value: string = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
+  const value: string = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
     .getRange(2, DISCORD_WEBHOOK_COL)
     .getValue() as string;
 
@@ -35,8 +35,8 @@ function getRole(): string {
 
 // Get the time and date when the TB started
 function getTBStartTime(): Date {
-  const value: Date = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
+  const value: Date = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_TB_START_ROW, DISCORD_WEBHOOK_COL)
     .getValue() as Date;
 
@@ -45,8 +45,8 @@ function getTBStartTime(): Date {
 
 // Get the number of hours in each phase
 function getPhaseHours(): number {
-  const value: number = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
+  const value: number = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
     .getValue() as number;
 
@@ -55,8 +55,8 @@ function getPhaseHours(): number {
 
 // Get the template for a webhooks
 function getWebhookTemplate(phase: number, row: number, defaultVal: string): string {
-  const text: string = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
+  const text: string = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
     .getRange(row, DISCORD_WEBHOOK_COL)
     .getValue() as string;
 
@@ -113,10 +113,10 @@ function getWebhookDepthIntro(phase: number, mention: string): string {
 // Get the Description for the phase
 function getWebhookDesc(phase: number): string {
   const tagFilter: string = getTagFilter_(); // TODO: potentially broken if TB not sync
-  const isLight: boolean = tagFilter === 'Light Side';
-  const text: string = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
-    .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + (isLight ? 0 : 1))
+  const columnOffset = isLight_(tagFilter) ? 0 : 1;
+  const text: string = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
+    .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
     .getValue() as string;
 
   return `\n\n${text}`;
@@ -124,8 +124,8 @@ function getWebhookDesc(phase: number): string {
 
 // See if the platoons should be cleared
 function getWebhookClear(): boolean {
-  const value: string = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
+  const value: string = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_CLEAR_ROW, DISCORD_WEBHOOK_COL)
     .getValue() as string;
 
@@ -134,8 +134,8 @@ function getWebhookClear(): boolean {
 
 // Get the player Discord IDs for mentions
 function getPlayerMentions(): string[] {
-  const data: string[][] = SpreadsheetApp.getActive()
-    .getSheetByName('Discord')
+  const data: string[][] = SPREADSHEET
+    .getSheetByName(SHEETS.DISCORD)
     .getRange(2, 1, MAX_PLAYERS, 2)
     .getValues() as string[][];
   const result: string[] = [];
@@ -182,8 +182,8 @@ function getPlatoonString(platoon: string[][]): string {
 
 // Get the formatted zone name with location descriptor
 function getZoneName(phase: number, zoneNum: number, full: boolean): string {
-  let zone: string = SpreadsheetApp.getActive()
-    .getSheetByName('Platoon')
+  let zone: string = SPREADSHEET
+    .getSheetByName(SHEETS.PLATOONS)
     .getRange((zoneNum * PLATOON_ZONE_ROW_OFFSET) + 4, 1)
     .getValue() as string;
   let loc: string;
@@ -225,15 +225,14 @@ interface IDiscordMessageEmbedFields {
 // Send a Webhook to Discord
 function sendPlatoonDepthWebhook(): void {
   const sheet: GoogleAppsScript.Spreadsheet.Sheet
-  = SpreadsheetApp.getActive().getSheetByName('Platoon');
+  = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase: number = sheet.getRange(2, 1).getValue() as number;
 
   // get the webhook
   const webhookURL: string = getWebhook();
   if (webhookURL.length === 0) {
     // we need a url to proceed
-    const ui: GoogleAppsScript.Base.Ui = SpreadsheetApp.getUi();
-    ui.alert('Discord Webhook not found (Discord!E1)', ui.ButtonSet.OK);
+    UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
 
     return;
   }
@@ -329,7 +328,7 @@ function getPlatoonDonations(
 
 // Get a list of units that are required a high number of times
 function getHighNeedList(sheetName: string, unitCount: number): string {
-  const counts: number[][] = SpreadsheetApp.getActive()
+  const counts: number[][] = SPREADSHEET
     .getSheetByName(sheetName)
     .getRange(2, 1, unitCount, HERO_PLAYER_COL_OFFSET)
     .getValues() as number[][];
@@ -373,26 +372,24 @@ function postMessage(webhookURL: string, message: string): void {
   //   var parts = message.split(",")
 
   //   // error sending to Discord
-  //   const ui = SpreadsheetApp.getUi();
-  //   const result = ui.alert(
+  //   const result = UI.alert(
   //     `Error sending webhook to Discord.
   //     Make sure Platoons are populated and can be filled by the guild.`,
-  //     ui.ButtonSet.OK);
+  //     UI.ButtonSet.OK);
   // }
 }
 
 // Send a Webhook to Discord
 function sendPlatoonSimplifiedWebhook(byType: 'Player' | 'Unit'): void {
   const sheet: GoogleAppsScript.Spreadsheet.Sheet
-  = SpreadsheetApp.getActive().getSheetByName('Platoon');
+  = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase: number = sheet.getRange(2, 1).getValue() as number;
 
   // get the webhook
   const webhookURL: string = getWebhook();
   if (webhookURL.length === 0) {
     // we need a url to proceed
-    const ui: GoogleAppsScript.Base.Ui = SpreadsheetApp.getUi();
-    ui.alert('Discord Webhook not found (Discord!E1)', ui.ButtonSet.OK);
+    UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
 
     return;
   }
@@ -405,8 +402,8 @@ function sendPlatoonSimplifiedWebhook(byType: 'Player' | 'Unit'): void {
   const title: string = getWebhookTitle(phase);
   const descriptionText: string = title + getWebhookRareIntro(phase, mentions);
 
-  const highNeedHeroes: string = getHighNeedList('Heroes', getCharacterCount_());
-  const highNeedShips: string = getHighNeedList('Ships', getShipCount_());
+  const highNeedHeroes: string = getHighNeedList(SHEETS.HEROES, getCharacterCount_());
+  const highNeedShips: string = getHighNeedList(SHEETS.SHIPS, getShipCount_());
 
   // get data from the platoons
   let fields: string = '';
@@ -549,7 +546,7 @@ function sendPlatoonSimplifiedByPlayerWebhook(): void {
 function getUniquePlatoonUnits(zone: number): string[] {
   const platoonRow: number = (zone * 18) + 2;
   const sheet: GoogleAppsScript.Spreadsheet.Sheet
-  = SpreadsheetApp.getActive().getSheetByName('Platoon');
+  = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
 
   let units: string[][] = [];
   for (let platoon: number = 0; platoon < MAX_PLATOONS; platoon += 1) {
@@ -572,9 +569,9 @@ function getUniquePlatoonUnits(zone: number): string[] {
 // Get the list of Rare units needed for the phase
 function getRareUnits(sheetName: string, phase: number): string {
   const tagFilter: string = getTagFilter_(); // TODO: potentially broken if TB not sync
-  const isLight: boolean = tagFilter === 'Light Side';
+  const useBottomTerritory = !isLight_(tagFilter) || phase > 1;
   const count: number = getCharacterCount_();
-  let data: [string, number][] = SpreadsheetApp.getActive()
+  let data: [string, number][] = SPREADSHEET
     .getSheetByName(sheetName)
     .getRange(1, 1, count + 1, 8)
     .getValues() as [string, number][];
@@ -590,11 +587,11 @@ function getRareUnits(sheetName: string, phase: number): string {
     .sort(); // sort the list of units
 
   let platoonUnits: string[];
-  if (sheetName === 'Ships') {
+  if (sheetName === SHEETS.SHIPS) {
     platoonUnits = getUniquePlatoonUnits(0);
   } else {
     platoonUnits = getUniquePlatoonUnits(1);
-    if (!isLight || phase > 1) {
+    if (useBottomTerritory) {
       platoonUnits = platoonUnits.concat(getUniquePlatoonUnits(2));
     }
   }
@@ -607,16 +604,15 @@ function getRareUnits(sheetName: string, phase: number): string {
 
 // Send a message to Discord that lists all units to watch out for in the current phase
 function allRareUnitsWebhook(): void {
-  const phase: number = SpreadsheetApp.getActive()
-    .getSheetByName('Platoon')
+  const phase: number = SPREADSHEET
+    .getSheetByName(SHEETS.PLATOONS)
     .getRange(2, 1)
     .getValue() as number;
 
   const webhookURL: string = getWebhook(); // get the webhook
   if (webhookURL.length === 0) {
     // we need a url to proceed
-    const ui: GoogleAppsScript.Base.Ui = SpreadsheetApp.getUi();
-    ui.alert('Discord Webhook not found (Discord!E1)', ui.ButtonSet.OK);
+    UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
 
     return;
   }
@@ -626,7 +622,7 @@ function allRareUnitsWebhook(): void {
   if (phase >= 3) {
     // TODO: remove hardcode
     // get the ships list
-    const ships: string = getRareUnits('Ships', phase);
+    const ships: string = getRareUnits(SHEETS.SHIPS, phase);
     if (ships.length > 0) {
       fields.push({
         name: 'Rare Ships',
@@ -637,7 +633,7 @@ function allRareUnitsWebhook(): void {
   }
 
   // get the hero list
-  const heroes: string = getRareUnits('Heroes', phase);
+  const heroes: string = getRareUnits(SHEETS.HEROES, phase);
   if (heroes.length > 0) {
     fields.push({
       name: 'Rare Heroes',
@@ -690,8 +686,8 @@ function setCurrentPhase(): void {
 
     // set the phase in Platoons tab
     if (phase <= maxPhases) {
-      SpreadsheetApp.getActive()
-        .getSheetByName('Platoon')
+      SPREADSHEET
+        .getSheetByName(SHEETS.PLATOONS)
         .getRange(2, 1)
         .setValue(phase);
     }

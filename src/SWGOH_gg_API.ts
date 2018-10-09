@@ -8,8 +8,8 @@ function get_guild_id_() {
   const metaSWGOHLinkCol = 1;
 
   const guildLink = String(
-    SpreadsheetApp.getActive()
-      .getSheetByName('Meta')
+    SPREADSHEET
+      .getSheetByName(SHEETS.META)
       .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
       .getValue(),
   );
@@ -29,8 +29,8 @@ function get_guild_api_link_() {
 
 function isSWGOHggSource() {
   const value = String(
-    SpreadsheetApp.getActive()
-      .getSheetByName('Meta')
+    SPREADSHEET
+      .getSheetByName(SHEETS.META)
       .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
       .getValue(),
   );
@@ -61,8 +61,7 @@ function getUnitsFromSWGoHgg_(link, errorMsg) {
     // Logger.log(`Retrieving Hero Data from SWGOH.gg: ${json.length}`)
   } catch (e) {
     // TODO: centralize alerts
-    const ui = SpreadsheetApp.getUi();
-    ui.alert(errorMsg, e, ui.ButtonSet.OK);
+    UI.alert(errorMsg, e, UI.ButtonSet.OK);
   }
 
   return json || [];

@@ -16,8 +16,8 @@ function set_cell_value_(
 }
 
 function populateTBTable(data, members, heroes) {
-  const roster = SpreadsheetApp.getActive()
-    .getSheetByName('Roster')
+  const roster = SPREADSHEET
+    .getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as string[][];
   const hIdx = [];
@@ -96,7 +96,7 @@ function populateTBTable(data, members, heroes) {
  * @customfunction
  */
 function updateGuildRoster(members) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName('Roster');
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   // get the list of members to add and remove
   const addMembers = sheet
     .getRange(2, META_ADD_PLAYER_COL, MAX_PLAYERS, 2)
@@ -141,59 +141,58 @@ function updateGuildRoster(members) {
   return members;
 }
 
-// Setup the heroes needed for a TB
-function setupTB(tabName: string, tagFilter: string) {
-  const metaSheet = SpreadsheetApp.getActive().getSheetByName('Meta');
-  const tbSheet = SpreadsheetApp.getActive().getSheetByName(tabName);
+/** Setup the Territory Battle for Hoth */
+function setupTBSide() {
+  // const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
-  const shipsSheet = SpreadsheetApp.getActive().getSheetByName('Ships');
-  const heroes = getHeroesFromSWGOHgg();
-  const ships = getShipsFromSWGOHgg();
-  let members;
   // make sure the roster is up-to-date
 
   // Update Heroes and Ship Sheets
   // NOTE Currently not supported by Scorpio, so always using SWGOH.gg data
+  const heroes = getHeroesFromSWGOHgg();
   updateHeroesList(heroes);
+  const ships = getShipsFromSWGOHgg();
   updateShipsList(ships);
 
   // Figure out which data source to use
+  let members;
   if (getUseSwgohggApi_()) {
     members = getGuildDataFromSWGOHgg();
   } else {
     members = getGuildDataFromScorpio();
   }
   if (!members) {
-    const ui = SpreadsheetApp.getUi();
-    ui.alert(
+    UI.alert(
       'Parsing Error',
       'Unable to parse guild data. Check source links in Meta Tab',
-      ui.ButtonSet.OK,
-    );
+      UI.ButtonSet.OK,
+      );
     return;
   }
 
-  // This will update Roster Sheet with names and GPs,
-  // will also return a new members array with added/deleted from sheet
+    // This will update Roster Sheet with names and GPs,
+    // will also return a new members array with added/deleted from sheet
   members = updateGuildRoster(members);
 
   populateHeroesList(members);
   populateShipsList(members);
 
   // clear the hero data
+  const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
   tbSheet.getRange(1, 10, 1, MAX_PLAYERS).clearContent();
   tbSheet.getRange(2, 1, 150, 9 + MAX_PLAYERS).clearContent();
 
-  // collect the meta data for the heroes
+    // collect the meta data for the heroes
   let row = 2;
-  const isLight = tagFilter === 'Light Side';
-  const col = isLight ? META_HEROES_COL : META_HEROES_DS_COL;
+  const tagFilter = getTagFilter_();
+  const col = isLight_(tagFilter) ? META_HEROES_COL : META_HEROES_DS_COL;
   let tbRow = 2;
   let lastPhase = '1';
   let phaseCount = 0;
   let total = 0;
   let lastSquad = '0';
   let squadCount = 0;
+  const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
   let curMeta = metaSheet.getRange(row, col, 1, 8);
   let metaData = curMeta.getValues() as string[][];
   let event = metaData[0][0];
@@ -346,10 +345,4 @@ function setupTB(tabName: string, tagFilter: string) {
   tbSheet
     .getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
     .setValues(table);
-}
-
-// Setup the Territory Battle for Hoth
-function setupTBSide() {
-  const tagFilter = getTagFilter_();
-  setupTB('TB', tagFilter);
 }

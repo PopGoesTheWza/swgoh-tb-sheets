@@ -4,8 +4,8 @@
 
 function isScorpioSource() {
   const value = String(
-    SpreadsheetApp.getActive()
-      .getSheetByName('Meta')
+    SPREADSHEET
+      .getSheetByName(SHEETS.META)
       .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
       .getValue(),
   );
@@ -15,14 +15,14 @@ function isScorpioSource() {
 
 // Pull Base IDs, unitType should be "Heroes" or "Ships"
 function get_base_ids_(unitType) {
-  const row = unitType === 'Heroes' ? META_HEROES_COUNT_ROW : META_SHIPS_COUNT_ROW;
+  const row = unitType === SHEETS.HEROES ? META_HEROES_COUNT_ROW : META_SHIPS_COUNT_ROW;
   const rows = Number(
-    SpreadsheetApp.getActive()
-      .getSheetByName('Meta')
+    SPREADSHEET
+      .getSheetByName(SHEETS.META)
       .getRange(row, META_UNIT_COUNTS_COL)
       .getValue(),
   );
-  const baseIDs = SpreadsheetApp.getActive()
+  const baseIDs = SPREADSHEET
     .getSheetByName(unitType)
     .getRange(2, 1, rows, 2)
     .getValues() as string[][];
@@ -39,24 +39,23 @@ function getGuildDataFromScorpio() {
   const members = [];
 
   const link = String(
-    SpreadsheetApp.getActive()
-      .getSheetByName('Meta')
+    SPREADSHEET
+      .getSheetByName(SHEETS.META)
       .getRange(metaScorpioLinkRow, metaScorpioLinkCol)
       .getValue(),
   );
   if (!link || link.trim().length === 0) {
-    const ui = SpreadsheetApp.getUi();
-    ui.alert(
+    UI.alert(
       'Unable to find SCORPIO Link',
       'Check value on Meta tab',
-      ui.ButtonSet.OK,
+      UI.ButtonSet.OK,
     );
     return [];
   }
   let json;
 
-  const hIndex = get_base_ids_('Heroes');
-  const sIndex = get_base_ids_('Ships');
+  const hIndex = get_base_ids_(SHEETS.HEROES);
+  const sIndex = get_base_ids_(SHEETS.SHIPS);
 
   try {
     const params = {
@@ -74,11 +73,10 @@ function getGuildDataFromScorpio() {
     }
     json = JSON.parse(response.getContentText());
   } catch (e) {
-    const ui = SpreadsheetApp.getUi();
-    ui.alert(
+    UI.alert(
       'Unable to Parse SCORPIO Data',
       'Check link in Meta tab. It should be a link and not JSON data',
-      ui.ButtonSet.OK,
+      UI.ButtonSet.OK,
     );
     return [];
   }
