@@ -186,7 +186,7 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
         const playerStars = Number(playerUnit[0]);
         if (playerStars >= minStars) {
           //          var power = Number(GetSubstring(playerUnit, "P", null))
-          const power = Number.parseInt(getSubstringRe_(playerUnit, /P(.*)/), 10);
+          const power = parseInt(getSubstringRe_(playerUnit, /P(.*)/), 10);
           rec[rec.length] = [playerName, power];
         }
       }
@@ -309,7 +309,7 @@ function recommendPlatoons() {
 
   // setup a custom order for walking the platoons
   const platoonOrder = [];
-  for (let p = MAX_PLATOONS - 1; p >= 0; p += 1) {
+  for (let p = MAX_PLATOONS - 1; p >= 0; p -= 1) {
     // last platoon to first platoon
     for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
       // zone by zone

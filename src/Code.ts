@@ -6,6 +6,7 @@
  * Global Variables
  */
 
+ /** Constants for sheets name */
 enum SHEETS {
   ROSTER = 'Roster',
   TB = 'TB',
@@ -25,6 +26,12 @@ enum SHEETS {
   DISCORD = 'Discord',
   META = 'Meta',
   INSTRUCTIONS = 'Instructions',
+}
+
+enum DATASOURCES {
+  SWGOH_HELP = 'SWGoH.help',
+  SWGOH_GG = 'SWGoH.gg',
+  SCORPIO = 'SCORPIO',
 }
 
 const SPREADSHEET = SpreadsheetApp.getActive();
@@ -82,27 +89,59 @@ const META_GUILD_SIZE_COL = 12;
 
 const META_TB_COL_OFFSET = 10;
 
+interface KeyDict {
+  [key: string]: string;
+}
+
+interface KeyOffset {
+  [key: string]: number;
+}
+
+interface PlayerData {
+  gp: number;
+  heroes_gp: number;
+  level: number;
+  link: string;
+  name: string;
+  ships_gp: number;
+  units: {[key: string]: UnitInstance};
+}
+
+interface UnitDeclaration {
+  Tags: string;
+  UnitId: string;
+  UnitName: string;
+}
+
+interface UnitInstance {
+  base_id: string;
+  gear_level: number;
+  level: number;
+  power: number;
+  rarity: number;
+}
+
 // ****************************************
 // Utility Functions
 // ****************************************
 
-function fullClear() {
-  let sheet: GoogleAppsScript.Spreadsheet.Sheet;
-  sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  sheet.getRange(2, 2, MAX_PLAYERS, 9).clearContent();
+// function fullClear() {
+//   let sheet: GoogleAppsScript.Spreadsheet.Sheet;
+//   sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
+//   sheet.getRange(2, 2, MAX_PLAYERS, 9).clearContent();
 
-  sheet = SPREADSHEET.getSheetByName(SHEETS.TB);
-  sheet.getRange(1, META_TB_COL_OFFSET, 50, MAX_PLAYERS).clearContent();
-  sheet.getRange(2, 1, 50, META_TB_COL_OFFSET - 1).clearContent();
+//   sheet = SPREADSHEET.getSheetByName(SHEETS.TB);
+//   sheet.getRange(1, META_TB_COL_OFFSET, 50, MAX_PLAYERS).clearContent();
+//   sheet.getRange(2, 1, 50, META_TB_COL_OFFSET - 1).clearContent();
 
-  resetPlatoons();
+//   resetPlatoons();
 
-  sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
-  sheet.getRange(1, 1, 300, MAX_PLAYERS + HERO_PLAYER_COL_OFFSET).clearContent();
+//   sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
+//   sheet.getRange(1, 1, 300, MAX_PLAYERS + HERO_PLAYER_COL_OFFSET).clearContent();
 
-  sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
-  sheet.getRange(1, 1, 300, MAX_PLAYERS + SHIP_PLAYER_COL_OFFSET).clearContent();
-}
+//   sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
+//   sheet.getRange(1, 1, 300, MAX_PLAYERS + SHIP_PLAYER_COL_OFFSET).clearContent();
+// }
 
 function getSubstringRe_(string: string, re: RegExp) {
   const m = string.match(re);
@@ -190,16 +229,23 @@ function getExclusionId_() {
   return value;
 }
 
-function getUseSwgohggApi_() {
-  // should we use the swgoh.gg API?
-  /*
-  var sheet = SPREADSHEET.getSheetByName("Meta")
-  var value = sheet.getRange(14, META_UNDERGEAR_COL).getValue()
-
-  return value == "Yes"
-*/
-  return get_data_source_() === 'SWGOH.gg';
+/** should we use the SWGoH.help API? */
+function isDataSourceSwgohHelp() {
+  return get_data_source_() === DATASOURCES.SWGOH_HELP;
 }
+
+/** should we use the SWGoH.gg API? */
+function isDataSourceSwgohGg() {
+  return get_data_source_() === DATASOURCES.SWGOH_GG;
+}
+
+// function getUseSwgohggApi_() {
+//   // should we use the swgoh.gg API?
+//   // var sheet = SPREADSHEET.getSheetByName("Meta")
+//   // var value = sheet.getRange(14, META_UNDERGEAR_COL).getValue()
+//   // return value == "Yes"
+//   return get_data_source_() === DATASOURCES.SWGOH_GG;
+// }
 
 function get_data_source_() {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
@@ -579,7 +625,7 @@ function GetGuildRoster() {
 // ****************************************
 
 function find_in_list_(name, list) {
-  return list.findIndex((e) => { name === e[0]; });
+  return list.findIndex(e => name === e[0]);
 }
 
 function get_player_link_() {
@@ -616,7 +662,7 @@ function get_metas_(tagFilter) {
 
   const values = metaSheet.getRange(row, col, numRows).getValues() as string[][];
   const meta = values
-  .filter((e) => { typeof e[0] === 'string' && e[0].trim().length > 0; })  // not empty
+  .filter(e => typeof e[0] === 'string' && e[0].trim().length > 0)  // not empty
   .map(e => e[0])  // TODO: .reduce()
   .unique()
   .map(e => [e, undefined]);

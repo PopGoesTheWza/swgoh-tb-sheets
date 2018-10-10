@@ -3,10 +3,10 @@
 // ****************************************
 
 // create an array to lookup player indexes by name
-function get_player_indexes_(data, offset) {
-  const result = [];
+function get_player_indexes_(data: string[][], offset: number) {
+  const result: KeyOffset = {};
 
-  data.forEach((e, i, a) => {
+  data.forEach((e, i) => {
     result[e[0]] = i + offset;
   });
 
@@ -15,20 +15,13 @@ function get_player_indexes_(data, offset) {
 
 // Create a lookup table for unit code names and display names
 // type = "characters" or "ships"
-function load_unit_lookup_(type) {
-  const link = Utilities.formatString(
-    'https://swgoh.gg/api/%s/?format=json',
-    type,
-  );
+// TODO: Caching? SwgohHelp?
+function load_unit_lookup_(type: 'characters'|'ships'): KeyDict {
+  const response = UrlFetchApp.fetch(`https://swgoh.gg/api/${type}/?format=json`);
+  const json = JSON.parse(response.getContentText()) as {base_id: string; name: string}[];
 
-  const response = UrlFetchApp.fetch(link);
-  const text = response.getContentText();
-  const json = JSON.parse(text);
-
-  const result = [];
-  json.forEach((e) => {
-    result[e.base_id] = e.name;
-  });
+  const result: KeyDict = {};
+  json.forEach(e => result[e.base_id] = e.name);
 
   return result;
 }
@@ -71,10 +64,10 @@ function populateHeroesList(members) {
     mHead[0].push(m.name);
     const units = m.units;
     baseIDs.forEach((e, i) => {
-      // const u = units[e[0]]
-      const u = units.filter((eu, iu) => iu === e[0]);
-      data[hIdx[e[0]]][pIdx[m.name]] =
-        u && `${u.rarity}*L${u.level}G${u.gear_level}P${u.power}`;
+      const baseId = e[0];
+      const u = units[baseId];
+      data[hIdx[baseId]][pIdx[m.name]] =
+          (u && `${u.rarity}*L${u.level}G${u.gear_level}P${u.power}`) || '';
     });
   });
   // Logger.log(
@@ -118,7 +111,7 @@ function updateHeroesList(heroes) {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
 
   const result = heroes.map((e, i) => {
-    const hMap = [e[0], e[1], e[2]];
+    const hMap = [e.UnitName, e.UnitId, e.Tags];
 
     // insert the star count formulas
     const row = i + 2;
@@ -578,43 +571,37 @@ function getGuildUnitsFromJson_(json) {
 }
 
 // Get all units for the guild
-function getGuildUnits() {
-  // get the guild link
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
-  const guildLink = sheet.getRange(2, META_GUILD_COL).getValue() as string;
-
-  // get the guild units
-  // https://swgoh.gg/g/1082/dllidncks-dksltd/
-  // https://swgoh.gg/api/guilds/1082/units/
-  const parts = guildLink.split('/');
-  let guildID = parts[4];
-
-  if (DEBUG_PLAYERS) {
-    guildID = '1080'; // replace the guild ID when debugging
-  }
-
-  let json = {};
-  if (getUseSwgohggApi_()) {
-    try {
-      let unitLink = Utilities.formatString(
-        'https://swgoh.gg/api/guilds/%s/units/',
-        guildID,
-      );
-
-      // Early SCORPIO support
-      const jsonLink = SPREADSHEET
-        .getSheetByName(SHEETS.META)
-        .getRange(44, META_GUILD_COL)
-        .getValue() as string;
-      if (jsonLink && jsonLink.trim && jsonLink.trim().length >= 0) {
-        unitLink = jsonLink;
-      }
-
-      const response = UrlFetchApp.fetch(unitLink);
-      const text = response.getContentText();
-      json = JSON.parse(text);
-    } catch (e) {}
-  }
-
-  return getGuildUnitsFromJson_(json);
-}
+// function getGuildUnits() {
+//   // get the guild link
+//   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
+//   const guildLink = sheet.getRange(2, META_GUILD_COL).getValue() as string;
+//   // get the guild units
+//   // https://swgoh.gg/g/1082/dllidncks-dksltd/
+//   // https://swgoh.gg/api/guilds/1082/units/
+//   const parts = guildLink.split('/');
+//   let guildID = parts[4];
+//   if (DEBUG_PLAYERS) {
+//     guildID = '1080'; // replace the guild ID when debugging
+//   }
+//   let json = {};
+//   if (getUseSwgohggApi_()) {
+//     try {
+//       let unitLink = Utilities.formatString(
+//         'https://swgoh.gg/api/guilds/%s/units/',
+//         guildID,
+//       );
+//       // Early SCORPIO support
+//       const jsonLink = SPREADSHEET
+//         .getSheetByName(SHEETS.META)
+//         .getRange(44, META_GUILD_COL)
+//         .getValue() as string;
+//       if (jsonLink && jsonLink.trim && jsonLink.trim().length >= 0) {
+//         unitLink = jsonLink;
+//       }
+//       const response = UrlFetchApp.fetch(unitLink);
+//       const text = response.getContentText();
+//       json = JSON.parse(text);
+//     } catch (e) {}
+//   }
+//   return getGuildUnitsFromJson_(json);
+// }

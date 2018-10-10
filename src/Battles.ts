@@ -21,7 +21,7 @@ function populateTBTable(data, members, heroes) {
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as string[][];
   const hIdx = [];
-  heroes.forEach(e => (hIdx[e[0]] = e[1]));
+  heroes.forEach(e => (hIdx[e.UnitName] = e.UnitId));
   let total = 0;
   let phaseCount = 0;
   let squadCount = 0;
@@ -128,7 +128,7 @@ function updateGuildRoster(members) {
     [e.link],
     [e.gp],
     [e.heroes_gp],
-    [e.ships_g],
+    [e.ships_gp],
   ]);
 
   // result.sort(sortFunction)
@@ -149,15 +149,26 @@ function setupTBSide() {
 
   // Update Heroes and Ship Sheets
   // NOTE Currently not supported by Scorpio, so always using SWGOH.gg data
-  const heroes = getHeroesFromSWGOHgg();
+  let heroes: UnitDeclaration[];
+  let ships: UnitDeclaration[];
+  if (isDataSourceSwgohHelp()) {
+    // heroes = getHeroesFromSWGOHhelp();
+    // ships = getShipsFromSWGOHhelp();
+    heroes = getHeroesFromSWGOHgg();
+    ships = getShipsFromSWGOHgg();
+  } else {
+    heroes = getHeroesFromSWGOHgg();
+    ships = getShipsFromSWGOHgg();
+  }
   updateHeroesList(heroes);
-  const ships = getShipsFromSWGOHgg();
   updateShipsList(ships);
 
   // Figure out which data source to use
-  let members;
-  if (getUseSwgohggApi_()) {
-    members = getGuildDataFromSWGOHgg();
+  let members: PlayerData[];
+  if (isDataSourceSwgohHelp()) {
+    members = getGuildDataFromSwgohHelp();
+  } else if (isDataSourceSwgohGg()) {
+    members = getGuildDataFromSwgohGg();
   } else {
     members = getGuildDataFromScorpio();
   }
@@ -170,8 +181,15 @@ function setupTBSide() {
     return;
   }
 
-    // This will update Roster Sheet with names and GPs,
-    // will also return a new members array with added/deleted from sheet
+  // TODO: relocate
+  members.forEach((e) => {
+    if (e.name[0] === '\'') {
+      e.name = ` ${e.name}`;
+    }
+  });
+
+  // This will update Roster Sheet with names and GPs,
+  // will also return a new members array with added/deleted from sheet
   members = updateGuildRoster(members);
 
   populateHeroesList(members);

@@ -37,7 +37,7 @@ function is_group_unit_(unit) {
 
 // Convert an array index to a string
 function array_index_to_string_(index) {
-  const indexNum = Number.parseInt(index, 10) + 1;
+  const indexNum = parseInt(index, 10) + 1;
 
   return indexNum.toString();
 }

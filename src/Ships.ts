@@ -39,10 +39,10 @@ function populateShipsList(members) {
   members.forEach((m) => {
     mHead[0].push(m.name);
     const units = m.units;
-    baseIDs.forEach((e, i) => {
-      // const u = units[e[0]]
-      const u = units.filter((eu, iu) => iu === e[0]);
-      data[hIdx[e[0]]][pIdx[m.name]] = u && `${u.rarity}*L${u.level}P${u.power}`;
+    baseIDs.forEach((e) => {
+      const baseId = e[0];
+      const u = units[baseId];
+      data[hIdx[baseId]][pIdx[m.name]] = (u && `${u.rarity}*L${u.level}P${u.power}`) || '';
     });
   });
   // for ( var mKey in members) {
@@ -73,7 +73,7 @@ function updateShipsList(ships) {
   sheet.getRange(1, 1, 300, SHIP_PLAYER_COL_OFFSET - 1).clearContent();
 
   const result = ships.map((e, i) => {
-    const hMap = [e[0], e[1], e[2]];
+    const hMap = [e.UnitName, e.UnitId, e.Tags];
 
     // insert the star count formulas
     const row = i + 2;
