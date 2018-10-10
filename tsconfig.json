@@ -10,9 +10,9 @@
     "src/Webhooks.ts",
     "src/Micromanage.ts",
     "src/lib.ts",
-    "src/SCORPIO.ts",
-    "src/SWGOH_gg_API.ts",
-    "src/SWGoH_help.ts"
+    "src/Scorpio.ts",
+    "src/SwgohGg.ts",
+    "src/SwgohHelp.ts"
   ],
   "compilerOptions": {
     // only emit .d.ts
@@ -33,9 +33,8 @@
     "module": "es2015",  // Note: "none" in ts2gas
     "moduleResolution": "node",
   },
-  "include": ["src/**/*.ts"],
+  // "include": ["src/**/*.ts"],
   "exclude": [
-    "node_modules",
-    "lib"
+    "node_modules"
   ]
 }
