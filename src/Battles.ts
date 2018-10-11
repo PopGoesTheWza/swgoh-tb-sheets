@@ -55,6 +55,8 @@ function populateTBTable(data, members, heroes) {
       } else if (curHero[0].length === 0) {
         table[r + 1][c] = '';
         continue;
+      } else {
+        table[r + 1][c] = '';
       }
       const squad = curHero[4];
       if (squad !== lastSquad) {
@@ -82,7 +84,7 @@ function populateTBTable(data, members, heroes) {
         }
       }
       table[r + 1][c] = requirementsMet
-        ? `${o.rarity}*`
+        ? `${o.rarity}`
         : `${o.rarity}*L${o.level}G${o.gear_level}`;
     }
   }
@@ -231,7 +233,7 @@ function setupTBSide() {
         // end the phase if this isn't the first row
         const curTb = tbSheet.getRange(tbRow, 3);
         set_cell_value_(curTb, 'Phase Count:', true, 'right');
-        curTb.offset(0, 1).setValue(phaseCount);
+        curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
         curTb
           .offset(0, 6)
           .setValue(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
@@ -286,7 +288,7 @@ function setupTBSide() {
   // add the final phase
   let curTb = tbSheet.getRange(tbRow, 3);
   set_cell_value_(curTb, 'Phase Count:', true, 'right');
-  curTb.offset(0, 1).setValue(phaseCount);
+  curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
   curTb
     .offset(0, 6)
     .setValue(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
