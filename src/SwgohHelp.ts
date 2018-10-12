@@ -35,6 +35,12 @@ function get_SwgohHelp_allycode_(): number {
 }
 
 function getGuildDataFromSwgohHelp(): PlayerData[] {
+  if (!swgohhelpapi) {
+    UI.alert(`Library swgohhelpapi not found
+    Please visit the link below to reinstall it.
+    https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`);
+    return [];
+  }
   const members: PlayerData[] = [];
   const settings: swgohhelpapi.exports.Settings = {
     username: get_SwgohHelp_username_(),
