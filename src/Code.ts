@@ -143,12 +143,12 @@ interface UnitInstance {
 //   sheet.getRange(1, 1, 300, MAX_PLAYERS + SHIP_PLAYER_COL_OFFSET).clearContent();
 // }
 
-function getSubstringRe_(string: string, re: RegExp) {
+function getSubstringRe_(string: string, re: RegExp): string {
   const m = string.match(re);
   return m ? m[1] : '';
 }
 
-function getTagFilter_() {
+function getTagFilter_(): string {
   const value = SPREADSHEET
     .getSheetByName(SHEETS.META)
     .getRange(META_FILTER_ROW, META_FILTER_COL)
@@ -156,7 +156,7 @@ function getTagFilter_() {
   return value;
 }
 
-function getCharacterCount_() {
+function getCharacterCount_(): number {
   const value = SPREADSHEET
     .getSheetByName(SHEETS.META)
     .getRange(META_HEROES_COUNT_ROW, META_UNIT_COUNTS_COL)
@@ -164,7 +164,7 @@ function getCharacterCount_() {
   return value;
 }
 
-function getShipCount_() {
+function getShipCount_(): number {
   const value = SPREADSHEET
     .getSheetByName(SHEETS.META)
     .getRange(META_SHIPS_COUNT_ROW, META_UNIT_COUNTS_COL)
@@ -172,7 +172,7 @@ function getShipCount_() {
   return value;
 }
 
-function get_character_tag_() {
+function get_character_tag_(): string {
   const value = SPREADSHEET
     .getSheetByName(SHEETS.META)
     .getRange(META_TAG_ROW, META_TAG_COL)
@@ -180,7 +180,7 @@ function get_character_tag_() {
   return value;
 }
 
-function get_minimum_gear_level_() {
+function get_minimum_gear_level_(): number {
   const value = SPREADSHEET
     .getSheetByName(SHEETS.META)
     .getRange(META_UNDERGEAR_ROW, META_UNDERGEAR_COL)
@@ -188,7 +188,7 @@ function get_minimum_gear_level_() {
   return value;
 }
 
-function get_minimum_character_gp_() {
+function get_minimum_character_gp_(): number {
   const value = SPREADSHEET
     .getSheetByName(SHEETS.META)
     .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)

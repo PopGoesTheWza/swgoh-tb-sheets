@@ -1,38 +1,33 @@
-// Get the list of exclusions
-function get_exclusions_() {
+/** Get the list of exclusions */
+function get_exclusions_(): boolean[][] {
   const excludeSheet = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS);
-  const excludeData = excludeSheet
-    .getDataRange()
-    .getValues()
-    .filter((e: string[]) => e[0].length > 0)
+  const excludeData = excludeSheet.getDataRange()
+    .getValues() as string[][];
+  const filtered = excludeData.filter(e => e[0].length > 0)
     .map(e => e.slice(0, MAX_PLAYERS)) as string[][];
 
-  const excludeHeroes = [];
+  const excludedUnits: boolean[][] = [];
 
-  // First row is player names
-  const players = excludeData.shift();
-  // drop first column
-  players.shift();
+  const players = filtered.shift();  // First row is player names
+  players.shift();  // drop first column
 
   // For each unit rows
-  excludeData.forEach((e) => {
-    // first column is unit names
-    const name = e.shift();
-    excludeHeroes[name] = [];
+  filtered.forEach((e) => {
+    const unitName = e.shift();  // first column is unit names
+    excludedUnits[unitName] = [];
 
     // For each exclusion cell
     e.forEach((x, c) => {
       const player = players[c];
-      const cell = x ? x.trim() : '';
-      // exclude if cell is not empty?
-      excludeHeroes[name][player] = Boolean(cell);
+      const isExcluded = Boolean(x ? x.trim() : '');  // exclude if cell is not empty?
+      excludedUnits[unitName][player] = isExcluded;
     });
   });
 
-  return excludeHeroes;
+  return excludedUnits;
 }
 
-// Process all the excluded units
+/** Process all the excluded units */
 function processExclusions(data, excludeData) {
   /*
   // First row is player names

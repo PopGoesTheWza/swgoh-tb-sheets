@@ -2,22 +2,26 @@
 // TB functions
 // ****************************************
 
+declare function getGuildDataFromSwgohHelp(): PlayerData[];
+
 // set the value and style in a cell
 function set_cell_value_(
   cell: GoogleAppsScript.Spreadsheet.Range,
   value,
   bold: boolean,
   align?: 'left' | 'center' | 'right',
-) {
-  cell
-    .setFontWeight(bold ? 'bold' : 'normal')
+): void {
+  cell.setFontWeight(bold ? 'bold' : 'normal')
     .setHorizontalAlignment(align)
     .setValue(value);
 }
 
-function populateTBTable(data, members, heroes) {
-  const roster = SPREADSHEET
-    .getSheetByName(SHEETS.ROSTER)
+function populateTBTable(
+  data: string[][],
+  members: PlayerData[],
+  heroes: UnitDeclaration[],
+): (string|number)[][] {
+  const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as string[][];
   const hIdx = [];
@@ -28,7 +32,7 @@ function populateTBTable(data, members, heroes) {
   let lastSquad = 0;
   let lastRequired = false;
 
-  const table = [];
+  const table: (string|number)[][] = [];
   table[0] = [];
 
   for (let c = 0; c < roster.length; c += 1) {
@@ -58,7 +62,7 @@ function populateTBTable(data, members, heroes) {
       } else {
         table[r + 1][c] = '';
       }
-      const squad = curHero[4];
+      const squad = Number(curHero[4]);
       if (squad !== lastSquad) {
         squadCount = 0;
       }
@@ -97,7 +101,7 @@ function populateTBTable(data, members, heroes) {
  * @return The Roster sheet is updated.
  * @customfunction
  */
-function updateGuildRoster(members) {
+function updateGuildRoster(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   // get the list of members to add and remove
   const addMembers = sheet
@@ -144,7 +148,7 @@ function updateGuildRoster(members) {
 }
 
 /** Setup the Territory Battle for Hoth */
-function setupTBSide() {
+function setupTBSide(): void {
   // const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
   // make sure the roster is up-to-date
@@ -349,7 +353,7 @@ function setupTBSide() {
   //   }
   // }
   table = populateTBTable(
-    tbSheet.getRange(2, 3, lastHeroRow, 6).getValues(),
+    tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
     heroes,
   );
