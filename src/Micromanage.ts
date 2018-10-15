@@ -1,67 +1,54 @@
 // ****************************************
 // Micromanaged Webhook Functions
 // ****************************************
-const waitTime = 2000; // TODO: expose as config variable
+const WAIT_TIME = 2000; // TODO: expose as config variable
 
 // Format the player's label
-function player_label_(player, mention) {
-  let label;
-  if (mention != null) {
-    label = Utilities.formatString(
-      'Assignments for **%s** (%s)',
-      player,
-      mention,
-    );
-  } else {
-    label = Utilities.formatString('Assignments for **%s**', player);
-  }
+function player_label_(player: string, mention: string) {
+  const value: string = (mention)
+    ? `Assignments for **${player}** (${mention})`
+    : `Assignments for **${player}**`;
 
-  return label;
+  return value;
 }
 
 // Format the platoon label with number icons
-function player_label_as_icon_(label, type, platoon) {
+function player_label_as_icon_(label: string, type: string, platoon: number) {
   const platoonIcon = [':one:', ':two:', ':three:', ':four:', ':five:', ':six:'][platoon];
 
-  return Utilities.formatString('__%s__ · %s %s', label, type, platoonIcon);
+  return `__${label}__ · ${type} ${platoonIcon}`;
 }
 
 // Check if the unit can be easily confused
-function is_group_unit_(unit) {
-  return (
-    unit.search(
+function is_group_unit_(unit: string): boolean {
+  return unit.search(
       /X-wing|U-wing|ARC-170|Geonosian|CC-|CT-|Dathcha|Jawa|Hoth Rebel/,
-    ) > -1
-  );
+    ) > -1;
 }
 
 // Convert an array index to a string
-function array_index_to_string_(index) {
+function array_index_to_string_(index: string): string {
   const indexNum = parseInt(index, 10) + 1;
 
   return indexNum.toString();
 }
 
 // Format the unit name
-function unit_label_(unit, slot) {
+function unit_label_(unit: string, slot: string): string {
   if (is_group_unit_(unit)) {
-    return Utilities.formatString(
-      '[slot %s] %s',
-      array_index_to_string_(slot),
-      unit,
-    );
+    return `[slot ${array_index_to_string_(slot)}] ${unit}`;
   }
 
   return unit;
 }
 
 // Send a Webhook to Discord
-function sendMicroByPlayerWebhook() {
+function sendMicroByPlayerWebhook(): void {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
 
   // get the webhook
-  const webhookURL = getWebhook();
+  const webhookURL = getWebhook_();
   if (webhookURL.length === 0) {
     // we need a url to proceed
     UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
@@ -78,7 +65,7 @@ function sendMicroByPlayerWebhook() {
 
     // for each zone
     const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
-    const label = getZoneName(phase, z, false);
+    const label = getZoneName_(phase, z, false);
     const type = z === 0 ? 'squadron' : 'platoon';
 
     // cycle throught the platoons in a zone
@@ -121,7 +108,7 @@ function sendMicroByPlayerWebhook() {
     return a.player.toLowerCase().localeCompare(b.player.toLowerCase());
   });
 
-  const playerMentions = getPlayerMentions();
+  const playerMentions = getPlayerMentions_();
   while (entries.length > 0) {
     const player = entries[0].player;
     const bucket = entries.filter((e) => {
@@ -192,7 +179,7 @@ function sendMicroByPlayerWebhook() {
     const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions
     = urlFetchMakeParam_(jsonObject);
     urlFetchExecute_(webhookURL, options);
-    Utilities.sleep(waitTime);
+    Utilities.sleep(WAIT_TIME);
   }
 }
 
