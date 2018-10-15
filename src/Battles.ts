@@ -104,16 +104,15 @@ function populateTBTable(
 function updateGuildRoster(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   // get the list of members to add and remove
-  const addMembers = sheet
-    .getRange(2, META_ADD_PLAYER_COL, MAX_PLAYERS, 2)
-    .getValues();
-  const removeMembers = sheet
-    .getRange(2, META_REMOVE_PLAYER_COL, MAX_PLAYERS, 1)
-    .getValues();
+  // const addMembers = sheet.getRange(2, META_ADD_PLAYER_COL, MAX_PLAYERS, 2)
+  //   .getValues() as [string, string][];
+  // TODO: use allycode instead of url
+  // const removeMembers = sheet.getRange(2, META_REMOVE_PLAYER_COL, MAX_PLAYERS, 1)
+  //   .getValues() as [string][];
 
   // members = remove_members_(text, removeMembers); // TODO, Remove members from array
   // add missing members
-  //  result = add_missing_members_(result, addMembers); // TODO Add members via SWGOH links
+  // result = add_missing_members_(result, addMembers); // TODO Add members via SWGOH links
 
   const sortFunction = getSortRoster_()
     // sort roster by player name
@@ -208,7 +207,7 @@ function setupTBSide(): void {
 
     // collect the meta data for the heroes
   let row = 2;
-  const tagFilter = getTagFilter_();
+  const tagFilter = getSideFilter_();
   const col = isLight_(tagFilter) ? META_HEROES_COL : META_HEROES_DS_COL;
   let tbRow = 2;
   let lastPhase = '1';

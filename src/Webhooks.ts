@@ -97,7 +97,7 @@ function getWebhookDepthIntro(phase: number, mention: string): string {
 
 // Get the Description for the phase
 function getWebhookDesc(phase: number): string {
-  const tagFilter = getTagFilter_(); // TODO: potentially broken if TB not sync
+  const tagFilter = getSideFilter_(); // TODO: potentially broken if TB not sync
   const columnOffset = isLight_(tagFilter) ? 0 : 1;
   const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
@@ -500,7 +500,7 @@ function getUniquePlatoonUnits(zone: number): string[] {
 
 // Get the list of Rare units needed for the phase
 function getRareUnits(sheetName: string, phase: number): string[] {
-  const tagFilter = getTagFilter_();  // TODO: potentially broken if TB not sync
+  const tagFilter = getSideFilter_();  // TODO: potentially broken if TB not sync
   const useBottomTerritory = !isLight_(tagFilter) || phase > 1;
   const count = getCharacterCount_();
   const data = (SPREADSHEET.getSheetByName(sheetName)
@@ -546,7 +546,7 @@ function allRareUnitsWebhook(): void {
 
   const fields: DiscordMessageEmbedFields[] = [];
 
-  // TODO: remove hardcode
+  // TODO: regroup phases and zones management
   if (phase >= 3) {
     // get the ships list
     const ships = getRareUnits(SHEETS.SHIPS, phase);

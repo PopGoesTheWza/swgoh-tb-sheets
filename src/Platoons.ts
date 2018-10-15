@@ -13,7 +13,7 @@ const PLATOON_ZONE_ROW_OFFSET = 18;
 
 // Initialize the list of Territory names
 function init_platoon_phases_() {
-  const tagFilter = getTagFilter_();
+  const tagFilter = getSideFilter_();
 
   // Names of Territories, # of Platoons
   if (isLight_(tagFilter)) {
@@ -62,7 +62,7 @@ function setZoneName(phase, zone, sheet, platoonRow) {
 // Populate platoon with slices if available
 function fillSlice(phase, zone, platoon, range) {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
-  const tagFilter = getTagFilter_();
+  const tagFilter = getSideFilter_();
 
   // format the cell name
   let cellName = tagFilter === 'Dark Side' ? 'Dark' : 'Light';

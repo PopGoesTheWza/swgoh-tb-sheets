@@ -158,7 +158,7 @@ function updateHeroesList(heroes) {
 // Populate the list of heroes
 function get_hero_list_() {
   // get the filter
-  const tagFilter = ''; // getTagFilter_()
+  const tagFilter = ''; // getSideFilter_()
 
   let link = 'https://swgoh.gg/';
   if (tagFilter.length > 0) {
@@ -248,7 +248,7 @@ function populate_hero_list_() {
 
 // Get the heroes for a duplicated player name directly from their link
 function get_dup_heroes_(playerLink) {
-  const tagFilter = ''; // getTagFilter_()
+  const tagFilter = ''; // getSideFilter_()
   const encodedTagFilter = tagFilter.replace(' ', '+');
 
   if (playerLink.length === 0) {
@@ -319,7 +319,7 @@ function get_dup_heroes_(playerLink) {
 
 // Get the ships for a duplicated player name directly from their link
 function get_dup_ships_(playerLink) {
-  const tagFilter = ''; // getTagFilter_()
+  const tagFilter = ''; // getSideFilter_()
   const encodedTagFilter = tagFilter.replace('-', ' ').toLowerCase();
 
   if (playerLink.length === 0) {

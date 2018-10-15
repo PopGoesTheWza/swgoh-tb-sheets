@@ -54,7 +54,7 @@ function getGuildDataFromSwgohHelp(): PlayerData[] {
     units: true,
     language: swgohhelpapi.Languages.eng_us,
     project: {
-      id: true,
+      // id: true,
       roster: true,
     },
   });
