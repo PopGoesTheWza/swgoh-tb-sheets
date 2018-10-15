@@ -16,7 +16,7 @@ function set_cell_value_(
     .setValue(value);
 }
 
-function populateTBTable(
+function populateTBTable_(
   data: string[][],
   members: PlayerData[],
   heroes: UnitDeclaration[],
@@ -101,7 +101,7 @@ function populateTBTable(
  * @return The Roster sheet is updated.
  * @customfunction
  */
-function updateGuildRoster(members: PlayerData[]): PlayerData[] {
+function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   // get the list of members to add and remove
   // const addMembers = sheet.getRange(2, META_ADD_PLAYER_COL, MAX_PLAYERS, 2)
@@ -156,7 +156,7 @@ function setupTBSide(): void {
   // NOTE Currently not supported by Scorpio, so always using SWGOH.gg data
   let heroes: UnitDeclaration[];
   let ships: UnitDeclaration[];
-  if (isDataSourceSwgohHelp()) {
+  if (isDataSourceSwgohHelp_()) {
     // heroes = getHeroesFromSWGOHhelp();
     // ships = getShipsFromSWGOHhelp();
     heroes = getHeroesFromSWGOHgg();
@@ -170,9 +170,9 @@ function setupTBSide(): void {
 
   // Figure out which data source to use
   let members: PlayerData[];
-  if (isDataSourceSwgohHelp()) {
+  if (isDataSourceSwgohHelp_()) {
     members = getGuildDataFromSwgohHelp();
-  } else if (isDataSourceSwgohGg()) {
+  } else if (isDataSourceSwgohGg_()) {
     members = getGuildDataFromSwgohGg();
   } else {
     members = getGuildDataFromScorpio();
@@ -187,15 +187,36 @@ function setupTBSide(): void {
   }
 
   // TODO: relocate
+  // fix name starting with single quote
   members.forEach((e) => {
     if (e.name[0] === '\'') {
       e.name = ` ${e.name}`;
     }
   });
 
+  // find duplicate names and append allycode
+  const index: { [key: string] : number[] } = {};
+  members.forEach((e, i) => {
+    if (index.hasOwnProperty(e.name)) {
+      index[e.name].push(i);
+    } else {
+      index[e.name] = [i];
+    }
+  });
+  for (const key in index) {
+    const a = index[key];
+    if (a.length > 1) {
+      a.forEach((i) => {
+        const name = members[i].name;
+        const allycode = members[i].link.match(/(\d+)/)[1];
+        members[i].name = `${name} (${allycode})`;
+      });
+    }
+  }
+
   // This will update Roster Sheet with names and GPs,
   // will also return a new members array with added/deleted from sheet
-  members = updateGuildRoster(members);
+  members = updateGuildRoster_(members);
 
   populateHeroesList(members);
   populateShipsList(members);
@@ -351,7 +372,7 @@ function setupTBSide(): void {
   //     }
   //   }
   // }
-  table = populateTBTable(
+  table = populateTBTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
     heroes,
