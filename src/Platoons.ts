@@ -287,8 +287,8 @@ function recommendPlatoons() {
   const exclusionsId = getExclusionId_();
   if (exclusionsId.length > 0) {
     const excludeData = get_exclusions_();
-    heroData = processExclusions(heroData, excludeData);
-    shipData = processExclusions(shipData, excludeData);
+    heroData = processExclusions_(heroData, excludeData);
+    shipData = processExclusions_(shipData, excludeData);
   }
 
   // reset the needed counts

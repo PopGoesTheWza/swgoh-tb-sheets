@@ -28,7 +28,7 @@ function get_exclusions_(): boolean[][] {
 }
 
 /** Process all the excluded units */
-function processExclusions(data, excludeData) {
+function processExclusions_(data, excludeData) {
   /*
   // First row is player names
   var players = data.slice().shift()

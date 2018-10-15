@@ -181,13 +181,13 @@ function getTagFilter_(): string {
   return value;
 }
 
-function get_minimum_gear_level_(): number {
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_UNDERGEAR_ROW, META_UNDERGEAR_COL)
-    .getValue() as number;
+// function get_minimum_gear_level_(): number {
+//   const value = SPREADSHEET.getSheetByName(SHEETS.META)
+//     .getRange(META_UNDERGEAR_ROW, META_UNDERGEAR_COL)
+//     .getValue() as number;
 
-  return value;
-}
+//   return value;
+// }
 
 function get_minimum_character_gp_(): number {
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -230,16 +230,16 @@ function getExclusionId_(): string {
 }
 
 /** should we use the SWGoH.help API? */
-function isDataSourceSwgohHelp(): boolean {
+function isDataSourceSwgohHelp_(): boolean {
   return get_data_source_() === DATASOURCES.SWGOH_HELP;
 }
 
 /** should we use the SWGoH.gg API? */
-function isDataSourceSwgohGg(): boolean {
+function isDataSourceSwgohGg_(): boolean {
   return get_data_source_() === DATASOURCES.SWGOH_GG;
 }
 
-function get_data_source_() {
+function get_data_source_(): string {
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
     .getValue() as string;
@@ -505,20 +505,20 @@ function getHeroesTabIndex_(): UnitTabIndex[] {
   return index;
 }
 
-function playerSnapshotOutput(
+function playerSnapshotOutput_(
   sheet: GoogleAppsScript.Spreadsheet.Sheet,
   rowGp: number,
   baseData: string[][],
   rowHeroes: number,
   meta: string[][],
-  ) {
+  ): void {
   sheet.getRange(1, 3, 50, 2).clearContent();  // clear the sheet
   sheet.getRange(rowGp, 3, baseData.length, 2).setValues(baseData);
   sheet.getRange(rowHeroes, 3, meta.length, 2).setValues(meta);
 }
 
 /** Create a Snapshot of a Player based on criteria tracked in the workbook */
-function playerSnapshot() {
+function playerSnapshot(): void {
   // cache the matrix of hero data
   const heroesIndex = getHeroesTabIndex_();
 
@@ -568,11 +568,11 @@ function playerSnapshot() {
   const rowGp = 1;
   const rowHeroes = 6;
   // output the results
-  playerSnapshotOutput(sheet, rowGp, baseData, rowHeroes, meta);
+  playerSnapshotOutput_(sheet, rowGp, baseData, rowHeroes, meta);
 }
 
 /** Setup new menu items when the spreadsheet opens */
-function onOpen() {
+function onOpen(): void {
   UI.createMenu('SWGoH')
     .addItem('Refresh TB', setupTBSide.name)
     .addSubMenu(
