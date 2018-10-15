@@ -351,13 +351,14 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
   const descriptionText = `${getWebhookTitle_(phase)}${getWebhookRareIntro_(phase, mentions)}`;
 
   // get data from the platoons
+  let fields: string = '';
   let donations: string[][] = [];
   let groundStart = -1;
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
     // for each zone
     const platoonRow = (z * PLATOON_ZONE_ROW_OFFSET + 2);
-    // const validPlatoons = [];
-    // const zone = getZoneName_(phase, z, true);
+    const validPlatoons = [];
+    const zone = getZoneName_(phase, z, true);
 
     if (z === 1) {
       groundStart = donations.length;
@@ -376,7 +377,7 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
       const platoon = getPlatoonDonations_(platoonData, donations, rules, playerMentions);
 
       if (platoon) {
-        // validPlatoons.push(p);
+        validPlatoons.push(p);
         if (platoon.length > 0) {
           // add the new donations to the list
           for (const e of platoon) {
@@ -386,23 +387,27 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
       }
     }
     // see if all platoons are valid
-    // let platoons: string;
-    // if (validPlatoons.length === MAX_PLATOONS) {
-    //   platoons = 'All';
-    // } else {
-    //   platoons = validPlatoons.map(e => `#${e + 1}`).join(', ');
-    // }
+    let platoons: string;
+    if (validPlatoons.length === MAX_PLATOONS) {
+      platoons = 'All';
+    } else {
+      platoons = validPlatoons.map(e => `#${e + 1}`).join(', ');
+    }
+
+    // format the needed platoons
+    if (validPlatoons.length > 0) {
+      fields += `**${zone}**\n${platoons}\n\n`;
+    }
   }
 
   // format the high needed units
-  let fields: string;
   const highNeedShips = getHighNeedList_(SHEETS.SHIPS, getShipCount_());
   if (highNeedShips.length > 0) {
-    fields = `**High Need Ships**\n${highNeedShips.join(', ')}\n\n`;
+    fields += `**High Need Ships**\n${highNeedShips.join(', ')}\n\n`;
   }
   const highNeedHeroes = getHighNeedList_(SHEETS.HEROES, getCharacterCount_());
   if (highNeedHeroes.length > 0) {
-    fields = `**High Need Heroes**\n${highNeedHeroes.join(', ')}\n\n`;
+    fields += `**High Need Heroes**\n${highNeedHeroes.join(', ')}\n\n`;
   }
   postMessage_(webhookURL, `${descriptionText}\n\n${fields}\n`);
 
