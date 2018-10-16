@@ -122,14 +122,14 @@ function getPlayerMentions_(): KeyDict {
     .getValues() as string[][];
   const result: KeyDict = {};
 
-  data.forEach((e) => {
+  for (const e of data) {
     const name = e[0];
     // only stores unique names, we can't differentiate with duplicates
     if (name && name.length > 0 && !result[name]) {
       // store the ID if it exists, otherwise store the player's name
       result[name] = (e[1] && e[1].length > 0) ? e[1] : name;
     }
-  });
+  }
 
   return result;
 }
@@ -415,38 +415,37 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
   if (byType === 'Player') {
     const heroLabel = 'Heroes: ';
     const shipLabel = 'Ships: ';
-    const playerDonations: [string, string][] = [];
-    donations.forEach((donation, d) => {
-      const unit = donation[0];
-      const names = donation[1].split(',');
-
-      // TODO: cleanup below
-      for (const name of names) {
-        const nameTrim = name.trim();
-        // see if the name is already listed
-        const foundName = playerDonations.some((player) => {
-          const found = player[0] === nameTrim;
-          if (found) {
-            if (d >= groundStart && player[1].indexOf(heroLabel) < 0) {
-              player[1] += `\n${heroLabel}${unit}`;
-            } else {
-              player[1] += `, ${unit}`;
+    const acc  = donations.reduce(
+      (acc: [string, string][], e, i) => {
+        const unit = e[0];
+        const names = e[1].split(',');
+        for (const name of names) {
+          const nameTrim = name.trim();
+          // see if the name is already listed
+          const foundName = acc.some((player) => {
+            const found = player[0] === nameTrim;
+            if (found) {
+              player[1] += (i >= groundStart && player[1].indexOf(heroLabel) < 0)
+                ? `\n${heroLabel}${unit}`
+                : `, ${unit}`;
             }
+
+            return found;
+          });
+
+          if (!foundName) {
+            acc.push([
+              nameTrim,
+              (i >= groundStart ? heroLabel : shipLabel) + unit,
+            ]);
           }
-
-          return found;
-        });
-
-        if (!foundName) {
-          playerDonations.push([
-            nameTrim,
-            (d >= groundStart ? heroLabel : shipLabel) + unit,
-          ]);
         }
-      }
-    });
+        return acc;
+      },
+      [],
+    );
     // sort by player
-    donations = playerDonations.sort(firstElementToLowerCase_);
+    donations = acc.sort(firstElementToLowerCase_);
   }
 
   // format the needed donations
@@ -457,22 +456,30 @@ function spoolDiscordMessage_(webhookURL: string, byType: string, donations: str
   const typeIsUnit = byType === 'Unit';
   const maxUrlLen = 1000;
   const maxCount = typeIsUnit ? 5 : 10;
-  let playerFields = '';
-  let count = 0;
-  const filtered = donations.filter(e => e[1].length > 0);
-  for (const e of filtered) {
-    const fieldName = typeIsUnit ? `${e[0]} (Rare)` : e[0]; // TODO: reduce
-    playerFields += `**${fieldName}**\n${e[1]}\n\n`;
-    count += 1;
-    // make sure our message isn't getting too long
-    if (count >= maxCount || playerFields.length > maxUrlLen) {
-      postMessage_(webhookURL, playerFields);
-      playerFields = '';
-      count = 0;
-    }
+  const acc = donations.reduce(
+    (acc, e) => {
+      if (e[1].length > 0) {
+        const f = typeIsUnit ? `${e[0]} (Rare)` : e[0];
+        const s = `**${f}**\n${e[1]}\n\n`;
+        acc.count += s.length;
+        acc.fields.push(s);
+        // make sure our message isn't getting too long
+        if (acc.fields.length >= maxCount || acc.count > maxUrlLen) {
+          postMessage_(webhookURL, acc.fields.join(''));
+          acc.count = 0;
+          acc.fields = [];
+        }
+      }
+      return acc;
+    },
+    {
+      count: 0,
+      fields: [],
+    },
+  );
+  if (acc.fields.length > 0) {
+    postMessage_(webhookURL, acc.fields.join(''));
   }
-
-  postMessage_(webhookURL, playerFields);
 }
 
 // Send a Webhook to Discord
@@ -515,8 +522,14 @@ function getRareUnits_(sheetName: string, phase: number): string[] {
 
   const idx = phase + 1;
   // cycle through each unit
-  const units = data.filter(row => row[0].length > 0 && row[idx] < RARE_MAX)
-    .map(row => row[0])  // keep only the unit's name
+  const units = data.reduce(
+    (acc, row) => {
+      if (row[0].length > 0 && row[idx] < RARE_MAX) {
+        acc.push(row[0]);
+      }
+      return acc;
+    },
+    [])  // keep only the unit's name
     .sort();  // sort the list of units
 
   let platoonUnits: string[];
@@ -530,7 +543,7 @@ function getRareUnits_(sheetName: string, phase: number): string[] {
   }
 
   // filter out rare units that do not appear in platoons
-  const results = units.filter((unit: string) => platoonUnits.some((el: string) => el === unit));
+  const results = units.filter(unit => platoonUnits.some(el => el === unit));
 
   return results;
 }

@@ -10,7 +10,7 @@
     "src/Webhooks.ts",
     "src/Micromanage.ts",
     "src/lib.ts",
-    "src/Scorpio.ts",
+    // "src/Scorpio.ts",
     "src/SwgohGg.ts",
     "src/SwgohHelp.ts"
   ],

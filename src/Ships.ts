@@ -19,7 +19,7 @@ function populateShipsList(members) {
   const mList = SPREADSHEET
     .getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
-    .getValues() as string[][];
+    .getValues() as [string][];
   const pIdx = [];
   mList.forEach((e, i) => {
     pIdx[e[0]] = i;
@@ -36,15 +36,15 @@ function populateShipsList(members) {
   // Initialize our data
   const data = baseIDs.map(e => Array(mList.length).fill(null));
 
-  members.forEach((m) => {
+  for (const m of members) {
     mHead[0].push(m.name);
     const units = m.units;
-    baseIDs.forEach((e) => {
+    for (const e of baseIDs) {
       const baseId = e[0];
       const u = units[baseId];
       data[hIdx[baseId]][pIdx[m.name]] = (u && `${u.rarity}*L${u.level}P${u.power}`) || '';
-    });
-  });
+    }
+  }
   // Write our data
   sheet.getRange(1, SHIP_PLAYER_COL_OFFSET, 1, mList.length).setValues(mHead);
   sheet
@@ -53,7 +53,7 @@ function populateShipsList(members) {
 }
 
 // Initialize the list of ships
-function updateShipsList(ships) {
+function updateShipsList(ships: UnitDeclaration[]): void {
   // update the sheet
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
@@ -61,7 +61,7 @@ function updateShipsList(ships) {
   sheet.getRange(1, 1, 300, SHIP_PLAYER_COL_OFFSET - 1).clearContent();
 
   const result = ships.map((e, i) => {
-    const hMap = [e.UnitName, e.UnitId, e.Tags];
+    const hMap = [e.name, e.baseId, e.tags];
 
     // insert the star count formulas
     const row = i + 2;

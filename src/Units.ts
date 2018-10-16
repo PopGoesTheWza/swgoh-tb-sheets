@@ -19,7 +19,7 @@ function populateHeroesList(members) {
   const mList = SPREADSHEET
     .getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
-    .getValues() as string[][];
+    .getValues() as [string][];
   const pIdx = [];
   mList.forEach((e, i) => {
     pIdx[e[0]] = i;
@@ -36,7 +36,7 @@ function populateHeroesList(members) {
   // Initialize our data
   const data = baseIDs.map(e => Array(mList.length).fill(''));
 
-  members.forEach((m) => {
+  for (const m of members) {
     mHead[0].push(m.name);
     const units = m.units;
     baseIDs.forEach((e, i) => {
@@ -45,7 +45,7 @@ function populateHeroesList(members) {
       data[hIdx[baseId]][pIdx[m.name]] =
           (u && `${u.rarity}*L${u.level}G${u.gear_level}P${u.power}`) || '';
     });
-  });
+  }
   // Logger.log(
   //   "Last Member Data: " + JSON.stringify(members[mList[mList.length - 1]])
   // )
@@ -82,12 +82,12 @@ function populateHeroesList(members) {
 }
 
 // Initialize the list of heroes
-function updateHeroesList(heroes) {
+function updateHeroesList(heroes: UnitDeclaration[]): void {
   // update the sheet
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
 
   const result = heroes.map((e, i) => {
-    const hMap = [e.UnitName, e.UnitId, e.Tags];
+    const hMap = [e.name, e.baseId, e.tags];
 
     // insert the star count formulas
     const row = i + 2;

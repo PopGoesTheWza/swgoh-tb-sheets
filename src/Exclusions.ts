@@ -3,8 +3,15 @@ function get_exclusions_(): boolean[][] {
   const excludeSheet = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS);
   const excludeData = excludeSheet.getDataRange()
     .getValues() as string[][];
-  const filtered = excludeData.filter(e => e[0].length > 0)
-    .map(e => e.slice(0, MAX_PLAYERS)) as string[][];
+  const filtered = excludeData.reduce(
+    (acc: string[][], e) => {
+      if (e[0].length > 0) {
+        acc.push(e.slice(0, MAX_PLAYERS));
+      }
+      return acc;
+    },
+    [],
+  );
 
   const excludedUnits: boolean[][] = [];
 
@@ -12,7 +19,7 @@ function get_exclusions_(): boolean[][] {
   players.shift();  // drop first column
 
   // For each unit rows
-  filtered.forEach((e) => {
+  for (const e of filtered) {
     const unitName = e.shift();  // first column is unit names
     excludedUnits[unitName] = [];
 
@@ -22,7 +29,7 @@ function get_exclusions_(): boolean[][] {
       const isExcluded = Boolean(x ? x.trim() : '');  // exclude if cell is not empty?
       excludedUnits[unitName][player] = isExcluded;
     });
-  });
+  }
 
   return excludedUnits;
 }

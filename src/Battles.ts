@@ -23,9 +23,11 @@ function populateTBTable_(
 ): (string|number)[][] {
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
-    .getValues() as string[][];
+    .getValues() as [string][];
   const hIdx = [];
-  heroes.forEach(e => (hIdx[e.UnitName] = e.UnitId));
+  for (const e of heroes) {
+    hIdx[e.name] = e.baseId;
+  }
   let total = 0;
   let phaseCount = 0;
   let squadCount = 0;
@@ -75,7 +77,7 @@ function populateTBTable_(
       }
       const requirementsMet =
         o.rarity >= Number(curHero[1]) &&
-        o.gear_level >= Number(curHero[2]) &&
+        o.gearLevel >= Number(curHero[2]) &&
         o.level >= Number(curHero[3]);
       if (requirementsMet) {
         if (curHero[5] === 'R' && !lastRequired) {
@@ -89,11 +91,43 @@ function populateTBTable_(
       }
       table[r + 1][c] = requirementsMet
         ? `${o.rarity}`
-        : `${o.rarity}*L${o.level}G${o.gear_level}`;
+        : `${o.rarity}*L${o.level}G${o.gearLevel}`;
     }
   }
   return table;
 }
+
+// function add_missing_members_(
+//   result: PlayerData[],
+//   addMembers: {[key: number]: string},
+// ): PlayerData[] {
+//   // for each member to add
+//   for (const key in addMembers) {
+//     if (addMembers.hasOwnProperty(key)) {
+//       // add
+//     }
+//   }
+//   // addMembers.filter(e => e[0].trim().length > 0)  // it must have a name
+//   //   .map(e => [e[0], forceHttps(e[1])])  // the url must use TLS
+//   //   // it must be unique. make sure the player's link isn't already in the list
+//   //   .filter(e => !result.some(l => l[1] === e[1]))
+//   //   // add member to the list. TODO: added members lack the gp information
+//   //   .forEach(e => result.push([e[0], e[1], 0, 0, 0]));
+
+//   return result;
+// }
+
+// TODO: use allycode instead of url
+// function remove_members_(members: PlayerData[], removeMembers: [string][]): PlayerData[] {
+//   const result: string[] = [];
+//   members.forEach((m) => {
+//     if (!should_remove_(m, removeMembers)) {
+//       result.push(m);
+//     }
+//   });
+
+//   return result;
+// }
 
 /**
  * Update the Guild Roster
@@ -103,16 +137,36 @@ function populateTBTable_(
  */
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
+  // let results = members;
+
   // get the list of members to add and remove
   // const addMembers = sheet.getRange(2, META_ADD_PLAYER_COL, MAX_PLAYERS, 2)
-  //   .getValues() as [string, string][];
-  // TODO: use allycode instead of url
-  // const removeMembers = sheet.getRange(2, META_REMOVE_PLAYER_COL, MAX_PLAYERS, 1)
-  //   .getValues() as [string][];
+  //   .getValues() as [string, number][];
+  // const addMemberList: {[key: number]: string} = {};
+  // addMembers.forEach((e) => {
+  //   const allyCode: number = e[1];
+  //   if (allyCode && typeof allyCode === 'number' && allyCode > 0) {
+  //     if (!addMemberList.hasOwnProperty(allyCode)) {
+  //       const name: string = String(e[0]).trim();
+  //       addMemberList[allyCode] = name;
+  //     }
+  //   }
+  // });
+  // // add missing members
+  // results = add_missing_members_(results, addMemberList);
 
-  // members = remove_members_(text, removeMembers); // TODO, Remove members from array
-  // add missing members
-  // result = add_missing_members_(result, addMembers); // TODO Add members via SWGOH links
+  // const removeMembers = sheet.getRange(2, META_REMOVE_PLAYER_COL, MAX_PLAYERS, 1)
+  //   .getValues() as [number][];
+  // const removeMemberList: {[key: number]: any} = {};
+  // removeMembers.forEach((e) => {
+  //   const allyCode: number = e[0];
+  //   if (allyCode && typeof allyCode === 'number' && allyCode > 0) {
+  //     if (!removeMemberList.hasOwnProperty(allyCode)) {
+  //       removeMemberList[allyCode] = undefined;
+  //     }
+  //   }
+  // });
+  // results = remove_members_(results, removeMemberList); // TODO, Remove members from array
 
   const sortFunction = getSortRoster_()
     // sort roster by player name
@@ -130,10 +184,11 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const result = members.map(e => [
     [e.name],
-    [e.link],
+    // [e.link],
+    [e.allyCode],
     [e.gp],
-    [e.heroes_gp],
-    [e.ships_gp],
+    [e.heroesGp],
+    [e.shipsGp],
   ]);
 
   // result.sort(sortFunction)
@@ -159,11 +214,12 @@ function setupTBSide(): void {
   if (isDataSourceSwgohHelp_()) {
     // heroes = getHeroesFromSWGOHhelp();
     // ships = getShipsFromSWGOHhelp();
-    heroes = getHeroesFromSWGOHgg();
-    ships = getShipsFromSWGOHgg();
+    heroes = getHeroListFromSwgohGg_();
+    ships = getShipListFromSwgohGg_();
   } else {
-    heroes = getHeroesFromSWGOHgg();
-    ships = getShipsFromSWGOHgg();
+    // TODO: re-read only if necessary
+    heroes = getHeroListFromSwgohGg_();
+    ships = getShipListFromSwgohGg_();
   }
   updateHeroesList(heroes);
   updateShipsList(ships);
@@ -173,9 +229,10 @@ function setupTBSide(): void {
   if (isDataSourceSwgohHelp_()) {
     members = getGuildDataFromSwgohHelp();
   } else if (isDataSourceSwgohGg_()) {
-    members = getGuildDataFromSwgohGg();
+    members = getGuildDataFromSwgohGg_(getSwgohGgGuildId_());
+    // TODO: enrich with units name and tags
   } else {
-    members = getGuildDataFromScorpio();
+    // members = getGuildDataFromScorpio();
   }
   if (!members) {
     UI.alert(
@@ -188,11 +245,15 @@ function setupTBSide(): void {
 
   // TODO: relocate
   // fix name starting with single quote
-  members.forEach((e) => {
+  for (const e of members) {
     if (e.name[0] === '\'') {
       e.name = ` ${e.name}`;
     }
-  });
+  }
+
+  // This will update Roster Sheet with names and GPs,
+  // will also return a new members array with added/deleted from sheet
+  members = updateGuildRoster_(members);
 
   // find duplicate names and append allycode
   const index: { [key: string] : number[] } = {};
@@ -206,17 +267,11 @@ function setupTBSide(): void {
   for (const key in index) {
     const a = index[key];
     if (a.length > 1) {
-      a.forEach((i) => {
-        const name = members[i].name;
-        const allycode = members[i].link.match(/(\d+)/)[1];
-        members[i].name = `${name} (${allycode})`;
-      });
+      for (const i of a) {
+        members[i].name += ` (${members[i].allyCode})`;
+      }
     }
   }
-
-  // This will update Roster Sheet with names and GPs,
-  // will also return a new members array with added/deleted from sheet
-  members = updateGuildRoster_(members);
 
   populateHeroesList(members);
   populateShipsList(members);

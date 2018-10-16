@@ -31,7 +31,7 @@ enum SHEETS {
 enum DATASOURCES {
   SWGOH_HELP = 'SWGoH.help',
   SWGOH_GG = 'SWGoH.gg',
-  SCORPIO = 'SCORPIO',
+  // SCORPIO = 'SCORPIO',
 }
 
 const SPREADSHEET = SpreadsheetApp.getActive();
@@ -98,27 +98,40 @@ interface KeyOffset {
 }
 
 interface PlayerData {
+  allyCode: number;
   gp: number;
-  heroes_gp: number;
+  heroesGp: number;
   level: number;
-  link: string;
+  link?: string;
   name: string;
-  ships_gp: number;
+  shipsGp: number;
   units: {[key: string]: UnitInstance};
 }
 
 interface UnitDeclaration {
-  Tags: string;
-  UnitId: string;
-  UnitName: string;
+  tags: string;
+  baseId: string;
+  name: string;
 }
 
+// interface UnitStats {
+//   base_id?: string;
+//   gear_level?: number;
+//   level: number;
+//   name?: string;
+//   power: number;
+//   rarity: number;
+//   stats: string;
+// }
+
 interface UnitInstance {
-  base_id: string;
-  gear_level: number;
+  baseId?: string;
+  gearLevel?: number;
   level: number;
+  name?: string;
   power: number;
   rarity: number;
+  stats?: string;
 }
 
 // ****************************************
@@ -289,18 +302,6 @@ function should_remove_(memberLink: string, removeMembers: [string][]): boolean 
   return result;
 }
 
-// TODO: use allycode instead of url
-function remove_members_(members: string[], removeMembers: [string][]): string[] {
-  const result: string[] = [];
-  members.forEach((m) => {
-    if (!should_remove_(m, removeMembers)) {
-      result.push(m);
-    }
-  });
-
-  return result;
-}
-
 type RosterEntry = [
   string,  // player name
   string,  // player url (TODO: allycode)
@@ -308,19 +309,6 @@ type RosterEntry = [
   number,  // heroes gp
   number  // ships gp
 ];
-
-// TODO: use allycode instead of url
-function add_missing_members_(result: RosterEntry[], addMembers: string[][]): RosterEntry[] {
-  // for each member to add
-  addMembers.filter(e => e[0].trim().length > 0)  // it must have a name
-    .map(e => [e[0], forceHttps(e[1])])  // the url must use TLS
-    // it must be unique. make sure the player's link isn't already in the list
-    .filter(e => !result.some(l => l[1] === e[1]))
-    // add member to the list. TODO: added members lack the gp information
-    .forEach(e => result.push([e[0], e[1], 0, 0, 0]));
-
-  return result;
-}
 
 function lowerCase_(a: string, b: string): number {
   return a.toLowerCase().localeCompare(b.toLowerCase());
@@ -334,12 +322,25 @@ function find_in_list_(name: string, list: string[][]): number {
   return list.findIndex(e => name === e[0]);
 }
 
-function getSnapshopData_(sheet: GoogleAppsScript.Spreadsheet.Sheet, tagFilter: string) {
+function getSnapshopData_(
+  sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  tagFilter: string,
+  heroesIndex: UnitTabIndex[],
+): UnitInstance[] {
   // try for external link
-  const playerLink = (sheet.getRange(2, 1).getValue() as string).trim();
-  if (playerLink.length > 0) {
+  const allyCode = (sheet.getRange(2, 1).getValue() as number);
+  if (allyCode > 0) {
     // TODO: SwgohGg & SwgohHelp API
-    const unitsData: UnitStats[] = getPlayerData_SwgohGg_html_(playerLink, tagFilter);
+    const unitsData: UnitInstance[] = getPlayerData_SwgohGg_html_(allyCode, tagFilter);
+
+    // enrich with name
+    for (const u of unitsData) {
+      const baseId = u.baseId;
+      const h = heroesIndex.find(e => e.baseId === baseId);
+      if (h) {
+        u.name = h.name;
+      }
+    }
 
     return unitsData;
   }
@@ -353,27 +354,34 @@ function getSnapshopData_(sheet: GoogleAppsScript.Spreadsheet.Sheet, tagFilter: 
   // get the player's link from the Roster
   const match = members.find(e => e[0] === memberName);
   if (match) {
-    const unitsData: UnitStats[] = getPlayerData_HeroesTab_(memberName, tagFilter.toLowerCase());
+    const unitsData: UnitInstance[] = getPlayerData_HeroesTab_(memberName, tagFilter.toLowerCase());
 
     return unitsData;
   }
   return [];
 }
 
-interface UnitStats {
-  name?: string;
-  base_id?: string;
-  rarity: number;
-  level: number;
-  gear?: number;
-  power: number;
-  stats: string;
-}
+function getPlayerData_SwgohGgApi_(
+  allyCode: number,
+  tagFilter: string,
+  heroesIndex: UnitTabIndex[],
+): UnitInstance[] {
+  const playerData = getPlayerDataFromSwgohGg_(allyCode);
 
-function getPlayerData_SwgohGg_html_(playerLink: string, tagFilter: string): UnitStats[] {
-  const results: UnitStats[] = [];
-  // get the web page source
-  // const characterTag = getTagFilter_(); // TODO: potentially broken if TB not sync
+  // TODO: enrich with units name and tags
+  const units = playerData.units;
+  const filteredUnits: {[key: string]: UnitInstance} = {};
+  for (const key in units) {
+    if (units.hasOwnProperty(key)) {
+      const baseId = units[key].baseId;
+      const h = heroesIndex.find(e => e.baseId === baseId);
+      if (h && h.tags.indexOf(tagFilter.toLowerCase()) > -1) {
+        filteredUnits[key] = units[key];
+      }
+    }
+  }
+
+  const results: UnitInstance[] = [];
   const encodedTagFilter = tagFilter.replace(' ', '+');
   const tag = tagFilter.length > 0 ? `f=${encodedTagFilter}&` : '';
 
@@ -381,7 +389,7 @@ function getPlayerData_SwgohGg_html_(playerLink: string, tagFilter: string): Uni
   let text: string;
   let page = 1;
   do {
-    const url = `${playerLink}characters/?${tag}page=${page}`;
+    const url = `https://swgoh.gg/p/${allyCode}/characters/?${tag}page=${page}`;
 
     try {
       response = UrlFetchApp.fetch(url);
@@ -393,24 +401,24 @@ function getPlayerData_SwgohGg_html_(playerLink: string, tagFilter: string): Uni
     text = response.getContentText();
     const unitsAsHtml = text.match(/collection-char-\w+-side[\s\S]+?<\/a>[\s\S]+?<\/a>/g);
     if (unitsAsHtml) {
-      unitsAsHtml.forEach((e) => {
+      for (const e of unitsAsHtml) {
         // TODO: try/catch regex match errors
         const name = fixString(e.match(/alt="([^"]+)/)[1]);
         const rarity = Number((e.match(/star[1-7]"/g) || []).length);
         const level = Number(e.match(/char-portrait-full-level">([^<]*)/)[1]);
-        const gear = Number.parseRoman(e.match(/char-portrait-full-gear-level">([^<]*)/)[1]);
+        const gearLevel = Number.parseRoman(e.match(/char-portrait-full-gear-level">([^<]*)/)[1]);
         const power = Number(e.match(/title="Power (.*?) \/ /)[1].replace(',', ''));
-        const stats: string = `${rarity}* G${gear} L${level} P${power}`;
+        const stats: string = `${rarity}* G${gearLevel} L${level} P${power}`;
 
         results.push({
-          name,
-          rarity,
+          gearLevel,
           level,
-          gear,
+          name,
           power,
+          rarity,
           stats,
         });
-      });
+      }
     }
 
     page += 1;
@@ -419,8 +427,57 @@ function getPlayerData_SwgohGg_html_(playerLink: string, tagFilter: string): Uni
   return results;
 }
 
-function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): UnitStats[] {
-  const results: UnitStats[] = [];
+function getPlayerData_SwgohGg_html_(allyCode: number, tagFilter: string): UnitInstance[] {
+  const results: UnitInstance[] = [];
+  // get the web page source
+  // const characterTag = getTagFilter_(); // TODO: potentially broken if TB not sync
+  const encodedTagFilter = tagFilter.replace(' ', '+');
+  const tag = tagFilter.length > 0 ? `f=${encodedTagFilter}&` : '';
+
+  let response: GoogleAppsScript.URL_Fetch.HTTPResponse;
+  let text: string;
+  let page = 1;
+  do {
+    const url = `https://swgoh.gg/p/${allyCode}/characters/?${tag}page=${page}`;
+
+    try {
+      response = UrlFetchApp.fetch(url);
+    } catch (e) {
+      return results; // TODO: throw error?
+    }
+
+    // divide the source into lines that can be parsed
+    text = response.getContentText();
+    const unitsAsHtml = text.match(/collection-char-\w+-side[\s\S]+?<\/a>[\s\S]+?<\/a>/g);
+    if (unitsAsHtml) {
+      for (const e of unitsAsHtml) {
+        // TODO: try/catch regex match errors
+        const name = fixString(e.match(/alt="([^"]+)/)[1]);
+        const rarity = Number((e.match(/star[1-7]"/g) || []).length);
+        const level = Number(e.match(/char-portrait-full-level">([^<]*)/)[1]);
+        const gearLevel = Number.parseRoman(e.match(/char-portrait-full-gear-level">([^<]*)/)[1]);
+        const power = Number(e.match(/title="Power (.*?) \/ /)[1].replace(',', ''));
+        const stats: string = `${rarity}* G${gearLevel} L${level} P${power}`;
+
+        results.push({
+          gearLevel,
+          level,
+          name,
+          power,
+          rarity,
+          stats,
+        });
+      }
+    }
+
+    page += 1;
+  } while (text.match(/aria-label="Next"/g));
+
+  return results;
+}
+
+function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): UnitInstance[] {
+  const results: UnitInstance[] = [];
   const heroCount = getCharacterCount_();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   const data = sheet.getRange(1, 1, 1 + heroCount, HERO_PLAYER_COL_OFFSET + MAX_PLAYERS)
@@ -445,15 +502,15 @@ function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): UnitSt
           const name = data[i][0];
           const rarity = Number(m[1]);
           const level = Number(m[2]);
-          const gear = Number(m[3]);
+          const gearLevel = Number(m[3]);
           const power = Number(m[4]);
 
           results.push({
-            name,
-            rarity,
+            gearLevel,
             level,
-            gear,
+            name,
             power,
+            rarity,
             stats,
           });
         }
@@ -467,24 +524,31 @@ function isLight_(tagFilter: string): boolean {
   return tagFilter === 'Light Side';
 }
 
-function get_metas_(tagFilter: string): string[][] {
+function get_metas_(tagFilter: string): [string, string][] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
   const numRows = sheet.getLastRow() - row + 1;
 
   const col = (isLight_(tagFilter) ? META_HEROES_COL : META_HEROES_DS_COL) + 2;
-  const values = sheet.getRange(row, col, numRows).getValues() as string[][];
-  const meta = values.filter(e => typeof e[0] === 'string' && e[0].trim().length > 0)  // not empty
-    .map(e => e[0])
-    .unique()
-    .map(e => [e, undefined]);
+  const values = sheet.getRange(row, col, numRows).getValues() as [string][];
+  const meta: [string, string][] = values.reduce(
+    (acc, e) => {
+      if (typeof e[0] === 'string' && e[0].trim().length > 0) {  // not empty
+        acc.push(e[0]);
+      }
+      return acc;
+    },
+    [],
+  )
+  .unique()
+  .map(e => [e, undefined]) as [string, string][];
 
   return meta;
 }
 
 interface UnitTabIndex {
   name: string;
-  base_id: string;
+  baseId: string;
   tags: string;
 }
 
@@ -495,7 +559,7 @@ function getHeroesTabIndex_(): UnitTabIndex[] {
   const index: UnitTabIndex[] = data.map((e) => {
     return {
       name: e[0],
-      base_id: e[1],
+      baseId: e[1],
       tags: e[2],
     };
   });
@@ -531,15 +595,18 @@ function playerSnapshot(): void {
   const characterTag = getTagFilter_(); // TODO: potentially broken if TB not sync
   const POWER_TARGET = get_minimum_character_gp_();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
-  const unitsData = getSnapshopData_(sheet, tagFilter);
-  unitsData.forEach((u) => {
+  const unitsData = getSnapshopData_(sheet, tagFilter, heroesIndex);
+  for (const u of unitsData) {
+    const baseId = u.baseId;
     const name = u.name;
+
     // does the hero meet the filtered requirements?
     if (u.rarity >= 7 && u.power >= POWER_TARGET) {
       countFiltered += 1;
       // does the hero meet the tagged requirements?
       heroesIndex.some((e) => {
-        const found = e.name === name;
+        const found = e.baseId === baseId;
+        // const found = e.name === name;
         if (found && e.tags.indexOf(characterTag) !== -1) {
           // the hero was tagged with the characterTag we're looking for
           countTagged += 1;
@@ -551,9 +618,9 @@ function playerSnapshot(): void {
     // store hero if required
     const heroListIdx = find_in_list_(name, meta);
     if (heroListIdx >= 0) {
-      meta[heroListIdx][1] = `${u.rarity}* G${u.gear} L${u.level} P${u.power}`;
+      meta[heroListIdx][1] = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
     }
-  });
+  }
 
   // format output
   const baseData = [];

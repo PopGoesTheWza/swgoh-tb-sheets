@@ -111,9 +111,7 @@ function sendMicroByPlayerWebhook(): void {
   const playerMentions = getPlayerMentions_();
   while (entries.length > 0) {
     const player = entries[0].player;
-    const bucket = entries.filter((e) => {
-      return e.player === player;
-    });
+    const bucket = entries.filter(e => e.player === player);
 
     entries = entries.slice(bucket.length);
     const embeds = [];
@@ -138,7 +136,7 @@ function sendMicroByPlayerWebhook(): void {
       currentEmbed.color = 4317713;
     }
 
-    bucket.forEach((currentValue, index, array) => {
+    for (const currentValue of bucket) {
       if (
         currentValue.zone.index !== currentZone.index ||
         currentValue.platoon !== currentPlatoon
@@ -169,7 +167,7 @@ function sendMicroByPlayerWebhook(): void {
         currentField.value += '\n';
       }
       currentField.value += unit_label_(currentValue.unit, currentValue.slot);
-    });
+    }
 
     const mention = playerMentions[player];
     const content = player_label_(player, mention);

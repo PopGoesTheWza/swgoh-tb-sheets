@@ -60,12 +60,12 @@ function getGuildDataFromSwgohHelp(): PlayerData[] {
   const roster = json.roster as swgohhelpapi.exports.UnitsResponse;
   for (const baseId in roster) {
     const instances = roster[baseId];
-    instances.forEach((o) => {
+    for (const o of instances) {
       const playerId = `p/${o.allyCode}`;
       const pname = o.player;
       let member: PlayerData;
       const q = {
-        base_id: baseId,
+        baseId,
         level: o.level,
         power: o.gp,
         rarity: o.starLevel,
@@ -79,10 +79,11 @@ function getGuildDataFromSwgohHelp(): PlayerData[] {
           name: pname,
           level: 0,
           gp: 0,
-          ships_gp: 0,
-          heroes_gp: 0,
+          shipsGp: 0,
+          heroesGp: 0,
           units: {},
-          link: `p/${o.allyCode}`,
+          allyCode: o.allyCode,
+          // link: `p/${o.allyCode}`,
         };
         members.push(member);
       }
@@ -90,11 +91,11 @@ function getGuildDataFromSwgohHelp(): PlayerData[] {
       member.level = Math.max(member.level, q.level);
       member.gp += q.power;
       if (o.type === 1) {
-        member.heroes_gp += q.power;
+        member.heroesGp += q.power;
       } else {
-        member.ships_gp += q.power;
+        member.shipsGp += q.power;
       }
-    });
+    }
   }
 
   return members;
@@ -128,16 +129,16 @@ function test_Player() {
     const gps = player.stats.filter(stat => stat.index >= 0 && stat.index <= 3);
     const characters: any[] = [];
     const ships: any[] = [];
-    player.roster.forEach((r) => {
+    for (const r of player.roster) {
       const unit = {
         defId: r.defId,
         rarity: r.rarity,
         level: r.level,
         gear: r.gear,
         gp: r.gp,
-      }
-      ; (r.type === 1 ? characters : ships).push(unit);
-    });
+      };
+      (r.type === 1 ? characters : ships).push(unit);
+    }
     debugger;
   }
   debugger;
@@ -180,15 +181,15 @@ function test_UnitsList() {
   if (json.length && json.length > 0) {
     const characters: object = {};
     const ships: object = {};
-    json.forEach((r) => {
+    for (const r of json) {
       const unit = {
         nameKey: r.nameKey,
         forceAlignment: r.forceAlignment,
         categoryIdList: r.categoryIdList,
         unitClass: r.unitClass,
-      }
-      ; (r.combatType === 1 ? characters : ships)[r.baseId] = unit;
-    });
+      };
+      (r.combatType === 1 ? characters : ships)[r.baseId] = unit;
+    }
     debugger;
   }
   debugger;
