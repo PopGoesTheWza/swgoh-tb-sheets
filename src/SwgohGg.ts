@@ -58,20 +58,11 @@ function get_guild_api_link_(): string {
   return link;
 }
 
-// function isSWGOHggSource() {
-//   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-//     .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
-//     .getValue() as string;
-//   // TODO: centralize constants
-//   return value === DATASOURCES.SWGOH_GG;
-// }
-
 // Pull base Character data from SWGoH.gg
 // @returns Array of Characters with [name, base_id, tags]
 function getUnitsFromSWGoHgg_<T>(link: string, errorMsg: string): T {
   let json;
   try {
-    // const link = "https://swgoh.gg/api/characters/?format=json"
     const params: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
       // followRedirects: true,
       muteHttpExceptions: true,
@@ -100,7 +91,8 @@ function getUnitsFromSWGoHgg_<T>(link: string, errorMsg: string): T {
  */
 function getHeroesFromSWGOHgg(): UnitDeclaration[] {
   const json = getUnitsFromSWGoHgg_<SwgohGgUnitDefinition[]>(
-    'https://swgoh.gg/api/characters/?format=json',
+    // 'https://swgoh.gg/api/characters/?format=json',
+    'https://swgoh.gg/api/characters/',
     'Error when retreiving data from swgoh.gg API',
   );
   const mapping = (e: SwgohGgUnitDefinition) => {
@@ -123,7 +115,8 @@ function getHeroesFromSWGOHgg(): UnitDeclaration[] {
  */
 function getShipsFromSWGOHgg(): UnitDeclaration[] {
   const json = getUnitsFromSWGoHgg_<SwgohGgUnitDefinition[]>(
-    'https://swgoh.gg/api/ships/?format=json',
+    // 'https://swgoh.gg/api/ships/?format=json',
+    'https://swgoh.gg/api/ships/',
     'Error when retreiving data from swgoh.gg API',
   );
   const mapping = (e: SwgohGgUnitDefinition) => {

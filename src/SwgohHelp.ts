@@ -1,4 +1,3 @@
-// TODO: fix tslint issue where 'import' statement messes with globals
 import { swgohhelpapi } from '../lib';
 
 /** Get the SWGoH.help API username */

@@ -420,7 +420,7 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
       const unit = donation[0];
       const names = donation[1].split(',');
 
-      /** TODO: cleanup below */
+      // TODO: cleanup below
       for (const name of names) {
         const nameTrim = name.trim();
         // see if the name is already listed

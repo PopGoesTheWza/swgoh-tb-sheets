@@ -343,8 +343,6 @@ function getSnapshopData_(sheet: GoogleAppsScript.Spreadsheet.Sheet, tagFilter: 
 
     return unitsData;
   }
-  // TODO: https://github.com/PopGoesTheWza/swgoh-tb-sheets/issues/1
-  // Read data from the Heroes tab
 
   // no player link supplied, check for guild member
   const memberName = sheet.getRange(5, 1).getValue() as string;
