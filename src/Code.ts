@@ -114,16 +114,6 @@ interface UnitDeclaration {
   name: string;
 }
 
-// interface UnitStats {
-//   base_id?: string;
-//   gear_level?: number;
-//   level: number;
-//   name?: string;
-//   power: number;
-//   rarity: number;
-//   stats: string;
-// }
-
 interface UnitInstance {
   baseId?: string;
   gearLevel?: number;
@@ -350,7 +340,7 @@ function getSnapshopData_(
   // no player link supplied, check for guild member
   const memberName = sheet.getRange(5, 1).getValue() as string;
   const members = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(2, 2, MAX_PLAYERS, 1)
+    .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as [string][];
 
   // get the player's link from the Roster
@@ -365,7 +355,7 @@ function getSnapshopData_(
 
 function getPlayerData_SwgohGgApi_(
   allyCode: number,
-  tagFilter: string,
+  tagFilter: string = '',
   heroesIndex: UnitTabIndex[],
 ): PlayerData {
   const playerData = getPlayerDataFromSwgohGg_(allyCode);
@@ -388,56 +378,6 @@ function getPlayerData_SwgohGgApi_(
 
   return playerData;
 }
-
-// function getPlayerData_SwgohGg_html_(allyCode: number, tagFilter: string): UnitInstance[] {
-//   const results: UnitInstance[] = [];
-//   // get the web page source
-//   // const characterTag = getTagFilter_(); // TODO: potentially broken if TB not sync
-//   const encodedTagFilter = tagFilter.replace(' ', '+');
-//   const tag = tagFilter.length > 0 ? `f=${encodedTagFilter}&` : '';
-
-//   let response: GoogleAppsScript.URL_Fetch.HTTPResponse;
-//   let text: string;
-//   let page = 1;
-//   do {
-//     const url = `https://swgoh.gg/p/${allyCode}/characters/?${tag}page=${page}`;
-
-//     try {
-//       response = UrlFetchApp.fetch(url);
-//     } catch (e) {
-//       return results; // TODO: throw error?
-//     }
-
-//     // divide the source into lines that can be parsed
-//     text = response.getContentText();
-//     const unitsAsHtml = text.match(/collection-char-\w+-side[\s\S]+?<\/a>[\s\S]+?<\/a>/g);
-//     if (unitsAsHtml) {
-//       for (const e of unitsAsHtml) {
-//         // TODO: try/catch regex match errors
-//         const name = fixString(e.match(/alt="([^"]+)/)[1]);
-//         const rarity = Number((e.match(/star[1-7]"/g) || []).length);
-//         const level = Number(e.match(/char-portrait-full-level">([^<]*)/)[1]);
-//         const gearLevel =
-//           Number.parseRoman(e.match(/char-portrait-full-gear-level">([^<]*)/)[1]);
-//         const power = Number(e.match(/title="Power (.*?) \/ /)[1].replace(',', ''));
-//         const stats: string = `${rarity}* G${gearLevel} L${level} P${power}`;
-
-//         results.push({
-//           gearLevel,
-//           level,
-//           name,
-//           power,
-//           rarity,
-//           stats,
-//         });
-//       }
-//     }
-
-//     page += 1;
-//   } while (text.match(/aria-label="Next"/g));
-
-//   return results;
-// }
 
 function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): PlayerData {
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
@@ -525,7 +465,7 @@ function get_metas_(tagFilter: string): [string, string][] {
     [],
   )
   .unique()
-  .map(e => [e, undefined]) as [string, string][];
+  .map(e => [e, 'n/a']) as [string, string][];
 
   return meta;
 }

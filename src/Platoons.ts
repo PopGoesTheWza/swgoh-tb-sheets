@@ -11,7 +11,7 @@ const MAX_PLATOONS = 6;
 const MAX_PLATOON_ZONES = 3;
 const PLATOON_ZONE_ROW_OFFSET = 18;
 
-// Initialize the list of Territory names
+/** Initialize the list of Territory names */
 function init_platoon_phases_() {
   const tagFilter = getSideFilter_();
 
@@ -50,7 +50,7 @@ function init_platoon_phases_() {
   }
 }
 
-// Get the zone name and update the cell
+/** Get the zone name and update the cell */
 function setZoneName(phase, zone, sheet, platoonRow) {
   // set the zone name
   const zoneName = PLATOON_PHASES[phase - 1][zone];
@@ -59,7 +59,7 @@ function setZoneName(phase, zone, sheet, platoonRow) {
   return zoneName;
 }
 
-// Populate platoon with slices if available
+/** Populate platoon with slices if available */
 function fillSlice(phase, zone, platoon, range) {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
   const tagFilter = getSideFilter_();
@@ -84,7 +84,7 @@ function fillSlice(phase, zone, platoon, range) {
   } catch (e) {}
 }
 
-// Clear out a platoon
+/** Clear out a platoon */
 function resetPlatoon(phase, zone, platoonRow, rows, show) {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
 
@@ -101,8 +101,8 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
   for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
     // clear the contents
     let range = sheet.getRange(platoonRow, 4 + platoon * 4, MAX_PLATOON_HEROES, 1);
-    range.setValue(null);
-    range.setFontColor('Black');
+    range.clearContent()
+      .setFontColor('Black');
     fillSlice(phase, zone + 1, platoon, range);
 
     range = sheet.getRange(platoonRow, 5 + platoon * 4, MAX_PLATOON_HEROES, 1);
@@ -112,7 +112,7 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
   }
 }
 
-// Clear the full chart
+/** Clear the full chart */
 function resetPlatoons() {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue();
@@ -138,14 +138,14 @@ function resetPlatoons() {
   // zone += 1;
 }
 
-// Check if the player is available for the current phase
+/** Check if the player is available for the current phase */
 function playerAvailable(player, unavailable) {
   return unavailable.some((e) => {
     return e[0].length > -1 && player === e[0];
   });
 }
 
-// Get a sorted list of recommended players
+/** Get a sorted list of recommended players */
 function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
   // see how many stars are needed
   const minStars = phase + 1;
@@ -159,6 +159,7 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
 
   // find the hero in the list
   let unitRow = -1;
+  const guildSize = getGuildSize_();
   for (let h = 1, hLen = data.length; h < hLen; h += 1) {
     if (unitName === data[h][0]) {
       // increment the number of times this unit was needed
@@ -169,7 +170,7 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
       }
 
       // found the unit, now get the recommendations
-      for (let p = 0; p < MAX_PLAYERS; p += 1) {
+      for (let p = 0; p < guildSize; p += 1) {
         const playerIdx = HERO_PLAYER_COL_OFFSET + p;
         const playerName = data[0][playerIdx];
         if (playerAvailable(playerName, unavailable)) {
@@ -185,7 +186,6 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
 
         const playerStars = Number(playerUnit[0]);
         if (playerStars >= minStars) {
-          //          var power = Number(GetSubstring(playerUnit, "P", null))
           const power = parseInt(getSubstringRe_(playerUnit, /P(.*)/), 10);
           rec[rec.length] = [playerName, power];
         }
@@ -205,7 +205,7 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
   return playerList;
 }
 
-// create the dropdown list
+/** create the dropdown list */
 function createDropdown(playerList, range) {
   const formatList = [];
   for (let p = 0, pLen = playerList.length; p < pLen; p += 1) {
@@ -218,7 +218,7 @@ function createDropdown(playerList, range) {
   range.setDataValidation(rule);
 }
 
-// Reset the needed counts
+/** Reset the needed counts */
 function resetNeededCount(sheet, count) {
   const result = [];
   for (let i = 0; i < count; i += 1) {
@@ -228,7 +228,7 @@ function resetNeededCount(sheet, count) {
   return result;
 }
 
-// Reset the units used
+/** Reset the units used */
 function resetUsedUnits(data) {
   const result = [];
   for (let r = 0, rLen = data.length; r < rLen; r += 1) {
@@ -246,7 +246,7 @@ function resetUsedUnits(data) {
   return result;
 }
 
-// Custom object for creating custom order to walk through platoons
+/** Custom object for creating custom order to walk through platoons */
 function platoonDetails(phase, zone, num) {
   this.zone = zone;
   this.num = num;
@@ -256,8 +256,10 @@ function platoonDetails(phase, zone, num) {
   this.skip = zone === 0 && phase < 3;
 }
 
-// Custom object for platoon units
-// hero, hero row, count, player count, player list (player, gear...)
+/**
+ * Custom object for platoon units
+ * hero, hero row, count, player count, player list (player, gear...)
+ */
 function platoonUnit(name, row, count, pCount) {
   this.name = name;
   this.row = row;
@@ -266,7 +268,7 @@ function platoonUnit(name, row, count, pCount) {
   this.players = [];
 }
 
-// Recommend players for each Platoon
+/** Recommend players for each Platoon */
 function recommendPlatoons() {
   const heroesSheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
@@ -277,18 +279,18 @@ function recommendPlatoons() {
 
   // cache the matrix of hero data
   let heroData = heroesSheet
-    .getRange(1, 1, 1 + heroCount, HERO_PLAYER_COL_OFFSET + MAX_PLAYERS)
-    .getValues();
+    .getRange(1, 1, 1 + heroCount, HERO_PLAYER_COL_OFFSET + getGuildSize_())
+    .getValues() as string[][];
   let shipData = shipsSheet
-    .getRange(1, 1, 1 + shipCount, SHIP_PLAYER_COL_OFFSET + MAX_PLAYERS)
-    .getValues();
+    .getRange(1, 1, 1 + shipCount, SHIP_PLAYER_COL_OFFSET + getGuildSize_())
+    .getValues() as string[][];
 
   // remove heroes listed on Exclusions sheet
   const exclusionsId = getExclusionId_();
   if (exclusionsId.length > 0) {
-    const excludeData = get_exclusions_();
-    heroData = processExclusions_(heroData, excludeData);
-    shipData = processExclusions_(shipData, excludeData);
+    const exclusions = get_exclusions_();
+    heroData = processExclusions_(heroData, exclusions);
+    shipData = processExclusions_(shipData, exclusions);
   }
 
   // reset the needed counts
@@ -303,7 +305,7 @@ function recommendPlatoons() {
 
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const unavailable = sheet.getRange(56, 4, MAX_PLAYERS, 1).getValues();
+  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues();
   const phase = sheet.getRange(2, 1).getValue();
   init_platoon_phases_();
 
