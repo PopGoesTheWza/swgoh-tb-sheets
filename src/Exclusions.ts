@@ -1,9 +1,9 @@
 /** Get the list of exclusions */
-function get_exclusions_(): boolean[][] {
-  const excludeSheet = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS);
-  const excludeData = excludeSheet.getDataRange()
+function get_exclusions_(): {[key: string]: {[key: string]: boolean}} {
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS);
+  const data = sheet.getDataRange()
     .getValues() as string[][];
-  const filtered = excludeData.reduce(
+  const filtered = data.reduce(
     (acc: string[][], e) => {
       if (e[0].length > 0) {
         acc.push(e.slice(0, MAX_PLAYERS));
@@ -13,50 +13,42 @@ function get_exclusions_(): boolean[][] {
     [],
   );
 
-  const excludedUnits: boolean[][] = [];
+  const exclusions: {[key: string]: {[key: string]: boolean}} = {};
 
-  const players = filtered.shift();  // First row is player names
+  const players = filtered.shift();  // First row holds player names
   players.shift();  // drop first column
 
   // For each unit rows
   for (const e of filtered) {
     const unitName = e.shift();  // first column is unit names
-    excludedUnits[unitName] = [];
+    exclusions[unitName] = {};
 
     // For each exclusion cell
     e.forEach((x, c) => {
       const player = players[c];
       const isExcluded = Boolean(x ? x.trim() : '');  // exclude if cell is not empty?
-      excludedUnits[unitName][player] = isExcluded;
+      exclusions[unitName][player] = isExcluded;
     });
   }
 
-  return excludedUnits;
+  return exclusions;
 }
 
 /** Process all the excluded units */
-function processExclusions_(data, excludeData) {
-  /*
-  // First row is player names
-  var players = data.slice().shift()
-  // drop first column
-  players.shift()
-
-  data.forEach(function(e, i, a) {
-  })
-*/
-
-  for (let r = 1, rLen = data.length; r < rLen; r += 1) {
-    for (let c = HERO_PLAYER_COL_OFFSET, cLen = data[r].length; c < cLen; c += 1) {
+function processExclusions_(
+  data: string[][],
+  exclusions: {[key: string]: {[key: string]: boolean}},
+) {
+  const maxRow = data.length;
+  for (let row = 1; row < maxRow; row += 1) {
+    const maxCol = data[row].length;
+    for (let col = HERO_PLAYER_COL_OFFSET; col < maxCol; col += 1) {
       try {
-        const heroName = data[r][0];
-        const playerName = data[0][c];
-        if (
-          excludeData[heroName] != null &&
-          excludeData[heroName][playerName]
-        ) {
+        const unitName = data[row][0];
+        const playerName = data[0][col];
+        if (exclusions[unitName] && exclusions[unitName][playerName]) {
           // clear the unit's data
-          data[r][c] = '';
+          data[row][col] = '';
         }
       } catch (e) {}
     }
