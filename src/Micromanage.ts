@@ -3,7 +3,7 @@
 // ****************************************
 const WAIT_TIME = 2000; // TODO: expose as config variable
 
-// Format the player's label
+/** Format the player's label */
 function player_label_(player: string, mention: string) {
   const value: string = (mention)
     ? `Assignments for **${player}** (${mention})`
@@ -12,28 +12,28 @@ function player_label_(player: string, mention: string) {
   return value;
 }
 
-// Format the platoon label with number icons
+/** Format the platoon label with number icons */
 function player_label_as_icon_(label: string, type: string, platoon: number) {
   const platoonIcon = [':one:', ':two:', ':three:', ':four:', ':five:', ':six:'][platoon];
 
   return `__${label}__ · ${type} ${platoonIcon}`;
 }
 
-// Check if the unit can be easily confused
+/** Check if the unit can be easily confused */
 function is_group_unit_(unit: string): boolean {
   return unit.search(
       /X-wing|U-wing|ARC-170|Geonosian|CC-|CT-|Dathcha|Jawa|Hoth Rebel/,
     ) > -1;
 }
 
-// Convert an array index to a string
+/** Convert an array index to a string */
 function array_index_to_string_(index: string): string {
   const indexNum = parseInt(index, 10) + 1;
 
   return indexNum.toString();
 }
 
-// Format the unit name
+/** Format the unit name */
 function unit_label_(unit: string, slot: string): string {
   if (is_group_unit_(unit)) {
     return `[slot ${array_index_to_string_(slot)}] ${unit}`;
@@ -42,7 +42,7 @@ function unit_label_(unit: string, slot: string): string {
   return unit;
 }
 
-// Send a Webhook to Discord
+/** Send a Webhook to Discord */
 function sendMicroByPlayerWebhook(): void {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
@@ -181,7 +181,7 @@ function sendMicroByPlayerWebhook(): void {
   }
 }
 
-// Setup the fetch parameters
+/** Setup the fetch parameters */
 // TODO: Make generic for all Discord webhooks
 function urlFetchMakeParam_(jsonObject: object): GoogleAppsScript.URL_Fetch.URLFetchRequestOptions {
   const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
@@ -195,7 +195,7 @@ function urlFetchMakeParam_(jsonObject: object): GoogleAppsScript.URL_Fetch.URLF
   return options;
 }
 
-// Execute the fetch request
+/** Execute the fetch request */
 // TODO: Make generic for all UrlFetch calls
 function urlFetchExecute_(webhookURL, params) {
   // exectute the command

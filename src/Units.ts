@@ -2,8 +2,8 @@
 // Guild Unit Functions
 // ****************************************
 
-// Populate the Hero list with Member data
-function populateHeroesList(members) {
+/** Populate the Hero list with Member data */
+function populateHeroesList(members: PlayerData[]): void {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
 
   // Build a Hero Index by BaseID
@@ -28,8 +28,7 @@ function populateHeroesList(members) {
   mHead[0] = [];
 
   // Clear out our old data, if any, including names as order may have changed
-  sheet
-    .getRange(1, HERO_PLAYER_COL_OFFSET, baseIDs.length, MAX_PLAYERS)
+  sheet.getRange(1, HERO_PLAYER_COL_OFFSET, baseIDs.length, MAX_PLAYERS)
     .clearContent();
 
   // This will hold all our data
@@ -43,7 +42,7 @@ function populateHeroesList(members) {
       const baseId = e[0];
       const u = units[baseId];
       data[hIdx[baseId]][pIdx[m.name]] =
-          (u && `${u.rarity}*L${u.level}G${u.gear_level}P${u.power}`) || '';
+          (u && `${u.rarity}*L${u.level}G${u.gearLevel}P${u.power}`) || '';
     });
   }
   // Logger.log(
@@ -60,7 +59,7 @@ function populateHeroesList(members) {
   //   for (r = 0; r < baseIDs.length; r++) {
   //     var uKey = baseIDs[r]
   //     var u = units[uKey]
-  //     if (u == null) {
+  //     if (!u) {
   //       continue
   //     } // Means player has not unlocked unit
   //     data[hIdx[uKey]][pIdx[m["name"]]] =
@@ -68,7 +67,7 @@ function populateHeroesList(members) {
   //       "*L" +
   //       u["level"] +
   //       "G" +
-  //       u["gear_level"] +
+  //       u["gearLevel"] +
   //       "P" +
   //       u["power"]
   //   }
@@ -81,7 +80,7 @@ function populateHeroesList(members) {
     .setValues(data);
 }
 
-// Initialize the list of heroes
+/** Initialize the list of heroes */
 function updateHeroesList(heroes: UnitDeclaration[]): void {
   // update the sheet
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);

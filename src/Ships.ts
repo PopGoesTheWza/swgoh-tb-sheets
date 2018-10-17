@@ -2,7 +2,7 @@
 // Ship Functions
 // ****************************************
 
-// Populate the Ships list with Member data
+/** Populate the Ships list with Member data */
 function populateShipsList(members) {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
@@ -28,13 +28,12 @@ function populateShipsList(members) {
   mHead[0] = [];
 
   // Clear out our old data, if any, including names as order may have changed
-  sheet
-    .getRange(1, SHIP_PLAYER_COL_OFFSET, baseIDs.length, MAX_PLAYERS)
+  sheet.getRange(1, SHIP_PLAYER_COL_OFFSET, baseIDs.length, MAX_PLAYERS)
     .clearContent();
 
   // This will hold all our data
   // Initialize our data
-  const data = baseIDs.map(e => Array(mList.length).fill(null));
+  const data = baseIDs.map(e => Array(mList.length).fill(undefined));
 
   for (const m of members) {
     mHead[0].push(m.name);
@@ -52,7 +51,7 @@ function populateShipsList(members) {
     .setValues(data);
 }
 
-// Initialize the list of ships
+/** Initialize the list of ships */
 function updateShipsList(ships: UnitDeclaration[]): void {
   // update the sheet
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
