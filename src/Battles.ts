@@ -2,7 +2,7 @@
 // TB functions
 // ****************************************
 
-declare function getGuildDataFromSwgohHelp(): PlayerData[];
+declare function getGuildDataFromSwgohHelp_(): PlayerData[];
 
 /** set the value and style in a cell */
 function set_cell_value_(
@@ -117,7 +117,9 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
       if (index === -1) {
         // get PlayerData and update members
         const member = (getPlayerData_SwgohGgApi_(allyCode, '', heroesIndex));
-        members.push(member);
+        if (member) {
+          members.push(member);
+        }
       } else if (name.length > 0 && members[index].name !== name) {
         members[index].name = name;  // rename member
       }
@@ -143,6 +145,11 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     : (a, b) => b.gp - a.gp;
 
   members.sort(sortFunction);
+
+  if (members.length > MAX_PLAYERS) {
+    members.splice(MAX_PLAYERS);
+    UI.alert(`Guild roster was truncated to the first ${MAX_PLAYERS} members.`);
+  }
 
   // get the filter & tag
   // var POWER_TARGET = get_minimum_character_gp_()
@@ -195,12 +202,9 @@ function setupTBSide(): void {
   // Figure out which data source to use
   let members: PlayerData[];
   if (isDataSourceSwgohHelp_()) {
-    members = getGuildDataFromSwgohHelp();
+    members = getGuildDataFromSwgohHelp_();
   } else if (isDataSourceSwgohGg_()) {
     members = getGuildDataFromSwgohGg_(getSwgohGgGuildId_());
-    // TODO: enrich with units name and tags
-  } else {
-    // members = getGuildDataFromScorpio();
   }
   if (!members) {
     UI.alert(

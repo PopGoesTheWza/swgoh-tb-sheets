@@ -82,7 +82,7 @@ function getSwgohGgGuildId_(): number {
 }
 
 /**
- * Send request to SWGoH.gg API
+ * Send request to SwgohGg API
  * @param link API 'GET' request
  * @param errorMsg Message to display on error
  * @returns JSON object response
@@ -108,7 +108,7 @@ function requestSwgohGgApi_<T>(
 }
 
 /**
- * Pull base Character data from SWGoH.gg
+ * Pull base Character data from SwgohGg
  * @returns Array of Characters with [tags, baseId, name]
  */
 function getHeroListFromSwgohGg_(): UnitDeclaration[] {
@@ -131,7 +131,7 @@ function getHeroListFromSwgohGg_(): UnitDeclaration[] {
 }
 
 /**
- * Pull base Ship data from SWGoH.gg
+ * Pull base Ship data from SwgohGg
  * @returns Array of Characters with [tags, baseId, name]
  */
 function getShipListFromSwgohGg_(): UnitDeclaration[] {
@@ -162,7 +162,7 @@ function getSwgohGgGuildApiLink_(guildId: number): string {
 }
 
 /**
- * Pull Guild data from SWGoH.gg
+ * Pull Guild data from SwgohGg
  * Units name and tags are not populated
  * @returns Array of Guild members and their units data
  */
@@ -170,33 +170,36 @@ function getGuildDataFromSwgohGg_(guildId: number): PlayerData[] {
   const json = requestSwgohGgApi_<SwgohGgGuildResponse>(
     getSwgohGgGuildApiLink_(guildId),
   );
-  const members: PlayerData[] = [];
-  for (const member of json.players) {
-    const unitArray: {[key: string]: UnitInstance} = {};
-    for (const e of member.units) {
-      const d = e.data;
-      const baseId = d.base_id;
-      unitArray[baseId] = {
-        baseId,
-        gearLevel: d.gear_level,
-        level: d.level,
-        power: d.power,
-        rarity: d.rarity,
-      };
+  if (json && json.players) {
+    const members: PlayerData[] = [];
+    for (const member of json.players) {
+      const unitArray: {[key: string]: UnitInstance} = {};
+      for (const e of member.units) {
+        const d = e.data;
+        const baseId = d.base_id;
+        unitArray[baseId] = {
+          baseId,
+          gearLevel: d.gear_level,
+          level: d.level,
+          power: d.power,
+          rarity: d.rarity,
+        };
+      }
+      members.push({
+        gp: member.data.galactic_power,
+        heroesGp: member.data.character_galactic_power,
+        level: member.data.level,
+        allyCode: Number(member.data.url.match(/(\d+)/)[1]),
+        // link: member.data.url,
+        name: member.data.name,
+        shipsGp: member.data.ship_galactic_power,
+        units: unitArray,
+      });
     }
-    members.push({
-      gp: member.data.galactic_power,
-      heroesGp: member.data.character_galactic_power,
-      level: member.data.level,
-      allyCode: Number(member.data.url.match(/(\d+)/)[1]),
-      // link: member.data.url,
-      name: member.data.name,
-      shipsGp: member.data.ship_galactic_power,
-      units: unitArray,
-    });
-  }
 
-  return members;
+    return members;
+  }
+  return undefined;
 }
 
 /** Create player API link */
@@ -208,7 +211,7 @@ function getSwgohGgPlayerApiLink_(allyCode: number): string {
 }
 
 /**
- * Pull Player data from SWGoH.gg
+ * Pull Player data from SwgohGg
  * Units name and tags are not populated
  * @returns Player data, including its units data
  */
@@ -216,29 +219,32 @@ function getPlayerDataFromSwgohGg_(allyCode: number): PlayerData {
   const json = requestSwgohGgApi_<SwgohGgPlayerResponse>(
     getSwgohGgPlayerApiLink_(allyCode),
   );
-  const data = json.data;
-  const player: PlayerData = {
-    allyCode: data.ally_code,
-    gp: data.galactic_power,
-    heroesGp: data.character_galactic_power,
-    level: data.level,
-    link: data.url,
-    name: data.name,
-    shipsGp: data.ship_galactic_power,
-    units: {},
-  };
-  const units = player.units;
-  for (const o of json.units) {
-    const d = o.data;
-    const baseId = d.base_id;
-    units[baseId] = {
-      baseId,
-      gearLevel: d.gear_level,
-      level: d.level,
-      power: d.power,
-      rarity: d.rarity,
+  if (json && json.data) {
+    const data = json.data;
+    const player: PlayerData = {
+      allyCode: data.ally_code,
+      gp: data.galactic_power,
+      heroesGp: data.character_galactic_power,
+      level: data.level,
+      link: data.url,
+      name: data.name,
+      shipsGp: data.ship_galactic_power,
+      units: {},
     };
-  }
+    const units = player.units;
+    for (const o of json.units) {
+      const d = o.data;
+      const baseId = d.base_id;
+      units[baseId] = {
+        baseId,
+        gearLevel: d.gear_level,
+        level: d.level,
+        power: d.power,
+        rarity: d.rarity,
+      };
+    }
 
-  return player;
+    return player;
+  }
+  return undefined;
 }

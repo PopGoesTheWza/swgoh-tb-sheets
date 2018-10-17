@@ -6,6 +6,8 @@
  * Global Variables
  */
 
+declare function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData;
+
 /** Constants for sheets name */
 enum SHEETS {
   ROSTER = 'Roster',
@@ -358,7 +360,13 @@ function getPlayerData_SwgohGgApi_(
   tagFilter: string = '',
   heroesIndex: UnitTabIndex[],
 ): PlayerData {
-  const playerData = getPlayerDataFromSwgohGg_(allyCode);
+  const playerData = isDataSourceSwgohHelp_()
+    ? getPlayerDataFromSwgohHelp_(allyCode)
+    : getPlayerDataFromSwgohGg_(allyCode);
+
+  if (!playerData) {
+    return undefined;
+  }
 
   // TODO: enrich with units name and tags
   const units = playerData.units;
@@ -519,43 +527,47 @@ function playerSnapshot(): void {
   const POWER_TARGET = get_minimum_character_gp_();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
   const playerData = getSnapshopData_(sheet, tagFilter, heroesIndex);
-  for (const baseId in playerData.units) {
-    const u = playerData.units[baseId];
-    const name = u.name;
+  if (playerData) {
+    for (const baseId in playerData.units) {
+      const u = playerData.units[baseId];
+      const name = u.name;
 
-    // does the hero meet the filtered requirements?
-    if (u.rarity >= 7 && u.power >= POWER_TARGET) {
-      countFiltered += 1;
-      // does the hero meet the tagged requirements?
-      heroesIndex.some((e) => {
-        const found = e.baseId === baseId;
-        if (found && e.tags.indexOf(characterTag) !== -1) {
-          // the hero was tagged with the characterTag we're looking for
-          countTagged += 1;
-        }
-        return found;
-      });
+      // does the hero meet the filtered requirements?
+      if (u.rarity >= 7 && u.power >= POWER_TARGET) {
+        countFiltered += 1;
+        // does the hero meet the tagged requirements?
+        heroesIndex.some((e) => {
+          const found = e.baseId === baseId;
+          if (found && e.tags.indexOf(characterTag) !== -1) {
+            // the hero was tagged with the characterTag we're looking for
+            countTagged += 1;
+          }
+          return found;
+        });
+      }
+
+      // store hero if required
+      const heroListIdx = find_in_list_(name, meta);
+      if (heroListIdx >= 0) {
+        meta[heroListIdx][1] = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
+      }
     }
 
-    // store hero if required
-    const heroListIdx = find_in_list_(name, meta);
-    if (heroListIdx >= 0) {
-      meta[heroListIdx][1] = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
-    }
+    // format output
+    const baseData = [];
+    baseData.push(['GP', playerData.gp]);
+    baseData.push(['GP Heroes', playerData.heroesGp]);
+    baseData.push(['GP Ships', playerData.shipsGp]);
+    baseData.push([`${tagFilter} 7* P${POWER_TARGET}+`, countFiltered]);
+    baseData.push([`${characterTag} 7* P${POWER_TARGET}+`, countTagged]);
+
+    const rowGp = 1;
+    const rowHeroes = 6;
+    // output the results
+    playerSnapshotOutput_(sheet, rowGp, baseData, rowHeroes, meta);
+  } else {
+    UI.alert('ERROR: Failed to retrieve player\'s data.');
   }
-
-  // format output
-  const baseData = [];
-  baseData.push(['GP', playerData.gp]);
-  baseData.push(['GP Heroes', playerData.heroesGp]);
-  baseData.push(['GP Ships', playerData.shipsGp]);
-  baseData.push([`${tagFilter} 7* P${POWER_TARGET}+`, countFiltered]);
-  baseData.push([`${characterTag} 7* P${POWER_TARGET}+`, countTagged]);
-
-  const rowGp = 1;
-  const rowHeroes = 6;
-  // output the results
-  playerSnapshotOutput_(sheet, rowGp, baseData, rowHeroes, meta);
 }
 
 /** Setup new menu items when the spreadsheet opens */
