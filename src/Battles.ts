@@ -4,7 +4,7 @@
 
 declare function getGuildDataFromSwgohHelp(): PlayerData[];
 
-// set the value and style in a cell
+/** set the value and style in a cell */
 function set_cell_value_(
   cell: GoogleAppsScript.Spreadsheet.Range,
   value,
@@ -97,38 +97,6 @@ function populateTBTable_(
   return table;
 }
 
-// function add_missing_members_(
-//   result: PlayerData[],
-//   addMembers: {[key: number]: string},
-// ): PlayerData[] {
-//   // for each member to add
-//   for (const key in addMembers) {
-//     if (addMembers.hasOwnProperty(key)) {
-//       // add
-//     }
-//   }
-//   // addMembers.filter(e => e[0].trim().length > 0)  // it must have a name
-//   //   .map(e => [e[0], forceHttps(e[1])])  // the url must use TLS
-//   //   // it must be unique. make sure the player's link isn't already in the list
-//   //   .filter(e => !result.some(l => l[1] === e[1]))
-//   //   // add member to the list. TODO: added members lack the gp information
-//   //   .forEach(e => result.push([e[0], e[1], 0, 0, 0]));
-
-//   return result;
-// }
-
-// TODO: use allycode instead of url
-// function remove_members_(members: PlayerData[], removeMembers: [string][]): PlayerData[] {
-//   const result: string[] = [];
-//   members.forEach((m) => {
-//     if (!should_remove_(m, removeMembers)) {
-//       result.push(m);
-//     }
-//   });
-
-//   return result;
-// }
-
 /**
  * Update the Guild Roster
  *
@@ -137,36 +105,36 @@ function populateTBTable_(
  */
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  // let results = members;
+  const heroesIndex = getHeroesTabIndex_();
 
-  // get the list of members to add and remove
-  // const addMembers = sheet.getRange(2, META_ADD_PLAYER_COL, MAX_PLAYERS, 2)
-  //   .getValues() as [string, number][];
-  // const addMemberList: {[key: number]: string} = {};
-  // addMembers.forEach((e) => {
-  //   const allyCode: number = e[1];
-  //   if (allyCode && typeof allyCode === 'number' && allyCode > 0) {
-  //     if (!addMemberList.hasOwnProperty(allyCode)) {
-  //       const name: string = String(e[0]).trim();
-  //       addMemberList[allyCode] = name;
-  //     }
-  //   }
-  // });
-  // // add missing members
-  // results = add_missing_members_(results, addMemberList);
+  const add = sheet.getRange(2, META_ADD_PLAYER_COL, sheet.getLastRow(), 2)
+    .getValues() as [string, number][];
+  for (const e of add) {
+    const allyCode = e[1];
+    if (allyCode && allyCode > 0) {
+      const name = ((typeof e[0] === 'string') ? e[0] : `${e[0]}`).trim();
+      const index = members.findIndex(m => m.allyCode === allyCode);
+      if (index === -1) {
+        // get PlayerData and update members
+        const member = (getPlayerData_SwgohGgApi_(allyCode, '', heroesIndex));
+        members.push(member);
+      } else if (name.length > 0 && members[index].name !== name) {
+        members[index].name = name;  // rename member
+      }
+    }
+  }
 
-  // const removeMembers = sheet.getRange(2, META_REMOVE_PLAYER_COL, MAX_PLAYERS, 1)
-  //   .getValues() as [number][];
-  // const removeMemberList: {[key: number]: any} = {};
-  // removeMembers.forEach((e) => {
-  //   const allyCode: number = e[0];
-  //   if (allyCode && typeof allyCode === 'number' && allyCode > 0) {
-  //     if (!removeMemberList.hasOwnProperty(allyCode)) {
-  //       removeMemberList[allyCode] = undefined;
-  //     }
-  //   }
-  // });
-  // results = remove_members_(results, removeMemberList); // TODO, Remove members from array
+  const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
+    .getValues() as number[][];
+  for (const e of remove) {
+    const allyCode = e && Number(e[0]) || 0;
+    if (allyCode > 0) {
+      const index = members.findIndex(m => m.allyCode === allyCode);
+      if (index > -1) {
+        members.splice(index, 1);  // remove member
+      }
+    }
+  }
 
   const sortFunction = getSortRoster_()
     // sort roster by player name
@@ -439,7 +407,7 @@ function setupTBSide(): void {
   const width = table.reduce((a: number, e: string) => Math.max(a, e.length), 0);
   table = table.map(
     e =>
-      e.length !== width ? e.concat(Array(width).fill(null)).slice(0, width) : e,
+      e.length !== width ? e.concat(Array(width).fill(undefined)).slice(0, width) : e,
   );
   tbSheet
     .getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
