@@ -1,6 +1,7 @@
 import { swgohhelpapi } from '../lib';
+import { UnitsResponse } from '../../swgoh-help-api/dist/index';
 
-/** Get the SWGoH.help API username */
+/** Get the SwgohHelp API username */
 function get_SwgohHelp_username_(): string {
   const metaSWGOHLinkCol = 1;
   const metaSWGOHLinkRow = 16;
@@ -11,7 +12,7 @@ function get_SwgohHelp_username_(): string {
   return result;
 }
 
-/** Get the SWGoH.help API password */
+/** Get the SwgohHelp API password */
 function get_SwgohHelp_password_(): string {
   const metaSWGOHLinkCol = 1;
   const metaSWGOHLinkRow = 18;
@@ -33,75 +34,119 @@ function get_SwgohHelp_allycode_(): number {
   return result;
 }
 
-function getGuildDataFromSwgohHelp(): PlayerData[] {
-  if (!swgohhelpapi) {
+function checkSwgohHelpLibrary_(): boolean {
+  const result = Boolean(swgohhelpapi);
+  if (!result) {
     UI.alert(`Library swgohhelpapi not found
     Please visit the link below to reinstall it.
     https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`);
-    return [];
   }
-  const members: PlayerData[] = [];
+  return result;
+}
+
+function getGuildDataFromSwgohHelp_(): PlayerData[] {
+  if (!checkSwgohHelpLibrary_()) {
+    return undefined;
+  }
   const settings: swgohhelpapi.exports.Settings = {
     username: get_SwgohHelp_username_(),
     password: get_SwgohHelp_password_(),
   };
   const client = new swgohhelpapi.exports.Client(settings);
   const allycode = get_SwgohHelp_allycode_();
-  const json: swgohhelpapi.exports.GuildResponse = client.fetchGuild({
+  const guild: swgohhelpapi.exports.GuildResponse[] = client.fetchGuild({
     allycode,
-    roster: true,
-    units: true,
     language: swgohhelpapi.Languages.eng_us,
     project: {
-      // id: true,
-      roster: true,
+      name: true,
+      members: true,
+      updated: true,
+      roster: {
+        allyCode: true,
+        gp: true,
+        gpChar: true,
+        gpShip: true,
+        level: true,
+        name: true,
+        updated: true,
+      },
     },
   });
-  const roster = json.roster as swgohhelpapi.exports.UnitsResponse;
-  for (const baseId in roster) {
-    const instances = roster[baseId];
-    for (const o of instances) {
-      const playerId = `p/${o.allyCode}`;
-      const pname = o.player;
-      let member: PlayerData;
-      const q = {
-        baseId,
-        level: o.level,
-        power: o.gp,
-        rarity: o.starLevel,
-        gear_level: o.gearLevel || 0,
-      };
-      const index = members.findIndex(m => m.link === playerId);
-      if (index > -1) {
-        member = members[index];
-      } else {
-        member = {
-          name: pname,
-          level: 0,
-          gp: 0,
-          shipsGp: 0,
-          heroesGp: 0,
+  if (guild && guild.length && guild.length === 1 && !guild[0].hasOwnProperty('error')) {
+    const roster = guild[0].roster as swgohhelpapi.exports.PlayerResponse[];
+    const red = roster.reduce(
+      (acc: {allyCodes: number[]; playersData: PlayerData[]}, r) => {
+        const allyCode = r.allyCode;
+        const p: PlayerData = {
+          allyCode,
+          gp: r.gp,
+          heroesGp: r.gpChar,
+          level: r.level,
+          name: r.name,
+          shipsGp: r.gpShip,
           units: {},
-          allyCode: o.allyCode,
-          // link: `p/${o.allyCode}`,
         };
-        members.push(member);
-      }
-      member.units[baseId] = q;
-      member.level = Math.max(member.level, q.level);
-      member.gp += q.power;
-      if (o.type === 1) {
-        member.heroesGp += q.power;
-      } else {
-        member.shipsGp += q.power;
+        acc.allyCodes.push(allyCode);
+        acc.playersData.push(p);
+        return acc;
+      },
+      {
+        playersData: [],
+        allyCodes: [],
+      } as {allyCodes: number[]; playersData: PlayerData[]},
+    );
+    const units = client.fetchUnits({
+      allycodes: red.allyCodes,
+      language: swgohhelpapi.Languages.eng_us,
+      project: {
+        allyCode: true,
+        type: true,
+        gp: true,
+        starLevel: true,
+        level: true,
+        gearLevel: true,
+      },
+    });
+    if (units && typeof units === 'object' && !units.hasOwnProperty('error')) {
+      const playersData = red.playersData;
+      for (const baseId in units) {
+        const u = units[baseId];
+        for (const i of u) {
+          const allyCode = i.allyCode;
+          const index = playersData.findIndex(e => e.allyCode === allyCode);
+          if (index > -1) {
+            playersData[index].units[baseId] = {
+              baseId,
+              gearLevel: i.gearLevel,
+              level: i.level,
+              // name: i.???,
+              power: i.gp,
+              rarity: i.starLevel,
+              // stats: i.???,
+              // tags: i.???,
+            };
+          }
+        }
       }
     }
+    const test = red.playersData;
+    debugger;
+
+    return red.playersData;
   }
 
-  return members;
+  return undefined;
 }
 
-function test_Player() {
+/**
+ * Pull Player data from SwgohHelp
+ * Units name and tags are not populated
+ * @returns Player data, including its units data
+ */
+function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData {
+  if (!checkSwgohHelpLibrary_()) {
+    return undefined;
+  }
   const settings = {
     username: get_SwgohHelp_username_(),
     password: get_SwgohHelp_password_(),
@@ -109,88 +154,58 @@ function test_Player() {
   const client: swgohhelpapi.exports.Client = new swgohhelpapi.exports.Client(
     settings,
   );
-  const allycode = 213176142;
   const json = client.fetchPlayer({
+    allycodes: [allyCode],
     language: swgohhelpapi.Languages.eng_us,
-    allycodes: [allycode],
     project: {
       allyCode: true,
-      name: true,
+      guildName: true,
       level: true,
+      name: true,
+      roster: {
+        combatType: true,
+        defId: true,
+        gp: true,
+        gear: true,
+        level: true,
+        nameKey: true,
+        rarity: true,
+      },
       stats: true,
-      roster: true,
       updated: true,
     },
   });
-  debugger;
-  const playerObj = json.filter(o => o.allycode && o.allycode === allycode);
-  if (playerObj.length && playerObj.length > 0) {
-    const player = playerObj.length && playerObj.length > 0 && playerObj[0];
-    const gps = player.stats.filter(stat => stat.index >= 0 && stat.index <= 3);
-    const characters: any[] = [];
-    const ships: any[] = [];
-    for (const r of player.roster) {
-      const unit = {
-        defId: r.defId,
-        rarity: r.rarity,
-        level: r.level,
-        gear: r.gear,
-        gp: r.gp,
+  if (json && json.length && json.length === 1 && !json[0].hasOwnProperty('error')) {
+    const e = json[0];
+    const getStats = (i) => {
+      const s = e.stats.find(o => o.index === i);
+      return s && s.value;
+    };
+    const player: PlayerData = {
+      allyCode: e.allyCode,
+      gp: getStats(1),
+      heroesGp: getStats(2),
+      level: e.level,
+      // link: e.url,
+      name: e.name,
+      shipsGp: getStats(3),
+      units: {},
+    };
+    for (const u of e.roster) {
+      const baseId = u.defId;
+      player.units[baseId] = {
+        baseId: u.defId,
+        gearLevel: u.gear,
+        level: u.level,
+        name: u.nameKey,
+        power: u.gp,
+        rarity: u.rarity,
+        // stats: u.???,
+        // tags: u.???,
       };
-      (r.type === 1 ? characters : ships).push(unit);
     }
-    debugger;
+    return player;
   }
-  debugger;
-}
 
-function test_UnitsList() {
-  const settings = {
-    username: get_SwgohHelp_username_(),
-    password: get_SwgohHelp_password_(),
-  };
-  const client = new swgohhelpapi.exports.Client(settings);
-  let request: swgohhelpapi.exports.DataRequest;
-  request = {
-    collection: 'categoryList',
-    language: 'eng_us',
-    match: {
-      visible: true,
-    },
-  } as swgohhelpapi.exports.DataRequest;
-  const categoryList = client.fetchData(request);
-  debugger;
-  request = {
-    collection: 'unitsList',
-    language: 'eng_us',
-    match: {
-      obtainable: true,
-      rarity: 7,
-    },
-    project: {
-      nameKey: true,
-      forceAlignment: true,
-      combatType: true,
-      baseId: true,
-      categoryIdList: true,
-      unitClass: true,
-    },
-  } as swgohhelpapi.exports.DataRequest;
-  const json = client.fetchData(request);
-  debugger;
-  if (json.length && json.length > 0) {
-    const characters: object = {};
-    const ships: object = {};
-    for (const r of json) {
-      const unit = {
-        nameKey: r.nameKey,
-        forceAlignment: r.forceAlignment,
-        categoryIdList: r.categoryIdList,
-        unitClass: r.unitClass,
-      };
-      (r.combatType === 1 ? characters : ships)[r.baseId] = unit;
-    }
-    debugger;
-  }
-  debugger;
+  return undefined;
 }
