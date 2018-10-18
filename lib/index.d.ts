@@ -90,7 +90,7 @@ export namespace  swgohhelpapi {
       /** Fetch Player data */
       fetchPlayer(payload: PlayerRequest): PlayerResponse[]
       /** Fetch Guild data */
-      fetchGuild(payload: GuildRequest): GuildResponse
+      fetchGuild(payload: GuildRequest): GuildResponse[]
       /** Fetch Units data */
       fetchUnits(payload: UnitsRequest): UnitsResponse
       /** Fetch Events data */
@@ -139,6 +139,7 @@ export namespace  swgohhelpapi {
     type BaseUnit = {
       id: string
       defId: string
+      nameKey?: string
       type: number
     }
     /** Equipped properties for Roster units */
@@ -231,12 +232,12 @@ export namespace  swgohhelpapi {
       guildName?: boolean
       updated?: boolean
       stats?: boolean
-      roster?: boolean
+      roster?: any  // boolean
       arena?: boolean
     }
     /** Response from PlayerRequest */
     export interface PlayerResponse {
-      allycode?: number
+      allyCode?: number
       name?: string
       level?: number
       guildname?: string
@@ -248,6 +249,9 @@ export namespace  swgohhelpapi {
         char: Arena[]
         ship: Arena[]
       }
+      gp?: number
+      gpChar?: number
+      gpShip?: number
     }
     /** Optional projection of GuildResponse properties (first layer) you want returned */
     type GuildOptions = {
@@ -262,7 +266,7 @@ export namespace  swgohhelpapi {
       message?: boolean
       gp?: boolean
       raid?: boolean
-      roster?: boolean
+      roster?: any  // boolean
       updated?: boolean
     }
     /** Request interface for /swgoh/guild endpoint */
