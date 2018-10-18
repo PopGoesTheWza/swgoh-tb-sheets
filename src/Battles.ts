@@ -105,7 +105,7 @@ function populateTBTable_(
  */
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  const heroesIndex = getHeroesTabIndex_();
+  const unitsIndex = getHeroesTabIndex_().concat(getShipsTabIndex_());
 
   const add = sheet.getRange(2, META_ADD_PLAYER_COL, sheet.getLastRow(), 2)
     .getValues() as [string, number][];
@@ -116,7 +116,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
       const index = members.findIndex(m => m.allyCode === allyCode);
       if (index === -1) {
         // get PlayerData and update members
-        const member = (getPlayerData_SwgohGgApi_(allyCode, '', heroesIndex));
+        const member = (getPlayerData_SwgohGgApi_(allyCode, undefined, unitsIndex));
         if (member) {
           members.push(member);
         }
