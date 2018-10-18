@@ -358,7 +358,7 @@ function getSnapshopData_(
 function getPlayerData_SwgohGgApi_(
   allyCode: number,
   tagFilter: string = '',
-  heroesIndex: UnitTabIndex[],
+  unitsIndex: UnitTabIndex[] = undefined,
 ): PlayerData {
   const playerData = isDataSourceSwgohHelp_()
     ? getPlayerDataFromSwgohHelp_(allyCode)
@@ -374,7 +374,7 @@ function getPlayerData_SwgohGgApi_(
   for (const key in units) {
     const u = units[key];
     const baseId = u.baseId;
-    const h = heroesIndex.find(e => e.baseId === baseId);
+    const h = unitsIndex.find(e => e.baseId === baseId);
     if (h && h.tags.indexOf(tagFilter.toLowerCase()) > -1) {
       u.name = h.name;
       u.stats = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
@@ -487,6 +487,21 @@ interface UnitTabIndex {
 function getHeroesTabIndex_(): UnitTabIndex[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   const data = sheet.getRange(2, 1, getCharacterCount_(), 3)
+    .getValues() as string[][];
+  const index: UnitTabIndex[] = data.map((e) => {
+    return {
+      name: e[0],
+      baseId: e[1],
+      tags: e[2],
+    };
+  });
+
+  return index;
+}
+
+function getShipsTabIndex_(): UnitTabIndex[] {
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
+  const data = sheet.getRange(2, 1, getShipCount_(), 3)
     .getValues() as string[][];
   const index: UnitTabIndex[] = data.map((e) => {
     return {
