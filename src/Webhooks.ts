@@ -12,6 +12,7 @@ const WEBHOOK_RARE_ROW: number = 7;
 const WEBHOOK_DEPTH_ROW: number = 8;
 const WEBHOOK_DESC_ROW: number = 9;
 const WEBHOOK_CLEAR_ROW: number = 15;
+const WEBHOOK_DISPLAY_SLOT_ROW: number = 16;
 
 interface DiscordMessageEmbedFields {
   name: string;
@@ -113,6 +114,21 @@ function getWebhookClear_(): boolean {
     .getValue() as string;
 
   return value === 'Yes';
+}
+
+enum DISPLAY_SLOT {
+  ALWAYS = 'Always',
+  DEFAULT = 'Default',
+  NEVER = 'Never',
+}
+
+/** See if the slot number should be displayed */
+function getWebhookDisplaySlot_(): string {
+  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+    .getRange(WEBHOOK_DISPLAY_SLOT_ROW, DISCORD_WEBHOOK_COL)
+    .getValue() as string;
+
+  return value;
 }
 
 /** Get the player Discord IDs for mentions */

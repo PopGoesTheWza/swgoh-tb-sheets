@@ -34,8 +34,8 @@ function array_index_to_string_(index: string): string {
 }
 
 /** Format the unit name */
-function unit_label_(unit: string, slot: string): string {
-  if (is_group_unit_(unit)) {
+function unit_label_(unit: string, slot: string, force: boolean = undefined): string {
+  if (force || is_group_unit_(unit)) {
     return `[slot ${array_index_to_string_(slot)}] ${unit}`;
   }
 
@@ -44,6 +44,9 @@ function unit_label_(unit: string, slot: string): string {
 
 /** Send a Webhook to Discord */
 function sendMicroByPlayerWebhook(): void {
+  const displaySetting = getWebhookDisplaySlot_();
+  const displaySlot = displaySetting !== DISPLAY_SLOT.NEVER;
+  const forceDisplay = displaySetting === DISPLAY_SLOT.ALWAYS;
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
 
@@ -166,7 +169,9 @@ function sendMicroByPlayerWebhook(): void {
       if (currentField.value !== '') {
         currentField.value += '\n';
       }
-      currentField.value += unit_label_(currentValue.unit, currentValue.slot);
+      currentField.value += displaySlot
+        ? unit_label_(currentValue.unit, currentValue.slot, forceDisplay)
+        : currentValue.unit;
     }
 
     const mention = playerMentions[player];
