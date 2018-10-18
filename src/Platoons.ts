@@ -107,8 +107,8 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
 
     range = sheet.getRange(platoonRow, 5 + platoon * 4, MAX_PLATOON_HEROES, 1);
     range.clearContent();
-    range.setFontColor('Black');
     range.clearDataValidations();
+    range.setFontColor('Black');
   }
 }
 
