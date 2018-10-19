@@ -4,6 +4,7 @@
 
 /** Populate the Ships list with Member data */
 function populateShipsList(members) {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
   // Build a Ship Index by BaseID
@@ -53,6 +54,7 @@ function populateShipsList(members) {
 
 /** Initialize the list of ships */
 function updateShipsList(ships: UnitDeclaration[]): void {
+
   // update the sheet
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 

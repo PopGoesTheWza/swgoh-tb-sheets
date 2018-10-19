@@ -1,8 +1,8 @@
 import { swgohhelpapi } from '../lib';
-import { UnitsResponse } from '../../swgoh-help-api/dist/index';
 
 /** Get the SwgohHelp API username */
 function get_SwgohHelp_username_(): string {
+
   const metaSWGOHLinkCol = 1;
   const metaSWGOHLinkRow = 16;
   const result = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -14,6 +14,7 @@ function get_SwgohHelp_username_(): string {
 
 /** Get the SwgohHelp API password */
 function get_SwgohHelp_password_(): string {
+
   const metaSWGOHLinkCol = 1;
   const metaSWGOHLinkRow = 18;
   const result = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -25,6 +26,7 @@ function get_SwgohHelp_password_(): string {
 
 /** Get the guild member ally code */
 function get_SwgohHelp_allycode_(): number {
+
   const metaSWGOHLinkCol = 1;
   const metaSWGOHLinkRow = 20;
   const result = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -35,24 +37,29 @@ function get_SwgohHelp_allycode_(): number {
 }
 
 function checkSwgohHelpLibrary_(): boolean {
+
   const result = Boolean(swgohhelpapi);
   if (!result) {
     UI.alert(`Library swgohhelpapi not found
     Please visit the link below to reinstall it.
     https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`);
   }
+
   return result;
 }
 
 function getGuildDataFromSwgohHelp_(): PlayerData[] {
+
   if (!checkSwgohHelpLibrary_()) {
     return undefined;
   }
+
   const settings: swgohhelpapi.exports.Settings = {
     username: get_SwgohHelp_username_(),
     password: get_SwgohHelp_password_(),
   };
   const client = new swgohhelpapi.exports.Client(settings);
+
   const allycode = get_SwgohHelp_allycode_();
   const guild: swgohhelpapi.exports.GuildResponse[] = client.fetchGuild({
     allycode,
@@ -72,10 +79,14 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
       },
     },
   });
+
   if (guild && guild.length && guild.length === 1 && !guild[0].hasOwnProperty('error')) {
+
     const roster = guild[0].roster as swgohhelpapi.exports.PlayerResponse[];
+
     const red = roster.reduce(
       (acc: {allyCodes: number[]; playersData: PlayerData[]}, r) => {
+
         const allyCode = r.allyCode;
         const p: PlayerData = {
           allyCode,
@@ -88,6 +99,7 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
         };
         acc.allyCodes.push(allyCode);
         acc.playersData.push(p);
+
         return acc;
       },
       {
@@ -95,6 +107,7 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
         allyCodes: [],
       } as {allyCodes: number[]; playersData: PlayerData[]},
     );
+
     const units = client.fetchUnits({
       allycodes: red.allyCodes,
       language: swgohhelpapi.Languages.eng_us,
@@ -107,6 +120,7 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
         gearLevel: true,
       },
     });
+
     if (units && typeof units === 'object' && !units.hasOwnProperty('error')) {
       const playersData = red.playersData;
       for (const baseId in units) {
@@ -129,8 +143,6 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
         }
       }
     }
-    const test = red.playersData;
-    debugger;
 
     return red.playersData;
   }
@@ -144,16 +156,17 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
  * @returns Player data, including its units data
  */
 function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData {
+
   if (!checkSwgohHelpLibrary_()) {
     return undefined;
   }
+
   const settings = {
     username: get_SwgohHelp_username_(),
     password: get_SwgohHelp_password_(),
   };
-  const client: swgohhelpapi.exports.Client = new swgohhelpapi.exports.Client(
-    settings,
-  );
+  const client = new swgohhelpapi.exports.Client(settings);
+
   const json = client.fetchPlayer({
     allycodes: [allyCode],
     language: swgohhelpapi.Languages.eng_us,
@@ -175,6 +188,7 @@ function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData {
       updated: true,
     },
   });
+
   if (json && json.length && json.length === 1 && !json[0].hasOwnProperty('error')) {
     const e = json[0];
     const getStats = (i) => {

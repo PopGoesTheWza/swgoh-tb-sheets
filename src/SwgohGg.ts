@@ -68,6 +68,7 @@ interface SwgohGgPlayerResponse {
 
 /** Get the guild id */
 function getSwgohGgGuildId_(): number {
+
   const metaSWGOHLinkCol = 1;
   const metaSWGOHLinkRow = 2;
 
@@ -91,6 +92,7 @@ function requestSwgohGgApi_<T>(
   link: string,
   errorMsg: string = 'Error when retreiving data from swgoh.gg API',
 ): T {
+
   let json;
   try {
     const params: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
@@ -112,6 +114,7 @@ function requestSwgohGgApi_<T>(
  * @returns Array of Characters with [tags, baseId, name]
  */
 function getHeroListFromSwgohGg_(): UnitDeclaration[] {
+
   const json = requestSwgohGgApi_<SwgohGgUnitResponse[]>(
     'https://swgoh.gg/api/characters/',
   );
@@ -135,6 +138,7 @@ function getHeroListFromSwgohGg_(): UnitDeclaration[] {
  * @returns Array of Characters with [tags, baseId, name]
  */
 function getShipListFromSwgohGg_(): UnitDeclaration[] {
+
   const json = requestSwgohGgApi_<SwgohGgUnitResponse[]>(
     'https://swgoh.gg/api/ships/',
   );
@@ -155,6 +159,7 @@ function getShipListFromSwgohGg_(): UnitDeclaration[] {
 
 /** Create guild API link */
 function getSwgohGgGuildApiLink_(guildId: number): string {
+
   const link = `https://swgoh.gg/api/guild/${guildId}/`;
 
   // TODO: data check
@@ -167,6 +172,7 @@ function getSwgohGgGuildApiLink_(guildId: number): string {
  * @returns Array of Guild members and their units data
  */
 function getGuildDataFromSwgohGg_(guildId: number): PlayerData[] {
+
   const json = requestSwgohGgApi_<SwgohGgGuildResponse>(
     getSwgohGgGuildApiLink_(guildId),
   );
@@ -199,14 +205,17 @@ function getGuildDataFromSwgohGg_(guildId: number): PlayerData[] {
 
     return members;
   }
+
   return undefined;
 }
 
 /** Create player API link */
 function getSwgohGgPlayerApiLink_(allyCode: number): string {
+
   const link = `https://swgoh.gg/api/player/${allyCode}/`;
 
   // TODO: data check
+
   return link;
 }
 
@@ -216,9 +225,11 @@ function getSwgohGgPlayerApiLink_(allyCode: number): string {
  * @returns Player data, including its units data
  */
 function getPlayerDataFromSwgohGg_(allyCode: number): PlayerData {
+
   const json = requestSwgohGgApi_<SwgohGgPlayerResponse>(
     getSwgohGgPlayerApiLink_(allyCode),
   );
+
   if (json && json.data) {
     const data = json.data;
     const player: PlayerData = {
@@ -246,5 +257,6 @@ function getPlayerDataFromSwgohGg_(allyCode: number): PlayerData {
 
     return player;
   }
+
   return undefined;
 }

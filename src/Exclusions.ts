@@ -1,5 +1,6 @@
 /** Get the list of exclusions */
 function get_exclusions_(): {[key: string]: {[key: string]: boolean}} {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS);
   const data = sheet.getDataRange()
     .getValues() as string[][];
@@ -36,6 +37,7 @@ function get_exclusions_(): {[key: string]: {[key: string]: boolean}} {
 
 /** Process all the excluded units */
 function processExclusions_(
+
   data: string[][],
   exclusions: {[key: string]: {[key: string]: boolean}},
 ) {

@@ -22,6 +22,7 @@ interface DiscordMessageEmbedFields {
 
 /** Get the webhook address */
 function getWebhook_(): string {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(1, DISCORD_WEBHOOK_COL)
     .getValue() as string;
@@ -31,6 +32,7 @@ function getWebhook_(): string {
 
 /** Get the role to mention */
 function getRole_(): string {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(2, DISCORD_WEBHOOK_COL)
     .getValue() as string;
@@ -40,6 +42,7 @@ function getRole_(): string {
 
 /** Get the time and date when the TB started */
 function getTBStartTime_(): Date {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_TB_START_ROW, DISCORD_WEBHOOK_COL)
     .getValue() as Date;
@@ -49,6 +52,7 @@ function getTBStartTime_(): Date {
 
 /** Get the number of hours in each phase */
 function getPhaseHours_(): number {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
     .getValue() as number;
@@ -58,6 +62,7 @@ function getPhaseHours_(): number {
 
 /** Get the template for a webhooks */
 function getWebhookTemplate_(phase: number, row: number, defaultVal: string): string {
+
   const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(row, DISCORD_WEBHOOK_COL)
     .getValue() as string;
@@ -67,6 +72,7 @@ function getWebhookTemplate_(phase: number, row: number, defaultVal: string): st
 
 /** Get the title for the webhooks */
 function getWebhookTitle_(phase: number): string {
+
   const defaultVal = `__**Territory Battle: Phase ${phase}**__`;
 
   return `${getWebhookTemplate_(phase, WEBHOOK_TITLE_ROW, defaultVal)}`;
@@ -74,30 +80,35 @@ function getWebhookTitle_(phase: number): string {
 
 /** Get the intro for the warning webhook */
 function getWebhookWarnIntro_(phase: number, mention: string): string {
-  // tslint:disable-next-line:max-line-length
-  const defaultVal = `Here are the __Rare Units__ to watch out for in __Phase ${phase}__. **Check with an officer before donating to Platoons/Squadrons that require them.**`;
+
+  const defaultVal = `Here are the __Rare Units__ to watch out for in __Phase ${phase}__.
+    **Check with an officer before donating to Platoons/Squadrons that require them.**`;
 
   return `\n\n${getWebhookTemplate_(phase, WEBHOOK_WARN_ROW, defaultVal)} ${mention}`;
 }
 
 /** Get the intro for the rare by webhook */
 function getWebhookRareIntro_(phase: number, mention: string): string {
-  // tslint:disable-next-line:max-line-length
-  const defaultVal = `Here are the Safe Platoons and the Rare Platoon donations for __Phase ${phase}__. **Do not donate heroes to the other Platoons.**`;
+
+  const defaultVal =
+    `Here are the Safe Platoons and the Rare Platoon donations for __Phase ${phase}__.
+    **Do not donate heroes to the other Platoons.**`;
 
   return `\n\n${getWebhookTemplate_(phase, WEBHOOK_RARE_ROW, defaultVal)} ${mention}`;
 }
 
 /** Get the intro for the depth webhook */
 function getWebhookDepthIntro_(phase: number, mention: string): string {
-  // tslint:disable-next-line:max-line-length
-  const defaultVal = `Here are the Platoon assignments for __Phase ${phase}__. **Do not donate heroes to the other Platoons.**`;
+
+  const defaultVal = `Here are the Platoon assignments for __Phase ${phase}__.
+  **Do not donate heroes to the other Platoons.**`;
 
   return `\n\n${getWebhookTemplate_(phase, WEBHOOK_DEPTH_ROW, defaultVal)} ${mention}`;
 }
 
 /** Get the Description for the phase */
 function getWebhookDesc_(phase: number): string {
+
   const tagFilter = getSideFilter_(); // TODO: potentially broken if TB not sync
   const columnOffset = isLight_(tagFilter) ? 0 : 1;
   const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
@@ -109,6 +120,7 @@ function getWebhookDesc_(phase: number): string {
 
 /** See if the platoons should be cleared */
 function getWebhookClear_(): boolean {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_CLEAR_ROW, DISCORD_WEBHOOK_COL)
     .getValue() as string;
@@ -116,14 +128,9 @@ function getWebhookClear_(): boolean {
   return value === 'Yes';
 }
 
-enum DISPLAY_SLOT {
-  ALWAYS = 'Always',
-  DEFAULT = 'Default',
-  NEVER = 'Never',
-}
-
 /** See if the slot number should be displayed */
 function getWebhookDisplaySlot_(): string {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_DISPLAY_SLOT_ROW, DISCORD_WEBHOOK_COL)
     .getValue() as string;
@@ -133,6 +140,7 @@ function getWebhookDisplaySlot_(): string {
 
 /** Get the player Discord IDs for mentions */
 function getPlayerMentions_(): KeyDict {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.DISCORD);
   const data = sheet.getRange(2, 1, sheet.getLastRow(), 2)
     .getValues() as string[][];
@@ -152,6 +160,7 @@ function getPlayerMentions_(): KeyDict {
 
 /** Get a string representing the platoon assignements */
 function getPlatoonString_(platoon: string[][]): string {
+
   const results: string[] = [];
 
   // cycle through the heroes
@@ -177,6 +186,7 @@ function getPlatoonString_(platoon: string[][]): string {
 
 /** Get the formatted zone name with location descriptor */
 function getZoneName_(phase: number, zoneNum: number, full: boolean): string {
+
   const zone = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
     .getRange((zoneNum * PLATOON_ZONE_ROW_OFFSET) + 4, 1)
     .getValue() as string;
@@ -202,6 +212,7 @@ function getZoneName_(phase: number, zoneNum: number, full: boolean): string {
 
 /** Send a Webhook to Discord */
 function sendPlatoonDepthWebhook(): void {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
 
@@ -253,12 +264,11 @@ function sendPlatoonDepthWebhook(): void {
 }
 
 /** Get an array representing the new platoon assignements */
-function getPlatoonDonations_(
-  platoon: string[][],
-  donations: string[][],
-  rules: GoogleAppsScript.Spreadsheet.DataValidation[][],
-  playerMentions: KeyDict,
-): string[][] {
+function getPlatoonDonations_(platoon: string[][],
+                              donations: string[][],
+                              rules: GoogleAppsScript.Spreadsheet.DataValidation[][],
+                              playerMentions: KeyDict): string[][] {
+
   const result: string[][] = [];
 
   // cycle through the heroes
@@ -297,16 +307,17 @@ function getPlatoonDonations_(
 
 /** Get a list of units that are required a high number of times */
 function getHighNeedList_(sheetName: string, unitCount: number): string[] {
+
   const counts = SPREADSHEET.getSheetByName(sheetName)
     .getRange(2, 1, unitCount, HERO_PLAYER_COL_OFFSET)
-    .getValues() as number[][];
+    .getValues() as [string, number][];
   const results: string[] = [];
   const idx = HERO_PLAYER_COL_OFFSET - 1;
 
-  for (const e of counts) {
+  for (const row of counts) {
     // unit's count is over the min bar to be too high
-    if (e[idx] >= HIGH_MIN) {
-      results.push(`${e[0]} (${e[idx]})`);
+    if (row[idx] >= HIGH_MIN) {
+      results.push(`${row[0]} (${row[idx]})`);
     }
   }
 
@@ -320,6 +331,7 @@ function getHighNeedList_(sheetName: string, unitCount: number): string[] {
 
 /** Send the message to Discord */
 function postMessage_(webhookURL: string, message: string): void {
+
   const options = urlFetchMakeParam_({ content: message.trim() });
   urlFetchExecute_(webhookURL, options);
   // try
@@ -347,13 +359,13 @@ function postMessage_(webhookURL: string, message: string): void {
 
 /** Send a Webhook to Discord */
 function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
 
   // get the webhook
   const webhookURL = getWebhook_();
-  if (webhookURL.length === 0) {
-    // we need a url to proceed
+  if (webhookURL.length === 0) {  // we need a url to proceed
     UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
 
     return;
@@ -367,41 +379,41 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
   const descriptionText = `${getWebhookTitle_(phase)}${getWebhookRareIntro_(phase, mentions)}`;
 
   // get data from the platoons
-  let fields: string = '';
+  const fields: string[] = [];
   let donations: string[][] = [];
   let groundStart = -1;
-  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-    // for each zone
+
+  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {  // for each zone
     const platoonRow = (z * PLATOON_ZONE_ROW_OFFSET + 2);
-    const validPlatoons = [];
+    const validPlatoons: number[] = [];
     const zone = getZoneName_(phase, z, true);
 
     if (z === 1) {
       groundStart = donations.length;
     }
 
-    if (z === 0 && phase < 3) {
-      continue;  // skip this and future zones
-    }
+    if (z !== 0 || phase > 2) {
 
-    // cycle throught the platoons in a zone
-    for (let p = 0; p < MAX_PLATOONS; p += 1) {
-      const platoonData = sheet.getRange(platoonRow, (p * 4) + 4, MAX_PLATOON_HEROES, 2)
-        .getValues() as string[][];
-      const rules = sheet.getRange(platoonRow, (p * 4) + 5, MAX_PLATOON_HEROES, 1)
-        .getDataValidations();
-      const platoon = getPlatoonDonations_(platoonData, donations, rules, playerMentions);
+      // cycle throught the platoons in a zone
+      for (let p = 0; p < MAX_PLATOONS; p += 1) {
+        const platoonData = sheet.getRange(platoonRow, (p * 4) + 4, MAX_PLATOON_HEROES, 2)
+          .getValues() as string[][];
+        const rules = sheet.getRange(platoonRow, (p * 4) + 5, MAX_PLATOON_HEROES, 1)
+          .getDataValidations();
+        const platoon = getPlatoonDonations_(platoonData, donations, rules, playerMentions);
 
-      if (platoon) {
-        validPlatoons.push(p);
-        if (platoon.length > 0) {
-          // add the new donations to the list
-          for (const e of platoon) {
-            donations.push([e[0], e[1]]);
+        if (platoon) {
+          validPlatoons.push(p);
+          if (platoon.length > 0) {
+            // add the new donations to the list
+            for (const e of platoon) {
+              donations.push([e[0], e[1]]);
+            }
           }
         }
       }
     }
+
     // see if all platoons are valid
     let platoons: string;
     if (validPlatoons.length === MAX_PLATOONS) {
@@ -412,27 +424,29 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
 
     // format the needed platoons
     if (validPlatoons.length > 0) {
-      fields += `**${zone}**\n${platoons}\n\n`;
+      fields.push(`**${zone}**\n${platoons}`);
     }
   }
 
   // format the high needed units
   const highNeedShips = getHighNeedList_(SHEETS.SHIPS, getShipCount_());
   if (highNeedShips.length > 0) {
-    fields += `**High Need Ships**\n${highNeedShips.join(', ')}\n\n`;
+    fields.push(`**High Need Ships**\n${highNeedShips.join(', ')}`);
   }
   const highNeedHeroes = getHighNeedList_(SHEETS.HEROES, getCharacterCount_());
   if (highNeedHeroes.length > 0) {
-    fields += `**High Need Heroes**\n${highNeedHeroes.join(', ')}\n\n`;
+    fields.push(`**High Need Heroes**\n${highNeedHeroes.join(', ')}`);
   }
-  postMessage_(webhookURL, `${descriptionText}\n\n${fields}\n`);
+  postMessage_(webhookURL, `${descriptionText}\n\n${fields.join('\n\n')}\n`);
 
   // reformat the output if we need by player istead of by unit
   if (byType === 'Player') {
     const heroLabel = 'Heroes: ';
     const shipLabel = 'Ships: ';
+
     const acc  = donations.reduce(
       (acc: [string, string][], e, i) => {
+
         const unit = e[0];
         const names = e[1].split(',');
         for (const name of names) {
@@ -456,6 +470,7 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
             ]);
           }
         }
+
         return acc;
       },
       [],
@@ -469,6 +484,7 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
 }
 
 function spoolDiscordMessage_(webhookURL: string, byType: string, donations: string[][]): void {
+
   const typeIsUnit = byType === 'Unit';
   const maxUrlLen = 1000;
   const maxCount = typeIsUnit ? 5 : 10;
@@ -510,6 +526,7 @@ function sendPlatoonSimplifiedByPlayerWebhook(): void {
 
 /** zone: 0, 1 or 2 */
 function getUniquePlatoonUnits_(zone: number): string[] {
+
   const platoonRow = (zone * 18) + 2;
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
 
@@ -528,18 +545,20 @@ function getUniquePlatoonUnits_(zone: number): string[] {
 
 /** Get the list of Rare units needed for the phase */
 function getRareUnits_(sheetName: string, phase: number): string[] {
+
   const tagFilter = getSideFilter_();  // TODO: potentially broken if TB not sync
   const useBottomTerritory = !isLight_(tagFilter) || phase > 1;
-  const count = getCharacterCount_();
+  const count = getCharacterCount_() + 1;
   const data = (SPREADSHEET.getSheetByName(sheetName)
-    .getRange(1, 1, count + 1, 8)
+    .getRange(1, 1, count, 8)
     .getValues() as [string, number][])
     .slice(1);  // Drop first line
 
-  const idx = phase + 1;
+  const idx = phase + 2;  // HEROES/SHIPS, column D
+
   // cycle through each unit
-  const units = data.reduce(
-    (acc, row) => {
+  const units: string[] = data.reduce(
+    (acc: [string], row) => {
       if (row[0].length > 0 && row[idx] < RARE_MAX) {
         acc.push(row[0]);
       }
@@ -566,6 +585,7 @@ function getRareUnits_(sheetName: string, phase: number): string[] {
 
 /** Send a message to Discord that lists all units to watch out for in the current phase */
 function allRareUnitsWebhook(): void {
+
   const phase = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
     .getRange(2, 1)
     .getValue() as number;
@@ -634,6 +654,7 @@ function allRareUnitsWebhook(): void {
 
 /** Figure out what phase the TB is in */
 function setCurrentPhase_(): void {
+
   // get the guild's TB start date/time and phase length in hours
   const startTime = getTBStartTime_();
   const phaseHours = getPhaseHours_();
@@ -656,6 +677,7 @@ function setCurrentPhase_(): void {
 
 /** Callback function to see if we should send the webhook */
 function sendTimedWebhook(): void {
+
   setCurrentPhase_(); // set the current phase based on time
 
   // reset the platoons if clear flag was set
@@ -668,6 +690,7 @@ function sendTimedWebhook(): void {
 
 /** Try to create a webhook trigger */
 function registerWebhookTimer(): void {
+
   // get the guild's TB start date/time and phase length in hours
   const startTime = getTBStartTime_();
   const phaseHours = getPhaseHours_();

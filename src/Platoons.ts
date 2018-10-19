@@ -11,8 +11,31 @@ const MAX_PLATOONS = 6;
 const MAX_PLATOON_ZONES = 3;
 const PLATOON_ZONE_ROW_OFFSET = 18;
 
+/** Custom object for creating custom order to walk through platoons */
+function platoonDetails(phase: number, zone: number, num: number) {
+  this.zone = zone;
+  this.num = num;
+  this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
+  this.possible = true;
+  this.isGround = zone > 0;
+  this.skip = zone === 0 && phase < 3;
+}
+
+/**
+ * Custom object for platoon units
+ * hero, hero row, count, player count, player list (player, gear...)
+ */
+function platoonUnit(name: string, row: number, count: number, pCount:number) {
+  this.name = name;
+  this.row = row;
+  this.count = count;
+  this.pCount = pCount;
+  this.players = [];
+}
+
 /** Initialize the list of Territory names */
 function init_platoon_phases_() {
+
   const tagFilter = getSideFilter_();
 
   // Names of Territories, # of Platoons
@@ -52,6 +75,7 @@ function init_platoon_phases_() {
 
 /** Get the zone name and update the cell */
 function setZoneName(phase, zone, sheet, platoonRow) {
+
   // set the zone name
   const zoneName = PLATOON_PHASES[phase - 1][zone];
   sheet.getRange(platoonRow + 2, 1).setValue(zoneName);
@@ -61,6 +85,7 @@ function setZoneName(phase, zone, sheet, platoonRow) {
 
 /** Populate platoon with slices if available */
 function fillSlice(phase, zone, platoon, range) {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
   const tagFilter = getSideFilter_();
 
@@ -86,6 +111,7 @@ function fillSlice(phase, zone, platoon, range) {
 
 /** Clear out a platoon */
 function resetPlatoon(phase, zone, platoonRow, rows, show) {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
 
   if (show) {
@@ -114,6 +140,7 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
 
 /** Clear the full chart */
 function resetPlatoons() {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue();
   init_platoon_phases_();
@@ -140,6 +167,7 @@ function resetPlatoons() {
 
 /** Check if the player is available for the current phase */
 function playerAvailable(player, unavailable) {
+
   return unavailable.some((e) => {
     return e[0].length > -1 && player === e[0];
   });
@@ -147,6 +175,7 @@ function playerAvailable(player, unavailable) {
 
 /** Get a sorted list of recommended players */
 function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
+
   // see how many stars are needed
   const minStars = phase + 1;
 
@@ -207,6 +236,7 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
 
 /** create the dropdown list */
 function createDropdown(playerList, range) {
+
   const formatList = [];
   for (let p = 0, pLen = playerList.length; p < pLen; p += 1) {
     formatList[formatList.length] = playerList[p][0];
@@ -220,6 +250,7 @@ function createDropdown(playerList, range) {
 
 /** Reset the needed counts */
 function resetNeededCount(sheet, count) {
+
   const result = [];
   for (let i = 0; i < count; i += 1) {
     result[i] = [0];
@@ -230,6 +261,7 @@ function resetNeededCount(sheet, count) {
 
 /** Reset the units used */
 function resetUsedUnits(data) {
+
   const result = [];
   for (let r = 0, rLen = data.length; r < rLen; r += 1) {
     if (r === 0) {
@@ -246,30 +278,9 @@ function resetUsedUnits(data) {
   return result;
 }
 
-/** Custom object for creating custom order to walk through platoons */
-function platoonDetails(phase, zone, num) {
-  this.zone = zone;
-  this.num = num;
-  this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
-  this.possible = true;
-  this.isGround = zone > 0;
-  this.skip = zone === 0 && phase < 3;
-}
-
-/**
- * Custom object for platoon units
- * hero, hero row, count, player count, player list (player, gear...)
- */
-function platoonUnit(name, row, count, pCount) {
-  this.name = name;
-  this.row = row;
-  this.count = count;
-  this.pCount = pCount;
-  this.players = [];
-}
-
 /** Recommend players for each Platoon */
 function recommendPlatoons() {
+
   const heroesSheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
@@ -306,7 +317,7 @@ function recommendPlatoons() {
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues();
-  const phase = sheet.getRange(2, 1).getValue();
+  const phase = sheet.getRange(2, 1).getValue() as number;
   init_platoon_phases_();
 
   // setup a custom order for walking the platoons

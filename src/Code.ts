@@ -2,11 +2,22 @@
  * @OnlyCurrentDoc
  */
 
-/**
- * Global Variables
- */
-
+/** Global Variables */
 declare function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData;
+
+/** Select data source */
+enum DATASOURCES {
+  /** Use swgoh.help API as data source */
+  SWGOH_HELP = 'SWGoH.help',
+  /** Use swgoh.gg API as data source */
+  SWGOH_GG = 'SWGoH.gg',
+}
+
+enum DISPLAY_SLOT {
+  ALWAYS = 'Always',
+  DEFAULT = 'Default',
+  NEVER = 'Never',
+}
 
 /** Constants for sheets name */
 enum SHEETS {
@@ -30,18 +41,11 @@ enum SHEETS {
   INSTRUCTIONS = 'Instructions',
 }
 
-enum DATASOURCES {
-  SWGOH_HELP = 'SWGoH.help',
-  SWGOH_GG = 'SWGoH.gg',
-  // SCORPIO = 'SCORPIO',
-}
-
+/** Shortcuts for Google Apps Script classes */
 const SPREADSHEET = SpreadsheetApp.getActive();
 const UI = SpreadsheetApp.getUi();
 
-// const DEBUG_HOTH = false
-
-// const MAX_PLAYERS = 52;
+/** Global constants */
 const MAX_PLAYERS = 50;
 // const MIN_PLAYER_LEVEL = 65
 // const POWER_TARGET = 14000
@@ -132,6 +136,7 @@ interface UnitInstance {
 // ****************************************
 
 // function fullClear(): void {
+
 //   let sheet: GoogleAppsScript.Spreadsheet.Sheet;
 //   sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
 //   sheet.getRange(2, 2, MAX_PLAYERS, 9).clearContent();
@@ -150,12 +155,14 @@ interface UnitInstance {
 // }
 
 function getSubstringRe_(string: string, re: RegExp): string {
+
   const m = string.match(re);
 
   return m ? m[1] : '';
 }
 
 function getSideFilter_(): string {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_FILTER_ROW, META_FILTER_COL)
     .getValue() as string;
@@ -164,6 +171,7 @@ function getSideFilter_(): string {
 }
 
 function getCharacterCount_(): number {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_HEROES_COUNT_ROW, META_UNIT_COUNTS_COL)
     .getValue() as number;
@@ -172,6 +180,7 @@ function getCharacterCount_(): number {
 }
 
 function getShipCount_(): number {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_SHIPS_COUNT_ROW, META_UNIT_COUNTS_COL)
     .getValue() as number;
@@ -180,6 +189,7 @@ function getShipCount_(): number {
 }
 
 function getTagFilter_(): string {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_TAG_ROW, META_TAG_COL)
     .getValue() as string;
@@ -188,6 +198,7 @@ function getTagFilter_(): string {
 }
 
 // function get_minimum_gear_level_(): number {
+
 //   const value = SPREADSHEET.getSheetByName(SHEETS.META)
 //     .getRange(META_UNDERGEAR_ROW, META_UNDERGEAR_COL)
 //     .getValue() as number;
@@ -196,6 +207,7 @@ function getTagFilter_(): string {
 // }
 
 function get_minimum_character_gp_(): number {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)
     .getValue() as number;
@@ -204,6 +216,7 @@ function get_minimum_character_gp_(): number {
 }
 
 // function get_minimun_player_gp_(): number {
+
 //   const value = SPREADSHEET.getSheetByName(SHEETS.META)
 //     .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)
 //     .getValue() as number;
@@ -212,6 +225,7 @@ function get_minimum_character_gp_(): number {
 // }
 
 function getMaximumPlatoonDonation_(): number {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_UNIT_PER_PLAYER_ROW, META_UNDERGEAR_COL)
     .getValue() as number;
@@ -220,6 +234,7 @@ function getMaximumPlatoonDonation_(): number {
 }
 
 function getSortRoster_(): boolean {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(2, META_SORT_ROSTER_COL)
     .getValue() as string;
@@ -228,6 +243,7 @@ function getSortRoster_(): boolean {
 }
 
 function getExclusionId_(): string {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(7, META_GUILD_COL)
     .getValue() as string;
@@ -246,6 +262,7 @@ function isDataSourceSwgohGg_(): boolean {
 }
 
 function get_data_source_(): string {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
     .getValue() as string;
@@ -254,6 +271,7 @@ function get_data_source_(): string {
 }
 
 function getGuildSize_(): number {
+
   const value = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
     .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
     .getValue() as number;
@@ -269,6 +287,7 @@ function getGuildSize_(): number {
  * @customfunction
  */
 function fixString(input: string): string {
+
   const result = input.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 
   return result;
@@ -282,6 +301,7 @@ function fixString(input: string): string {
  * @customfunction
  */
 function forceHttps(url: string): string {
+
   const result = url.replace('http:', 'https:');
 
   return result;
@@ -289,6 +309,7 @@ function forceHttps(url: string): string {
 
 // TODO: use allycode instead of url
 function should_remove_(memberLink: string, removeMembers: [string][]): boolean {
+
   const result = removeMembers
   .some(e => memberLink === forceHttps(e[0]));  // return true if link is found within he list
 
@@ -320,6 +341,7 @@ function getSnapshopData_(
   tagFilter: string,
   heroesIndex: UnitTabIndex[],
 ): PlayerData {
+
   // try for external link
   const allyCode = (sheet.getRange(2, 1).getValue() as number);
   if (allyCode > 0) {
@@ -360,6 +382,7 @@ function getPlayerData_SwgohGgApi_(
   tagFilter: string = '',
   unitsIndex: UnitTabIndex[] = undefined,
 ): PlayerData {
+
   const playerData = isDataSourceSwgohHelp_()
     ? getPlayerDataFromSwgohHelp_(allyCode)
     : getPlayerDataFromSwgohGg_(allyCode);
@@ -388,6 +411,7 @@ function getPlayerData_SwgohGgApi_(
 }
 
 function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): PlayerData {
+
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 5).getValues() as [string, number, number, number, number][];
   const p = roster.find(e => e[0] === memberName);
@@ -457,6 +481,7 @@ function isLight_(tagFilter: string): boolean {
 }
 
 function get_metas_(tagFilter: string): [string, string][] {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
   const numRows = sheet.getLastRow() - row + 1;
@@ -485,6 +510,7 @@ interface UnitTabIndex {
 }
 
 function getHeroesTabIndex_(): UnitTabIndex[] {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   const data = sheet.getRange(2, 1, getCharacterCount_(), 3)
     .getValues() as string[][];
@@ -500,6 +526,7 @@ function getHeroesTabIndex_(): UnitTabIndex[] {
 }
 
 function getShipsTabIndex_(): UnitTabIndex[] {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
   const data = sheet.getRange(2, 1, getShipCount_(), 3)
     .getValues() as string[][];
@@ -515,6 +542,7 @@ function getShipsTabIndex_(): UnitTabIndex[] {
 }
 
 function playerSnapshotOutput_(
+
   sheet: GoogleAppsScript.Spreadsheet.Sheet,
   rowGp: number,
   baseData: string[][],
@@ -528,6 +556,7 @@ function playerSnapshotOutput_(
 
 /** Create a Snapshot of a Player based on criteria tracked in the workbook */
 function playerSnapshot(): void {
+
   // cache the matrix of hero data
   const heroesIndex = getHeroesTabIndex_();
 
@@ -539,7 +568,7 @@ function playerSnapshot(): void {
   let countFiltered = 0;
   let countTagged = 0;
   const characterTag = getTagFilter_(); // TODO: potentially broken if TB not sync
-  const POWER_TARGET = get_minimum_character_gp_();
+  const powerTarget = get_minimum_character_gp_();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
   const playerData = getSnapshopData_(sheet, tagFilter, heroesIndex);
   if (playerData) {
@@ -548,7 +577,7 @@ function playerSnapshot(): void {
       const name = u.name;
 
       // does the hero meet the filtered requirements?
-      if (u.rarity >= 7 && u.power >= POWER_TARGET) {
+      if (u.rarity >= 7 && u.power >= powerTarget) {
         countFiltered += 1;
         // does the hero meet the tagged requirements?
         heroesIndex.some((e) => {
@@ -573,8 +602,8 @@ function playerSnapshot(): void {
     baseData.push(['GP', playerData.gp]);
     baseData.push(['GP Heroes', playerData.heroesGp]);
     baseData.push(['GP Ships', playerData.shipsGp]);
-    baseData.push([`${tagFilter} 7* P${POWER_TARGET}+`, countFiltered]);
-    baseData.push([`${characterTag} 7* P${POWER_TARGET}+`, countTagged]);
+    baseData.push([`${tagFilter} 7* P${powerTarget}+`, countFiltered]);
+    baseData.push([`${characterTag} 7* P${powerTarget}+`, countTagged]);
 
     const rowGp = 1;
     const rowHeroes = 6;
@@ -587,8 +616,9 @@ function playerSnapshot(): void {
 
 /** Setup new menu items when the spreadsheet opens */
 function onOpen(): void {
+
   UI.createMenu('SWGoH')
-    .addItem('Refresh TB', setupTBSide.name)
+    .addItem('Refresh TB', setupEvent.name)
     .addSubMenu(
       UI
         .createMenu('Platoons')

@@ -4,6 +4,7 @@
 
 /** Populate the Hero list with Member data */
 function populateHeroesList(members: PlayerData[]): void {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
 
   // Build a Hero Index by BaseID
@@ -82,6 +83,7 @@ function populateHeroesList(members: PlayerData[]): void {
 
 /** Initialize the list of heroes */
 function updateHeroesList(heroes: UnitDeclaration[]): void {
+
   // update the sheet
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
 

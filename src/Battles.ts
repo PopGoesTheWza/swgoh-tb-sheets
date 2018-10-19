@@ -5,29 +5,33 @@
 declare function getGuildDataFromSwgohHelp_(): PlayerData[];
 
 /** set the value and style in a cell */
-function set_cell_value_(
+function setCellValue_(
   cell: GoogleAppsScript.Spreadsheet.Range,
   value,
   bold: boolean,
   align?: 'left' | 'center' | 'right',
 ): void {
+
   cell.setFontWeight(bold ? 'bold' : 'normal')
     .setHorizontalAlignment(align)
     .setValue(value);
 }
 
-function populateTBTable_(
+function populateEventTable_(
   data: string[][],
   members: PlayerData[],
   heroes: UnitDeclaration[],
 ): (string|number)[][] {
-  const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+
+  const memberNames = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as [string][];
-  const hIdx = [];
+
+  const nameToBaseId: {[key: string]: string} = {};
   for (const e of heroes) {
-    hIdx[e.name] = e.baseId;
+    nameToBaseId[e.name] = e.baseId;
   }
+
   let total = 0;
   let phaseCount = 0;
   let squadCount = 0;
@@ -37,15 +41,19 @@ function populateTBTable_(
   const table: (string|number)[][] = [];
   table[0] = [];
 
-  for (let c = 0; c < roster.length; c += 1) {
-    // const m = members[roster[c]]
+  for (let c = 0; c < memberNames.length; c += 1) {
+
     const m = members[c]; // weak
     table[0][c] = m.name;
+
     for (let r = 0; r < data.length; r += 1) {
+
       const curHero = data[r];
+
       if (table[r + 1] == null) {
         table[r + 1] = [];
       }
+
       if (curHero[0] === 'Phase Count:') {
         table[r + 1][c] = phaseCount;
         total += phaseCount;
@@ -71,7 +79,7 @@ function populateTBTable_(
       lastSquad = squad;
 
       // Get Hero for member
-      const o = m['units'][hIdx[curHero[0]]];
+      const o = m['units'][nameToBaseId[curHero[0]]];
       if (o == null) {
         continue;
       }
@@ -104,6 +112,7 @@ function populateTBTable_(
  * @customfunction
  */
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   const unitsIndex = getHeroesTabIndex_().concat(getShipsTabIndex_());
 
@@ -177,7 +186,8 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 }
 
 /** Setup the Territory Battle for Hoth */
-function setupTBSide(): void {
+function setupEvent(): void {
+
   // const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
 
   // make sure the roster is up-to-date
@@ -255,8 +265,7 @@ function setupTBSide(): void {
 
     // collect the meta data for the heroes
   let row = 2;
-  const tagFilter = getSideFilter_();
-  const col = isLight_(tagFilter) ? META_HEROES_COL : META_HEROES_DS_COL;
+  const col = isLight_(getSideFilter_()) ? META_HEROES_COL : META_HEROES_DS_COL;
   let tbRow = 2;
   let lastPhase = '1';
   let phaseCount = 0;
@@ -269,7 +278,9 @@ function setupTBSide(): void {
   let event = metaData[0][0];
   const phaseList = [];
   let phase;
+
   while (event.length > 0) {
+
     phase = metaData[0][1];
     const name = metaData[0][2];
     const stars = metaData[0][3];
@@ -283,7 +294,7 @@ function setupTBSide(): void {
       if (tbRow > 2) {
         // end the phase if this isn't the first row
         const curTb = tbSheet.getRange(tbRow, 3);
-        set_cell_value_(curTb, 'Phase Count:', true, 'right');
+        setCellValue_(curTb, 'Phase Count:', true, 'right');
         curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
         curTb
           .offset(0, 6)
@@ -319,7 +330,7 @@ function setupTBSide(): void {
 
     curTb.setValues(data);
     curTb = tbSheet.getRange(tbRow, 1);
-    set_cell_value_(curTb.offset(0, 2), name, false, 'left');
+    setCellValue_(curTb.offset(0, 2), name, false, 'left');
     tbRow += 1;
     squadCount += 1;
 
@@ -338,7 +349,7 @@ function setupTBSide(): void {
 
   // add the final phase
   let curTb = tbSheet.getRange(tbRow, 3);
-  set_cell_value_(curTb, 'Phase Count:', true, 'right');
+  setCellValue_(curTb, 'Phase Count:', true, 'right');
   curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
   curTb
     .offset(0, 6)
@@ -349,14 +360,14 @@ function setupTBSide(): void {
   tbRow += 1;
   // add the total
   curTb = tbSheet.getRange(tbRow, 3);
-  set_cell_value_(curTb, 'Total:', true, 'right');
+  setCellValue_(curTb, 'Total:', true, 'right');
   curTb.offset(0, 1).setValue(total);
   curTb
     .offset(0, 6)
     .setValue(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
   // add the readiness chart
-  set_cell_value_(
+  setCellValue_(
     tbSheet.getRange(tbRow + 2, 3),
     `=CONCATENATE("Guild Readiness ",FIXED(100*AVERAGE(J${tbRow}:BI${tbRow})/D${tbRow},1),"%")`,
     true,
@@ -368,21 +379,21 @@ function setupTBSide(): void {
   phaseList.forEach((e, i) => {
     curTb = tbSheet.getRange(tbRow + i, 2);
     curTb.setValue(e[0]);
-    set_cell_value_(curTb.offset(0, 1), `=I${e[1]}`, true, 'center');
+    setCellValue_(curTb.offset(0, 1), `=I${e[1]}`, true, 'center');
   });
 
   // show the legend
   tbRow += phaseList.length + 1;
   curTb = tbSheet.getRange(tbRow, 3);
-  set_cell_value_(curTb, 'Legend', true, 'center');
-  set_cell_value_(curTb.offset(1, 0), 'Meets Requirements', false, 'center');
-  set_cell_value_(curTb.offset(2, 0), 'Missing 1 Gear (<= G8)', false, 'center');
-  set_cell_value_(curTb.offset(3, 0), 'Missing Levels', false, 'center');
-  set_cell_value_(curTb.offset(4, 0), 'Missing 1 Gear (> G8)', false, 'center');
-  set_cell_value_(curTb.offset(5, 0), 'Missing 1 Star', false, 'center');
+  setCellValue_(curTb, 'Legend', true, 'center');
+  setCellValue_(curTb.offset(1, 0), 'Meets Requirements', false, 'center');
+  setCellValue_(curTb.offset(2, 0), 'Missing 1 Gear (<= G8)', false, 'center');
+  setCellValue_(curTb.offset(3, 0), 'Missing Levels', false, 'center');
+  setCellValue_(curTb.offset(4, 0), 'Missing 1 Gear (> G8)', false, 'center');
+  setCellValue_(curTb.offset(5, 0), 'Missing 1 Star', false, 'center');
 
   // setup player columns
-  let table = [];
+  let table: (string | number)[][] = [];
   // curTb = tbSheet.getRange(2, 10)
   // for (var i = 0; i < MAX_PLAYERS; ++i) {
   //   var range = tbSheet.getRange(2, 3, lastHeroRow - 1, 6).getValues()
@@ -399,21 +410,18 @@ function setupTBSide(): void {
   //     }
   //   }
   // }
-  table = populateTBTable_(
+  table = populateEventTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
     heroes,
   );
 
   // store the table of player data
-  // tbSheet.getRange(1, HERO_PLAYER_COL_OFFSET + 1,
-  //                  table.length, table[0].length).setValues(table);
-  const width = table.reduce((a: number, e: string) => Math.max(a, e.length), 0);
+  const width = table.reduce((a: number, e) => Math.max(a, e.length), 0);
   table = table.map(
     e =>
       e.length !== width ? e.concat(Array(width).fill(undefined)).slice(0, width) : e,
   );
-  tbSheet
-    .getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
+  tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
     .setValues(table);
 }
