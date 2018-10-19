@@ -103,7 +103,12 @@ function updateHeroesList(heroes: UnitDeclaration[]): void {
     }
 
     // insdert the needed count
-    const formula = `=COUNTIF(${SHEETS.PLATOONS}!$20:$52,A${row})`;
+    const formula = `=COUNTIF({${SHEETS.PLATOONS}!$D$20:$D$34,${SHEETS.PLATOONS}!$H$20:$H$34,
+      ${SHEETS.PLATOONS}!$L$20:$L$34,${SHEETS.PLATOONS}!$P$20:$P$34,
+      ${SHEETS.PLATOONS}!$T$20:$T$34,${SHEETS.PLATOONS}!$X$20:$X$34,
+      ${SHEETS.PLATOONS}!$D$38:$D$52,${SHEETS.PLATOONS}!$H$38:$H$52,
+      ${SHEETS.PLATOONS}!$L$38:$L$52,${SHEETS.PLATOONS}!$P$38:$P$52,
+      ${SHEETS.PLATOONS}!$T$38:$T$52,${SHEETS.PLATOONS}!$X$38:$X$52},A${row})`;
 
     hMap.push(formula);
 

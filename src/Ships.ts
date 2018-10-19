@@ -77,7 +77,9 @@ function updateShipsList(ships: UnitDeclaration[]): void {
     }
 
     // insert the needed count
-    const formula = `=COUNTIF(${SHEETS.PLATOONS}!$2:$16,A${row})`;
+    const formula = `=COUNTIF({${SHEETS.PLATOONS}!$D$2:$D$16,${SHEETS.PLATOONS}!$H$2:$H$16,
+      ${SHEETS.PLATOONS}!$L$2:$L$16,${SHEETS.PLATOONS}!$P$2:$P$16,
+      ${SHEETS.PLATOONS}!$T$2:$T$16,${SHEETS.PLATOONS}!$X$2:$X$16},A${row})`;
 
     hMap.push(formula);
 
