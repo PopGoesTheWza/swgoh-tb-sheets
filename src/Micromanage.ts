@@ -221,7 +221,7 @@ function urlFetchExecute_(webhookURL, params) {
     // error sending to Discord
     UI.alert(
       `Error sending webhook to Discord.
-      Make sure Platoons are populated and can be filled by the guild.`,
+Make sure Platoons are populated and can be filled by the guild.`,
       UI.ButtonSet.OK,
     );
   }

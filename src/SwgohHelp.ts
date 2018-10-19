@@ -41,8 +41,8 @@ function checkSwgohHelpLibrary_(): boolean {
   const result = Boolean(swgohhelpapi);
   if (!result) {
     UI.alert(`Library swgohhelpapi not found
-    Please visit the link below to reinstall it.
-    https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`);
+Please visit the link below to reinstall it.
+https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`);
   }
 
   return result;

@@ -82,7 +82,7 @@ function getWebhookTitle_(phase: number): string {
 function getWebhookWarnIntro_(phase: number, mention: string): string {
 
   const defaultVal = `Here are the __Rare Units__ to watch out for in __Phase ${phase}__.
-    **Check with an officer before donating to Platoons/Squadrons that require them.**`;
+**Check with an officer before donating to Platoons/Squadrons that require them.**`;
 
   return `\n\n${getWebhookTemplate_(phase, WEBHOOK_WARN_ROW, defaultVal)} ${mention}`;
 }
@@ -92,7 +92,7 @@ function getWebhookRareIntro_(phase: number, mention: string): string {
 
   const defaultVal =
     `Here are the Safe Platoons and the Rare Platoon donations for __Phase ${phase}__.
-    **Do not donate heroes to the other Platoons.**`;
+**Do not donate heroes to the other Platoons.**`;
 
   return `\n\n${getWebhookTemplate_(phase, WEBHOOK_RARE_ROW, defaultVal)} ${mention}`;
 }
@@ -101,7 +101,7 @@ function getWebhookRareIntro_(phase: number, mention: string): string {
 function getWebhookDepthIntro_(phase: number, mention: string): string {
 
   const defaultVal = `Here are the Platoon assignments for __Phase ${phase}__.
-  **Do not donate heroes to the other Platoons.**`;
+**Do not donate heroes to the other Platoons.**`;
 
   return `\n\n${getWebhookTemplate_(phase, WEBHOOK_DEPTH_ROW, defaultVal)} ${mention}`;
 }
