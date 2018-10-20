@@ -4,37 +4,76 @@
 
 // var usedHeroes = [];
 let PLATOON_PHASES = [];
-let PLATOON_HERO_NEEDED_COUNT = [];
-let PLATOON_SHIP_NEEDED_COUNT = [];
-const MAX_PLATOON_HEROES = 15;
-const MAX_PLATOONS = 6;
-const MAX_PLATOON_ZONES = 3;
-const PLATOON_ZONE_ROW_OFFSET = 18;
+let PLATOON_HERO_NEEDED_COUNT: number[][] = [];
+let PLATOON_SHIP_NEEDED_COUNT: number[][] = [];
 
 /** Custom object for creating custom order to walk through platoons */
-function platoonDetails(phase: number, zone: number, num: number) {
-  this.zone = zone;
-  this.num = num;
-  this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
-  this.possible = true;
-  this.isGround = zone > 0;
-  this.skip = zone === 0 && phase < 3;
+class PlatoonDetails {
+
+  public readonly zone: number;
+  public readonly num: number;
+  public readonly row: number;
+  public possible: boolean;
+  public readonly isGround: boolean;
+  public readonly skip: boolean;
+
+  constructor(phase: number, zone: number, num: number) {
+    this.zone = zone;
+    this.num = num;
+    this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
+    this.possible = true;
+    this.isGround = zone > 0;
+    this.skip = zone === 0 && phase < 3;
+  }
 }
+// function platoonDetails(phase: number, zone: number, num: number) {
+//   this.zone = zone;
+//   this.num = num;
+//   this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
+//   this.possible = true;
+//   this.isGround = zone > 0;
+//   this.skip = zone === 0 && phase < 3;
+// }
 
 /**
  * Custom object for platoon units
  * hero, hero row, count, player count, player list (player, gear...)
  */
-function platoonUnit(name: string, row: number, count: number, pCount:number) {
-  this.name = name;
-  this.row = row;
-  this.count = count;
-  this.pCount = pCount;
-  this.players = [];
+class PlatoonUnit {
+
+  public readonly name: string;
+  public row: number;
+  public count: number;
+  private readonly pCount: number;
+  public readonly players: string[];
+
+  constructor(name: string, row: number, count: number, pCount:number) {
+    this.name = name;
+    this.row = row;
+    this.count = count;
+    this.pCount = pCount;
+    this.players = [];
+  }
+
+  public isMissing(): boolean {
+    return this.count > this.pCount;
+  }
+
+  public isRare(): boolean {
+    return this.count + 3 > this.pCount;
+  }
+
 }
+// function platoonUnit(name: string, row: number, count: number, pCount:number) {
+//   this.name = name;
+//   this.row = row;
+//   this.count = count;
+//   this.pCount = pCount;
+//   this.players = [];
+// }
 
 /** Initialize the list of Territory names */
-function init_platoon_phases_() {
+function initPlatoonPhases_() {
 
   const tagFilter = getSideFilter_();
 
@@ -48,7 +87,7 @@ function init_platoon_phases_() {
       ['Contested Airspace', 'Snowfields', 'Forward Stronghold'],
       ['Imperial Fleet Staging Area', 'Imperial Flank', 'Imperial Landing'],
     ];
-  } else if (tagFilter === 'Dark Side') {
+  } else if (tagFilter === ALIGNMENT.DARKSIDE) {
     PLATOON_PHASES = [
       ['', 'Imperial Flank', 'Imperial Landing'],
       ['', 'Snowfields', 'Forward Stronghold'],
@@ -90,7 +129,7 @@ function fillSlice(phase, zone, platoon, range) {
   const tagFilter = getSideFilter_();
 
   // format the cell name
-  let cellName = tagFilter === 'Dark Side' ? 'Dark' : 'Light';
+  let cellName = tagFilter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
   cellName += `Slice${phase}Z${zone}`;
 
   if (phase < 3 && zone === 1) {
@@ -128,13 +167,13 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
     // clear the contents
     let range = sheet.getRange(platoonRow, 4 + platoon * 4, MAX_PLATOON_HEROES, 1);
     range.clearContent()
-      .setFontColor('Black');
+      .setFontColor(COLOR.BLACK);
     fillSlice(phase, zone + 1, platoon, range);
 
     range = sheet.getRange(platoonRow, 5 + platoon * 4, MAX_PLATOON_HEROES, 1);
     range.clearContent();
     range.clearDataValidations();
-    range.setFontColor('Black');
+    range.setFontColor(COLOR.BLACK);
   }
 }
 
@@ -143,7 +182,7 @@ function resetPlatoons() {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue();
-  init_platoon_phases_();
+  initPlatoonPhases_();
 
   // Territory 1 (Air)
   let platoonRow = 2;
@@ -166,42 +205,44 @@ function resetPlatoons() {
 }
 
 /** Check if the player is available for the current phase */
-function playerAvailable(player, unavailable) {
-
-  return unavailable.some((e) => {
-    return e[0].length > -1 && player === e[0];
-  });
+function playerAvailable(player: string, unavailable: string[][]): boolean {
+  return unavailable.some(e => e[0].length > -1 && player === e[0]);
 }
 
 /** Get a sorted list of recommended players */
-function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
+function getRecommendedPlayers_(
+  unitName: string,
+  phase: number,
+  data: string[][],
+  isHero: boolean,
+  unavailable: string[][],
+): [string, number][] {
 
   // see how many stars are needed
   const minStars = phase + 1;
 
-  const rec = [];
+  const rec: [string, number][] = [];
 
-  if (unitName.length === 0) {
-    // no unit selected
+  if (unitName.length === 0) {  // no unit selected
     return rec;
   }
 
   // find the hero in the list
-  let unitRow = -1;
   const guildSize = getGuildSize_();
+
   for (let h = 1, hLen = data.length; h < hLen; h += 1) {
+
     if (unitName === data[h][0]) {
+
       // increment the number of times this unit was needed
-      if (isHero) {
-        PLATOON_HERO_NEEDED_COUNT[h - 1][0] += 1;
-      } else {
-        PLATOON_SHIP_NEEDED_COUNT[h - 1][0] += 1;
-      }
+      (isHero ? PLATOON_HERO_NEEDED_COUNT : PLATOON_SHIP_NEEDED_COUNT)[h - 1][0] += 1;
 
       // found the unit, now get the recommendations
       for (let p = 0; p < guildSize; p += 1) {
+
         const playerIdx = HERO_PLAYER_COL_OFFSET + p;
         const playerName = data[0][playerIdx];
+
         if (playerAvailable(playerName, unavailable)) {
           // we shouldn't use this player
           continue;
@@ -213,15 +254,14 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
           continue;
         }
 
-        const playerStars = Number(playerUnit[0]);
+        const playerStars = Number(playerUnit[0]);  // weak
         if (playerStars >= minStars) {
           const power = parseInt(getSubstringRe_(playerUnit, /P(.*)/), 10);
-          rec[rec.length] = [playerName, power];
+          rec.push([playerName, power]);
         }
       }
 
       // finished with the hero, so break
-      unitRow = h;
       break;
     }
   }
@@ -235,11 +275,14 @@ function getRecommendedPlayers(unitName, phase, data, isHero, unavailable) {
 }
 
 /** create the dropdown list */
-function createDropdown(playerList, range) {
+function createDropdown_(
+  playerList: [string, number][],
+  range: GoogleAppsScript.Spreadsheet.Range,
+) {
 
   const formatList = [];
-  for (let p = 0, pLen = playerList.length; p < pLen; p += 1) {
-    formatList[formatList.length] = playerList[p][0];
+  for (const p of playerList) {
+    formatList.push(p[0]);
   }
 
   const rule = SpreadsheetApp.newDataValidation()
@@ -249,18 +292,12 @@ function createDropdown(playerList, range) {
 }
 
 /** Reset the needed counts */
-function resetNeededCount(sheet, count) {
-
-  const result = [];
-  for (let i = 0; i < count; i += 1) {
-    result[i] = [0];
-  }
-
-  return result;
+function resetNeededCount(count: number): number[][] {
+  return Array(count).fill([0]);
 }
 
 /** Reset the units used */
-function resetUsedUnits(data) {
+function resetUsedUnits(data: string[][]): (string|boolean)[][] {
 
   const result = [];
   for (let r = 0, rLen = data.length; r < rLen; r += 1) {
@@ -268,10 +305,11 @@ function resetUsedUnits(data) {
       // first row, so copy it all
       result[r] = data[r];
     } else {
-      result[r] = [];
-      for (let c = 0, cLen = data[r].length; c < cLen; c += 1) {
-        result[r].push(false);
-      }
+      result[r] = Array(data[r].length).fill(false);
+      // result[r] = [];
+      // for (let c = 0, cLen = data[r].length; c < cLen; c += 1) {
+      //   result[r].push(false);
+      // }
     }
   }
 
@@ -289,10 +327,10 @@ function recommendPlatoons() {
   const shipCount = getShipCount_();
 
   // cache the matrix of hero data
-  let heroData = heroesSheet
+  let heroData: string[][] = heroesSheet
     .getRange(1, 1, 1 + heroCount, HERO_PLAYER_COL_OFFSET + getGuildSize_())
     .getValues() as string[][];
-  let shipData = shipsSheet
+  let shipData: string[][] = shipsSheet
     .getRange(1, 1, 1 + shipCount, SHIP_PLAYER_COL_OFFSET + getGuildSize_())
     .getValues() as string[][];
 
@@ -305,28 +343,28 @@ function recommendPlatoons() {
   }
 
   // reset the needed counts
-  PLATOON_HERO_NEEDED_COUNT = resetNeededCount(heroesSheet, heroCount);
-  PLATOON_SHIP_NEEDED_COUNT = resetNeededCount(shipsSheet, shipCount);
+  PLATOON_HERO_NEEDED_COUNT = resetNeededCount(heroCount);
+  PLATOON_SHIP_NEEDED_COUNT = resetNeededCount(shipCount);
 
   // reset the used heroes
-  let usedHeroes = [];
-  let usedShips = [];
-  usedHeroes = resetUsedUnits(heroData);
-  usedShips = resetUsedUnits(shipData);
+  // let usedHeroes = [];
+  // let usedShips = [];
+  const usedHeroes = resetUsedUnits(heroData);
+  const usedShips = resetUsedUnits(shipData);
 
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues();
+  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues() as string[][];
   const phase = sheet.getRange(2, 1).getValue() as number;
-  init_platoon_phases_();
+  initPlatoonPhases_();
 
   // setup a custom order for walking the platoons
-  const platoonOrder = [];
+  const platoonOrder: PlatoonDetails[] = [];
   for (let p = MAX_PLATOONS - 1; p >= 0; p -= 1) {
     // last platoon to first platoon
     for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
       // zone by zone
-      platoonOrder.push(new platoonDetails(phase, z, p));
+      platoonOrder.push(new PlatoonDetails(phase, z, p));
     }
   }
 
@@ -351,13 +389,13 @@ function recommendPlatoons() {
 
   // initialize platoon matrix
   // hero, hero row, count, player count, player list (player, gear...)
-  const platoonMatrix = [];
+  const platoonMatrix: PlatoonUnit[] = [];
   const baseCol = 4;
   for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
     const cur = platoonOrder[o];
 
     const platoonOffset = cur.num * 4;
-    const platoonRange = sheet.getRange(cur.row, baseCol + platoonOffset);
+    // const platoonRange = sheet.getRange(cur.row, baseCol + platoonOffset);
 
     // clear previous contents
     const range = sheet.getRange(
@@ -368,8 +406,8 @@ function recommendPlatoons() {
     );
     range.clearContent();
     range.clearDataValidations();
-    range.setFontColor('Black');
-    range.offset(0, -1).setFontColor('Black');
+    range.setFontColor(COLOR.BLACK);
+    range.offset(0, -1).setFontColor(COLOR.BLACK);
 
     if (cur.skip) {
       // skip this platoon
@@ -398,88 +436,79 @@ function recommendPlatoons() {
       );
       if (unitName.length === 0) {
         // no unit was entered, so skip it
-        platoonMatrix[idx] = new platoonUnit(unitName, 0, 0, 0);
+        platoonMatrix[idx] = new PlatoonUnit(unitName, 0, 0, 0);
         continue;
       }
 
-      const rec = getRecommendedPlayers(
+      const rec = getRecommendedPlayers_(
         unitName,
         phase,
         cur.isGround ? heroData : shipData,
         cur.isGround,
         unavailable,
       );
-      platoonMatrix[idx] = new platoonUnit(unitName, 0, 0, rec.length);
+      platoonMatrix[idx] = new PlatoonUnit(unitName, 0, 0, rec.length);
       if (rec.length > 0) {
-        createDropdown(rec, playersRange);
+        createDropdown_(rec, playersRange);
 
         // add the players to the matrix
-        for (let r = 0, rLen = rec.length; r < rLen; r += 1) {
-          platoonMatrix[idx].players.push(rec[r][0]); // player name
+        for (const r of rec) {
+          platoonMatrix[idx].players.push(r[0]); // player name
         }
       } else {
         // impossible to fill the platoon if no one can donate
         cur.possible = false;
-        sheet.getRange(cur.row + h, baseCol + platoonOffset).setFontColor('Red');
+        sheet.getRange(cur.row + h, baseCol + platoonOffset).setFontColor(COLOR.RED);
       }
     }
   }
 
   // update the unit counts
-  for (let m = 0, mLen = platoonMatrix.length; m < mLen; m += 1) {
+  for (const p of platoonMatrix) {
     // find the unit's count
     for (let h = 1, hLen = heroData.length; h < hLen; h += 1) {
-      if (heroData[h][0] === platoonMatrix[m].name) {
-        platoonMatrix[m].row = h;
-        platoonMatrix[m].count = PLATOON_HERO_NEEDED_COUNT[h - 1][0];
+      if (heroData[h][0] === p.name) {
+        p.row = h;
+        p.count = PLATOON_HERO_NEEDED_COUNT[h - 1][0];
         break;
       }
     }
 
     // find the unit's count
     for (let h = 1, hLen = shipData.length; h < hLen; h += 1) {
-      if (shipData[h][0] === platoonMatrix[m].name) {
-        platoonMatrix[m].row = h;
-        platoonMatrix[m].count = PLATOON_SHIP_NEEDED_COUNT[h - 1][0];
+      if (shipData[h][0] === p.name) {
+        p.row = h;
+        p.count = PLATOON_SHIP_NEEDED_COUNT[h - 1][0];
         break;
       }
     }
   }
 
   // make sure the platoon is possible to fill
-  for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
-    const cur = platoonOrder[o];
-    if (cur.skip) {
-      // skip this platoon
+  for (const cur of platoonOrder) {
+
+    if (cur.skip) {  // skip this platoon
       continue;
     }
 
     // const idx = cur.num + cur.zone * MAX_PLATOON_HEROES
-    if (cur.possible === false) {
+    if (!cur.possible) {
       const plattonOffset = cur.num * 4;
-      const platoonRange = sheet.getRange(
-        cur.row,
-        baseCol + 1 + plattonOffset,
-        MAX_PLATOON_HEROES,
-        1,
-      );
-      platoonRange.setValue('Skip');
-      platoonRange.clearDataValidations();
-      platoonRange.setFontColor('Red');
+      sheet.getRange(cur.row, baseCol + 1 + plattonOffset, MAX_PLATOON_HEROES, 1)
+        .setValue('Skip')
+        .clearDataValidations()
+        .setFontColor(COLOR.RED);
     }
   }
 
   // initialize the placement counts
-  const placementCount = [];
+  const placementCount = Array(MAX_PLATOON_ZONES).fill([]);
   const maxPlayerDonations = getMaximumPlatoonDonation_();
-  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-    placementCount[z] = [];
-  }
 
   // try to find an unused player to default to
   let matrixIdx = 0;
-  for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
-    const cur = platoonOrder[o];
+
+  for (const cur of platoonOrder) {
 
     if (cur.skip) {
       // skip this zone
@@ -495,59 +524,40 @@ function recommendPlatoons() {
 
     // cycle through the heroes
     for (let h = 0; h < MAX_PLATOON_HEROES; h += 1) {
-      const plattonOffset = cur.num * 4;
-      const platoonRange = sheet.getRange(
-        cur.row + h,
-        baseCol + 1 + plattonOffset,
-      );
 
       let defaultValue = '';
-      for (
-        let playerIdx = 0, playerLen = platoonMatrix[matrixIdx].players.length;
-        playerIdx < playerLen;
-        playerIdx += 1
-      ) {
+      const count = placementCount[cur.zone];
+
+      for (const player in platoonMatrix[matrixIdx].players) {
+
         // see if the recommended player's hero has been used
         const heroRow = platoonMatrix[matrixIdx].row;
         if (cur.isGround) {
           // ground units
+
           for (let u = 1, uLen = usedHeroes[heroRow].length; u < uLen; u += 1) {
-            const playerName = platoonMatrix[matrixIdx].players[playerIdx];
-            const playerAvail =
-              placementCount[cur.zone][playerName] == null ||
-              placementCount[cur.zone][playerName] < maxPlayerDonations;
-            if (
-              playerAvail &&
-              usedHeroes[0][u] === playerName &&
-              usedHeroes[heroRow][u] === false
-            ) {
+
+            const available = count[player] == null || count[player] < maxPlayerDonations;
+            if (available && usedHeroes[0][u] === player && usedHeroes[heroRow][u] === false) {
               usedHeroes[heroRow][u] = true;
-              defaultValue = playerName;
-              if (placementCount[cur.zone][playerName] == null) {
-                placementCount[cur.zone][playerName] = 0;
-              }
-              placementCount[cur.zone][playerName] += 1;
+              defaultValue = player;
+              count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+
               break;
             }
           }
         } else {
           // ships
+
           for (let u = 1, uLen = usedShips[heroRow].length; u < uLen; u += 1) {
-            const playerName = platoonMatrix[matrixIdx].players[playerIdx];
-            const playerAvail =
-              placementCount[cur.zone][playerName] == null ||
-              placementCount[cur.zone][playerName] < maxPlayerDonations;
-            if (
-              playerAvail &&
-              usedShips[0][u] === playerName &&
-              usedShips[heroRow][u] === false
-            ) {
+
+            const available = count[player] == null || count[player] < maxPlayerDonations;
+
+            if (available && usedShips[0][u] === player && usedShips[heroRow][u] === false) {
               usedShips[heroRow][u] = true;
-              defaultValue = playerName;
-              if (placementCount[cur.zone][playerName] == null) {
-                placementCount[cur.zone][playerName] = 0;
-              }
-              placementCount[cur.zone][playerName] += 1;
+              defaultValue = player;
+              count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+
               break;
             }
           }
@@ -558,22 +568,68 @@ function recommendPlatoons() {
           break;
         }
       }
+      // for (
+      //   let playerIdx = 0, playerLen = platoonMatrix[matrixIdx].players.length;
+      //   playerIdx < playerLen;
+      //   playerIdx += 1
+      // ) {
+      //   // see if the recommended player's hero has been used
+      //   const heroRow = platoonMatrix[matrixIdx].row;
+      //   if (cur.isGround) {
+      //     // ground units
+      //     const player = platoonMatrix[matrixIdx].players[playerIdx];
+      //     const count = placementCount[cur.zone];
+      //     for (let u = 1, uLen = usedHeroes[heroRow].length; u < uLen; u += 1) {
+      //       const available = count[player] == null || count[player] < maxPlayerDonations;
+      //       if (available && usedHeroes[0][u] === player && usedHeroes[heroRow][u] === false) {
+      //         usedHeroes[heroRow][u] = true;
+      //         defaultValue = player;
+      //         count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+
+      //         break;
+      //       }
+      //     }
+      //   } else {
+      //     // ships
+      //     const player = platoonMatrix[matrixIdx].players[playerIdx];
+      //     const count = placementCount[cur.zone];
+      //     for (let u = 1, uLen = usedShips[heroRow].length; u < uLen; u += 1) {
+
+      //       const available = count[player] == null || count[player] < maxPlayerDonations;
+
+      //       if (available && usedShips[0][u] === player && usedShips[heroRow][u] === false) {
+      //         usedShips[heroRow][u] = true;
+      //         defaultValue = player;
+      //         count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+
+      //         break;
+      //       }
+      //     }
+      //   }
+
+      //   if (defaultValue.length > 0) {
+      //     // we already have a recommended player
+      //     break;
+      //   }
+      // }
+
+      const plattonOffset = cur.num * 4;
+      const platoonRange = sheet.getRange(cur.row + h, baseCol + 1 + plattonOffset);
       platoonRange.setValue(defaultValue);
 
       // see if we should highlight rare units
-      if (platoonMatrix[matrixIdx].count > platoonMatrix[matrixIdx].pCount) {
+      if (platoonMatrix[matrixIdx].isMissing()) {
         // we don't have enough of this hero, so mark it
-        const color = 'Red';
-        platoonRange.setFontColor(color);
-        platoonRange.offset(0, -1).setFontColor(color);
-      } else if (
-        defaultValue.length > 0 &&
-        platoonMatrix[matrixIdx].count + 3 > platoonMatrix[matrixIdx].pCount
-      ) {
+        platoonRange.offset(0, -1, 1, 2).setFontColors([[COLOR.RED, COLOR.RED]]);
+        // const color = COLOR.RED;
+        // platoonRange.setFontColor(color);
+        // platoonRange.offset(0, -1).setFontColor(color);
+      } else if (defaultValue.length > 0 && platoonMatrix[matrixIdx].isRare()) {
         // we barely have enough of this hero, so mark it
-        const color = 'Blue';
-        platoonRange.setFontColor(color);
-        platoonRange.offset(0, -1).setFontColor(color);
+        platoonRange.offset(0, -1, 1, 2).setFontColors([[COLOR.BLUE, COLOR.BLUE]]);
+        // const color = COLOR.BLUE;
+        // platoonRange.setFontColor(color);
+        // platoonRange.offset(0, -1).setFontColor(color);
       }
 
       matrixIdx += 1;

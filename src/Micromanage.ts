@@ -1,7 +1,6 @@
 // ****************************************
 // Micromanaged Webhook Functions
 // ****************************************
-const WAIT_TIME = 2000; // TODO: expose as config variable
 
 /** Format the player's label */
 function player_label_(player: string, mention: string) {
@@ -51,8 +50,8 @@ function unit_label_(unit: string, slot: string, force: boolean = undefined): st
 function sendMicroByPlayerWebhook(): void {
 
   const displaySetting = getWebhookDisplaySlot_();
-  const displaySlot = displaySetting !== DISPLAY_SLOT.NEVER;
-  const forceDisplay = displaySetting === DISPLAY_SLOT.ALWAYS;
+  const displaySlot = displaySetting !== DISPLAYSLOT.NEVER;
+  const forceDisplay = displaySetting === DISPLAYSLOT.ALWAYS;
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
 

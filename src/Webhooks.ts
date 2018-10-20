@@ -1,73 +1,11 @@
 // ****************************************
 // Webhooks Functions
 // ****************************************
-const RARE_MAX: number = 15;
-const HIGH_MIN: number = 10;
-const DISCORD_WEBHOOK_COL: number = 5;
-const WEBHOOK_TB_START_ROW: number = 3;
-const WEBHOOK_PHASE_HOURS_ROW: number = 4;
-const WEBHOOK_TITLE_ROW: number = 5;
-const WEBHOOK_WARN_ROW: number = 6;
-const WEBHOOK_RARE_ROW: number = 7;
-const WEBHOOK_DEPTH_ROW: number = 8;
-const WEBHOOK_DESC_ROW: number = 9;
-const WEBHOOK_CLEAR_ROW: number = 15;
-const WEBHOOK_DISPLAY_SLOT_ROW: number = 16;
 
 interface DiscordMessageEmbedFields {
   name: string;
   value: string;
   inline?: boolean;
-}
-
-/** Get the webhook address */
-function getWebhook_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(1, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
-
-  return value;
-}
-
-/** Get the role to mention */
-function getRole_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(2, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
-
-  return value;
-}
-
-/** Get the time and date when the TB started */
-function getTBStartTime_(): Date {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_TB_START_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as Date;
-
-  return value;
-}
-
-/** Get the number of hours in each phase */
-function getPhaseHours_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as number;
-
-  return value;
-}
-
-/** Get the template for a webhooks */
-function getWebhookTemplate_(phase: number, row: number, defaultVal: string): string {
-
-  const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(row, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
-
-  return text.length > 0 ? text.replace('{0}', String(phase)) : defaultVal;
 }
 
 /** Get the title for the webhooks */
@@ -106,45 +44,13 @@ function getWebhookDepthIntro_(phase: number, mention: string): string {
   return `\n\n${getWebhookTemplate_(phase, WEBHOOK_DEPTH_ROW, defaultVal)} ${mention}`;
 }
 
-/** Get the Description for the phase */
-function getWebhookDesc_(phase: number): string {
-
-  const tagFilter = getSideFilter_(); // TODO: potentially broken if TB not sync
-  const columnOffset = isLight_(tagFilter) ? 0 : 1;
-  const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
-    .getValue() as string;
-
-  return `\n\n${text}`;
-}
-
-/** See if the platoons should be cleared */
-function getWebhookClear_(): boolean {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_CLEAR_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
-
-  return value === 'Yes';
-}
-
-/** See if the slot number should be displayed */
-function getWebhookDisplaySlot_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_DISPLAY_SLOT_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
-
-  return value;
-}
-
 /** Get the player Discord IDs for mentions */
-function getPlayerMentions_(): KeyDict {
+function getPlayerMentions_(): KeyedArray {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.DISCORD);
   const data = sheet.getRange(2, 1, sheet.getLastRow(), 2)
     .getValues() as string[][];
-  const result: KeyDict = {};
+  const result: KeyedArray = {};
 
   for (const e of data) {
     const name = e[0];
@@ -267,7 +173,7 @@ function sendPlatoonDepthWebhook(): void {
 function getPlatoonDonations_(platoon: string[][],
                               donations: string[][],
                               rules: GoogleAppsScript.Spreadsheet.DataValidation[][],
-                              playerMentions: KeyDict): string[][] {
+                              playerMentions: KeyedArray): string[][] {
 
   const result: string[][] = [];
 
@@ -546,8 +452,7 @@ function getUniquePlatoonUnits_(zone: number): string[] {
 /** Get the list of Rare units needed for the phase */
 function getRareUnits_(sheetName: string, phase: number): string[] {
 
-  const tagFilter = getSideFilter_();  // TODO: potentially broken if TB not sync
-  const useBottomTerritory = !isLight_(tagFilter) || phase > 1;
+  const useBottomTerritory = !isLight_(getSideFilter_()) || phase > 1;
   const count = getCharacterCount_() + 1;
   const data = (SPREADSHEET.getSheetByName(sheetName)
     .getRange(1, 1, count, 8)

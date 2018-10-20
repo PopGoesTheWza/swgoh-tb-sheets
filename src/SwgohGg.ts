@@ -66,22 +66,6 @@ interface SwgohGgPlayerResponse {
   units: SwgohGgUnit[];
 }
 
-/** Get the guild id */
-function getSwgohGgGuildId_(): number {
-
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 2;
-
-  const guildLink = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as string;
-  const parts = guildLink.split('/');
-  // TODO: input check
-  const guildId = Number(parts[4]);
-
-  return guildId;
-}
-
 /**
  * Send request to SwgohGg API
  * @param link API 'GET' request
@@ -179,7 +163,7 @@ function getGuildDataFromSwgohGg_(guildId: number): PlayerData[] {
   if (json && json.players) {
     const members: PlayerData[] = [];
     for (const member of json.players) {
-      const unitArray: {[key: string]: UnitInstance} = {};
+      const unitArray: UnitInstances = {};
       for (const e of member.units) {
         const d = e.data;
         const baseId = d.base_id;

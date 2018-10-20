@@ -27,7 +27,7 @@ function populateEventTable_(
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as [string][];
 
-  const nameToBaseId: {[key: string]: string} = {};
+  const nameToBaseId: KeyedArray = {};
   for (const e of heroes) {
     nameToBaseId[e.name] = e.baseId;
   }
@@ -161,7 +161,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   }
 
   // get the filter & tag
-  // var POWER_TARGET = get_minimum_character_gp_()
+  // var POWER_TARGET = getMinimumCharacterGp_()
 
   // cleanup the header
   const header = [['Name', 'Hyper Link', 'GP', 'GP Heroes', 'GP Ships']];
@@ -296,9 +296,7 @@ function setupEvent(): void {
         const curTb = tbSheet.getRange(tbRow, 3);
         setCellValue_(curTb, 'Phase Count:', true, 'right');
         curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
-        curTb
-          .offset(0, 6)
-          .setValue(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+        curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
         phaseList.push([lastPhase, tbRow]);
         tbRow += 2;
       }
@@ -351,9 +349,7 @@ function setupEvent(): void {
   let curTb = tbSheet.getRange(tbRow, 3);
   setCellValue_(curTb, 'Phase Count:', true, 'right');
   curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
-  curTb
-    .offset(0, 6)
-    .setValue(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+  curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
   phaseList.push([phase, tbRow]);
 
   total += phaseCount;
@@ -362,9 +358,7 @@ function setupEvent(): void {
   curTb = tbSheet.getRange(tbRow, 3);
   setCellValue_(curTb, 'Total:', true, 'right');
   curTb.offset(0, 1).setValue(total);
-  curTb
-    .offset(0, 6)
-    .setValue(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+  curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
   // add the readiness chart
   setCellValue_(
@@ -394,22 +388,6 @@ function setupEvent(): void {
 
   // setup player columns
   let table: (string | number)[][] = [];
-  // curTb = tbSheet.getRange(2, 10)
-  // for (var i = 0; i < MAX_PLAYERS; ++i) {
-  //   var range = tbSheet.getRange(2, 3, lastHeroRow - 1, 6).getValues()
-  //   var playerData = populate_player_tb_(tbSheet, i, range, heroes)
-  //   if (playerData != null) {
-  //     for (var p = 0, pLen = playerData.length; p < pLen; ++p) {
-  //       if (table[p] == null) {
-  //         // first entry
-  //         table[p] = [playerData[p]]
-  //       } else {
-  //         // append additional entries
-  //         table[p].push(playerData[p])
-  //       }
-  //     }
-  //   }
-  // }
   table = populateEventTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,

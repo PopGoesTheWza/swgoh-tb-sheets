@@ -46,34 +46,7 @@ function populateHeroesList(members: PlayerData[]): void {
           (u && `${u.rarity}*L${u.level}G${u.gearLevel}P${u.power}`) || '';
     });
   }
-  // Logger.log(
-  //   "Last Member Data: " + JSON.stringify(members[mList[mList.length - 1]])
-  // )
-  // for (var key in members) {
-  //   if (key == "unique") {
-  //     continue
-  //   }
-  //   var m = members[key]
-  //   mHead[0][pIdx[m["name"]]] = m["name"]
-  //   // Logger.log("Parsing Units for: " + m["name"])
-  //   var units = m["units"]
-  //   for (r = 0; r < baseIDs.length; r++) {
-  //     var uKey = baseIDs[r]
-  //     var u = units[uKey]
-  //     if (!u) {
-  //       continue
-  //     } // Means player has not unlocked unit
-  //     data[hIdx[uKey]][pIdx[m["name"]]] =
-  //       u["rarity"] +
-  //       "*L" +
-  //       u["level"] +
-  //       "G" +
-  //       u["gearLevel"] +
-  //       "P" +
-  //       u["power"]
-  //   }
-  //   // Logger.log("Parsed " + r + " units.")
-  // }
+
   // Write our data
   sheet.getRange(1, HERO_PLAYER_COL_OFFSET, 1, mList.length).setValues(mHead);
   sheet

@@ -2,6 +2,7 @@
   // list all files to process for .d.ts declarations
   "files": [
     "src/Code.ts",
+    "src/Settings.ts",
     "src/Ships.ts",
     "src/Exclusions.ts",
     "src/Units.ts",

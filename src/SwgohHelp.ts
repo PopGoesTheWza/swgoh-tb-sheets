@@ -1,41 +1,5 @@
 import { swgohhelpapi } from '../lib';
 
-/** Get the SwgohHelp API username */
-function get_SwgohHelp_username_(): string {
-
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 16;
-  const result = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as string;
-
-  return result;
-}
-
-/** Get the SwgohHelp API password */
-function get_SwgohHelp_password_(): string {
-
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 18;
-  const result = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as string;
-
-  return result;
-}
-
-/** Get the guild member ally code */
-function get_SwgohHelp_allycode_(): number {
-
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 20;
-  const result = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as number;
-
-  return result;
-}
-
 function checkSwgohHelpLibrary_(): boolean {
 
   const result = Boolean(swgohhelpapi);
@@ -55,12 +19,12 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
   }
 
   const settings: swgohhelpapi.exports.Settings = {
-    username: get_SwgohHelp_username_(),
-    password: get_SwgohHelp_password_(),
+    username: getSwgohHelpUsername_(),
+    password: getSwgohHelpPassword_(),
   };
   const client = new swgohhelpapi.exports.Client(settings);
 
-  const allycode = get_SwgohHelp_allycode_();
+  const allycode = getSwgohHelpAllycode_();
   const guild: swgohhelpapi.exports.GuildResponse[] = client.fetchGuild({
     allycode,
     language: swgohhelpapi.Languages.eng_us,
@@ -162,8 +126,8 @@ function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData {
   }
 
   const settings = {
-    username: get_SwgohHelp_username_(),
-    password: get_SwgohHelp_password_(),
+    username: getSwgohHelpUsername_(),
+    password: getSwgohHelpPassword_(),
   };
   const client = new swgohhelpapi.exports.Client(settings);
 

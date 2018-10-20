@@ -5,132 +5,6 @@
 /** Global Variables */
 declare function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData;
 
-/** Select data source */
-enum DATASOURCES {
-  /** Use swgoh.help API as data source */
-  SWGOH_HELP = 'SWGoH.help',
-  /** Use swgoh.gg API as data source */
-  SWGOH_GG = 'SWGoH.gg',
-}
-
-enum DISPLAY_SLOT {
-  ALWAYS = 'Always',
-  DEFAULT = 'Default',
-  NEVER = 'Never',
-}
-
-/** Constants for sheets name */
-enum SHEETS {
-  ROSTER = 'Roster',
-  TB = 'TB',
-  PLATOONS = 'Platoon',
-  BREAKDOWN = 'Breakdown',
-  ESTIMATE = 'Estimate',
-  LSMISSIONS = 'LS Missions',
-  DSMISSIONS = 'DS Missions',
-  SNAPSHOT = 'Snapshot',
-  EXCLUSIONS = 'Exclusions',
-  HEROES = 'Heroes',
-  SHIPS = 'Ships',
-  RAREUNITS = 'Rare Units',
-  SEARCHUNITS = 'Search Units',
-  SLICES = 'Slices',
-  MAP = 'map',
-  DISCORD = 'Discord',
-  META = 'Meta',
-  INSTRUCTIONS = 'Instructions',
-}
-
-/** Shortcuts for Google Apps Script classes */
-const SPREADSHEET = SpreadsheetApp.getActive();
-const UI = SpreadsheetApp.getUi();
-
-/** Global constants */
-const MAX_PLAYERS = 50;
-// const MIN_PLAYER_LEVEL = 65
-// const POWER_TARGET = 14000
-
-// Meta tab columns
-const META_GUILD_COL = 1;
-const META_FILTER_COL = 2;
-const META_FILTER_ROW = 2;
-const META_TAG_COL = 3;
-const META_TAG_ROW = 2;
-const META_UNDERGEAR_COL = 4;
-const META_UNDERGEAR_ROW = 2;
-const META_UNIT_PER_PLAYER_ROW = 11;
-
-const META_MIN_LEVEL_ROW = 5;
-const META_UNIT_POWER_ROW = 8;
-
-const META_HEROES_COL = 7;
-const META_HEROES_DS_COL = 16;
-// const META_HEROES_SIZE_COL = 25;
-const META_SORT_ROSTER_COL = 5;
-
-// Hoth tab columns
-// const HERO_PLAYER_COL_OFFSET = 9
-// const SHIP_PLAYER_COL_OFFSET = 9
-
-// Roster tab columns
-// const ROSTER_SHIP_COUNT_COL = 10
-
-const META_DATASOURCE_COL = 4;
-const META_DATASOURCE_ROW = 14;
-
-const META_UNIT_COUNTS_COL = 5;
-const META_HEROES_COUNT_ROW = 5;
-const META_SHIPS_COUNT_ROW = 8;
-
-const META_ADD_PLAYER_COL = 16;
-const META_REMOVE_PLAYER_COL = 18;
-
-// Hero/Ship tab columns
-const HERO_PLAYER_COL_OFFSET = 11;
-const SHIP_PLAYER_COL_OFFSET = 11;
-
-// Roster Size info
-const META_GUILD_SIZE_ROW = 5;
-const META_GUILD_SIZE_COL = 12;
-
-const META_TB_COL_OFFSET = 10;
-
-interface KeyDict {
-  [key: string]: string;
-}
-
-interface KeyOffset {
-  [key: string]: number;
-}
-
-interface PlayerData {
-  allyCode: number;
-  gp: number;
-  heroesGp: number;
-  level?: number;
-  link?: string;
-  name: string;
-  shipsGp: number;
-  units: {[key: string]: UnitInstance};
-}
-
-interface UnitDeclaration {
-  tags: string;
-  baseId: string;
-  name: string;
-}
-
-interface UnitInstance {
-  baseId?: string;
-  gearLevel?: number;
-  level: number;
-  name?: string;
-  power: number;
-  rarity: number;
-  stats?: string;
-  tags?: string;
-}
-
 // ****************************************
 // Utility Functions
 // ****************************************
@@ -159,124 +33,6 @@ function getSubstringRe_(string: string, re: RegExp): string {
   const m = string.match(re);
 
   return m ? m[1] : '';
-}
-
-function getSideFilter_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_FILTER_ROW, META_FILTER_COL)
-    .getValue() as string;
-
-  return value;
-}
-
-function getCharacterCount_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_HEROES_COUNT_ROW, META_UNIT_COUNTS_COL)
-    .getValue() as number;
-
-  return value;
-}
-
-function getShipCount_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_SHIPS_COUNT_ROW, META_UNIT_COUNTS_COL)
-    .getValue() as number;
-
-  return value;
-}
-
-function getTagFilter_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_TAG_ROW, META_TAG_COL)
-    .getValue() as string;
-
-  return value;
-}
-
-// function get_minimum_gear_level_(): number {
-
-//   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-//     .getRange(META_UNDERGEAR_ROW, META_UNDERGEAR_COL)
-//     .getValue() as number;
-
-//   return value;
-// }
-
-function get_minimum_character_gp_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)
-    .getValue() as number;
-
-  return value;
-}
-
-// function get_minimun_player_gp_(): number {
-
-//   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-//     .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)
-//     .getValue() as number;
-
-//   return value;
-// }
-
-function getMaximumPlatoonDonation_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_UNIT_PER_PLAYER_ROW, META_UNDERGEAR_COL)
-    .getValue() as number;
-
-  return value;
-}
-
-function getSortRoster_(): boolean {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(2, META_SORT_ROSTER_COL)
-    .getValue() as string;
-
-  return value === 'Yes';
-}
-
-function getExclusionId_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(7, META_GUILD_COL)
-    .getValue() as string;
-
-  return value;
-}
-
-/** should we use the SWGoH.help API? */
-function isDataSourceSwgohHelp_(): boolean {
-  return get_data_source_() === DATASOURCES.SWGOH_HELP;
-}
-
-/** should we use the SWGoH.gg API? */
-function isDataSourceSwgohGg_(): boolean {
-  return get_data_source_() === DATASOURCES.SWGOH_GG;
-}
-
-function get_data_source_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
-    .getValue() as string;
-
-  return value;
-}
-
-function getGuildSize_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
-    .getValue() as number;
-
-  return value;
 }
 
 /**
@@ -316,14 +72,6 @@ function should_remove_(memberLink: string, removeMembers: [string][]): boolean 
   return result;
 }
 
-type RosterEntry = [
-  string,  // player name
-  string,  // player url (TODO: allycode)
-  number,  // gp
-  number,  // heroes gp
-  number  // ships gp
-];
-
 function lowerCase_(a: string, b: string): number {
   return a.toLowerCase().localeCompare(b.toLowerCase());
 }
@@ -339,24 +87,13 @@ function find_in_list_(name: string, list: string[][]): number {
 function getSnapshopData_(
   sheet: GoogleAppsScript.Spreadsheet.Sheet,
   tagFilter: string,
-  heroesIndex: UnitTabIndex[],
+  heroesIndex: UnitDeclaration[],
 ): PlayerData {
 
   // try for external link
   const allyCode = (sheet.getRange(2, 1).getValue() as number);
   if (allyCode > 0) {
-    // TODO: SwgohGg & SwgohHelp API
-    // const unitsData: UnitInstance[] = getPlayerData_SwgohGg_html_(allyCode, tagFilter);
     const unitsData = getPlayerData_SwgohGgApi_(allyCode, tagFilter, heroesIndex);
-
-    // enrich with name
-    // for (const u of unitsData) {
-    //   const baseId = u.baseId;
-    //   const h = heroesIndex.find(e => e.baseId === baseId);
-    //   if (h) {
-    //     u.name = h.name;
-    //   }
-    // }
 
     return unitsData;
   }
@@ -380,7 +117,7 @@ function getSnapshopData_(
 function getPlayerData_SwgohGgApi_(
   allyCode: number,
   tagFilter: string = '',
-  unitsIndex: UnitTabIndex[] = undefined,
+  unitsIndex: UnitDeclaration[] = undefined,
 ): PlayerData {
 
   const playerData = isDataSourceSwgohHelp_()
@@ -393,7 +130,7 @@ function getPlayerData_SwgohGgApi_(
 
   // TODO: enrich with units name and tags
   const units = playerData.units;
-  const filteredUnits: {[key: string]: UnitInstance} = {};
+  const filteredUnits: UnitInstances = {};
   for (const key in units) {
     const u = units[key];
     const baseId = u.baseId;
@@ -477,7 +214,7 @@ function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): Player
 }
 
 function isLight_(tagFilter: string): boolean {
-  return tagFilter === 'Light Side';
+  return tagFilter === ALIGNMENT.LIGHTSIDE;
 }
 
 function get_metas_(tagFilter: string): [string, string][] {
@@ -503,18 +240,12 @@ function get_metas_(tagFilter: string): [string, string][] {
   return meta;
 }
 
-interface UnitTabIndex {
-  name: string;
-  baseId: string;
-  tags: string;
-}
-
-function getHeroesTabIndex_(): UnitTabIndex[] {
+function getHeroesTabIndex_(): UnitDeclaration[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
   const data = sheet.getRange(2, 1, getCharacterCount_(), 3)
     .getValues() as string[][];
-  const index: UnitTabIndex[] = data.map((e) => {
+  const index: UnitDeclaration[] = data.map((e) => {
     return {
       name: e[0],
       baseId: e[1],
@@ -525,12 +256,12 @@ function getHeroesTabIndex_(): UnitTabIndex[] {
   return index;
 }
 
-function getShipsTabIndex_(): UnitTabIndex[] {
+function getShipsTabIndex_(): UnitDeclaration[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
   const data = sheet.getRange(2, 1, getShipCount_(), 3)
     .getValues() as string[][];
-  const index: UnitTabIndex[] = data.map((e) => {
+  const index: UnitDeclaration[] = data.map((e) => {
     return {
       name: e[0],
       baseId: e[1],
@@ -568,7 +299,7 @@ function playerSnapshot(): void {
   let countFiltered = 0;
   let countTagged = 0;
   const characterTag = getTagFilter_(); // TODO: potentially broken if TB not sync
-  const powerTarget = get_minimum_character_gp_();
+  const powerTarget = getMinimumCharacterGp_();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
   const playerData = getSnapshopData_(sheet, tagFilter, heroesIndex);
   if (playerData) {
