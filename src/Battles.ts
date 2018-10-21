@@ -153,6 +153,32 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     // sort roster by GP
     : (a, b) => b.gp - a.gp;
 
+  // TODO: relocate
+  // fix name starting with single quote
+  for (const e of members) {
+    if (e.name[0] === '\'') {
+      e.name = ` ${e.name}`;
+    }
+  }
+
+  // find duplicate names and append allycode
+  const index: { [key: string] : number[] } = {};
+  members.forEach((e, i) => {
+    if (index.hasOwnProperty(e.name)) {
+      index[e.name].push(i);
+    } else {
+      index[e.name] = [i];
+    }
+  });
+  for (const key in index) {
+    const a = index[key];
+    if (a.length > 1) {
+      for (const i of a) {
+        members[i].name += ` (${members[i].allyCode})`;
+      }
+    }
+  }
+
   members.sort(sortFunction);
 
   if (members.length > MAX_PLAYERS) {
@@ -225,35 +251,9 @@ function setupEvent(): void {
     return;
   }
 
-  // TODO: relocate
-  // fix name starting with single quote
-  for (const e of members) {
-    if (e.name[0] === '\'') {
-      e.name = ` ${e.name}`;
-    }
-  }
-
   // This will update Roster Sheet with names and GPs,
   // will also return a new members array with added/deleted from sheet
   members = updateGuildRoster_(members);
-
-  // find duplicate names and append allycode
-  const index: { [key: string] : number[] } = {};
-  members.forEach((e, i) => {
-    if (index.hasOwnProperty(e.name)) {
-      index[e.name].push(i);
-    } else {
-      index[e.name] = [i];
-    }
-  });
-  for (const key in index) {
-    const a = index[key];
-    if (a.length > 1) {
-      for (const i of a) {
-        members[i].name += ` (${members[i].allyCode})`;
-      }
-    }
-  }
 
   populateHeroesList(members);
   populateShipsList(members);
