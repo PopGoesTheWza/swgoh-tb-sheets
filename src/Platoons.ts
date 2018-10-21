@@ -404,7 +404,6 @@ function recommendPlatoons() {
 
     const cur = platoonOrder[o];
     const platoonOffset = cur.num * 4;
-    // const platoonRange = sheet.getRange(cur.row, baseCol + platoonOffset);
 
     // clear previous contents
     sheet.getRange(cur.row, baseCol + platoonOffset + 1, MAX_PLATOON_HEROES, 1)
@@ -412,7 +411,6 @@ function recommendPlatoons() {
       .clearDataValidations()
       .offset(0, -1, MAX_PLATOON_HEROES, 2)
       .setFontColor(COLOR.BLACK);
-      // .setFontColors([[COLOR.BLACK, COLOR.BLACK]]);
 
     if (cur.skip) {
       // skip this platoon
@@ -579,50 +577,6 @@ function recommendPlatoons() {
           break;
         }
       }
-      // for (
-      //   let playerIdx = 0, playerLen = platoonMatrix[matrixIdx].players.length;
-      //   playerIdx < playerLen;
-      //   playerIdx += 1
-      // ) {
-      //   // see if the recommended player's hero has been used
-      //   const heroRow = platoonMatrix[matrixIdx].row;
-      //   if (cur.isGround) {
-      //     // ground units
-      //     const player = platoonMatrix[matrixIdx].players[playerIdx];
-      //     const count = placementCount[cur.zone];
-      //     for (let u = 1, uLen = usedHeroes[heroRow].length; u < uLen; u += 1) {
-      //       const available = count[player] == null || count[player] < maxPlayerDonations;
-      //       if (available && usedHeroes[0][u] === player && usedHeroes[heroRow][u] === false) {
-      //         usedHeroes[heroRow][u] = true;
-      //         defaultValue = player;
-      //         count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
-
-      //         break;
-      //       }
-      //     }
-      //   } else {
-      //     // ships
-      //     const player = platoonMatrix[matrixIdx].players[playerIdx];
-      //     const count = placementCount[cur.zone];
-      //     for (let u = 1, uLen = usedShips[heroRow].length; u < uLen; u += 1) {
-
-      //       const available = count[player] == null || count[player] < maxPlayerDonations;
-
-      //       if (available && usedShips[0][u] === player && usedShips[heroRow][u] === false) {
-      //         usedShips[heroRow][u] = true;
-      //         defaultValue = player;
-      //         count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
-
-      //         break;
-      //       }
-      //     }
-      //   }
-
-      //   if (defaultValue.length > 0) {
-      //     // we already have a recommended player
-      //     break;
-      //   }
-      // }
 
       const plattonOffset = cur.num * 4;
       const platoonRange = sheet.getRange(cur.row + h, baseCol + 1 + plattonOffset);
@@ -633,15 +587,9 @@ function recommendPlatoons() {
       if (platoonMatrix[matrixIdx].isMissing()) {
         // we don't have enough of this hero, so mark it
         platoonRange.offset(0, -1, 1, 2).setFontColor(COLOR.RED);
-        // const color = COLOR.RED;
-        // platoonRange.setFontColor(color);
-        // platoonRange.offset(0, -1).setFontColor(color);
       } else if (defaultValue.length > 0 && platoonMatrix[matrixIdx].isRare()) {
         // we barely have enough of this hero, so mark it
         platoonRange.offset(0, -1, 1, 2).setFontColor(COLOR.BLUE);
-        // const color = COLOR.BLUE;
-        // platoonRange.setFontColor(color);
-        // platoonRange.offset(0, -1).setFontColor(color);
       }
 
       matrixIdx += 1;

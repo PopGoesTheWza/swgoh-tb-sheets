@@ -230,37 +230,11 @@ function getHighNeedList_(sheetName: string, unitCount: number): string[] {
   return results;
 }
 
-/** See if a unit is considered in high need */
-// function isHighNeed_(list: string[], unit: string): boolean {
-//   return list.some((u: string) => u === unit);
-// }
-
 /** Send the message to Discord */
 function postMessage_(webhookURL: string, message: string): void {
 
   const options = urlFetchMakeParam_({ content: message.trim() });
   urlFetchExecute_(webhookURL, options);
-  // try
-  // {
-  //   UrlFetchApp.fetch(webhookURL, options)
-  // }
-  // catch (e)
-  // {
-  //   // this can be used to debug issues with sending the webhooks.
-  //   // disable "muteHttpExceptions" above to allow the exception to trigger.
-
-  //   // log the error
-  //   Logger.log(e)
-
-  //   // split the message, so we can see what it choked on
-  //   var parts = message.split(",")
-
-  //   // error sending to Discord
-  //   const result = UI.alert(
-  //     `Error sending webhook to Discord.
-  //     Make sure Platoons are populated and can be filled by the guild.`,
-  //     UI.ButtonSet.OK);
-  // }
 }
 
 /** Send a Webhook to Discord */
