@@ -3,7 +3,7 @@
 // ****************************************
 
 // var usedHeroes = [];
-let PLATOON_PHASES = [];
+let PLATOON_PHASES: [string, string, string][] = [];
 let PLATOON_HERO_NEEDED_COUNT: number[][] = [];
 let PLATOON_SHIP_NEEDED_COUNT: number[][] = [];
 
@@ -26,14 +26,6 @@ class PlatoonDetails {
     this.skip = zone === 0 && phase < 3;
   }
 }
-// function platoonDetails(phase: number, zone: number, num: number) {
-//   this.zone = zone;
-//   this.num = num;
-//   this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
-//   this.possible = true;
-//   this.isGround = zone > 0;
-//   this.skip = zone === 0 && phase < 3;
-// }
 
 /**
  * Custom object for platoon units
@@ -64,16 +56,9 @@ class PlatoonUnit {
   }
 
 }
-// function platoonUnit(name: string, row: number, count: number, pCount:number) {
-//   this.name = name;
-//   this.row = row;
-//   this.count = count;
-//   this.pCount = pCount;
-//   this.players = [];
-// }
 
 /** Initialize the list of Territory names */
-function initPlatoonPhases_() {
+function initPlatoonPhases_(): void {
 
   const tagFilter = getSideFilter_();
 
@@ -113,7 +98,12 @@ function initPlatoonPhases_() {
 }
 
 /** Get the zone name and update the cell */
-function setZoneName(phase, zone, sheet, platoonRow) {
+function setZoneName_(
+  phase: number,
+  zone: number,
+  sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  platoonRow: number,
+): string {
 
   // set the zone name
   const zoneName = PLATOON_PHASES[phase - 1][zone];
@@ -123,7 +113,12 @@ function setZoneName(phase, zone, sheet, platoonRow) {
 }
 
 /** Populate platoon with slices if available */
-function fillSlice(phase, zone, platoon, range) {
+function fillSlice(
+  phase: number,
+  zone: number,
+  platoon: number,
+  range: GoogleAppsScript.Spreadsheet.Range,
+): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
   const tagFilter = getSideFilter_();
@@ -149,7 +144,13 @@ function fillSlice(phase, zone, platoon, range) {
 }
 
 /** Clear out a platoon */
-function resetPlatoon(phase, zone, platoonRow, rows, show) {
+function resetPlatoon(
+  phase: number,
+  zone: number,
+  platoonRow: number,
+  rows: number,
+  show: boolean,
+): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
 
@@ -166,8 +167,8 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
   for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
     // clear the contents
     let range = sheet.getRange(platoonRow, 4 + platoon * 4, MAX_PLATOON_HEROES, 1);
-    range.clearContent()
-      .setFontColor(COLOR.BLACK);
+    range.clearContent();
+    range.setFontColor(COLOR.BLACK);
     fillSlice(phase, zone + 1, platoon, range);
 
     range = sheet.getRange(platoonRow, 5 + platoon * 4, MAX_PLATOON_HEROES, 1);
@@ -178,29 +179,29 @@ function resetPlatoon(phase, zone, platoonRow, rows, show) {
 }
 
 /** Clear the full chart */
-function resetPlatoons() {
+function resetPlatoons(): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const phase = sheet.getRange(2, 1).getValue();
+  const phase = sheet.getRange(2, 1).getValue() as number;
   initPlatoonPhases_();
 
   // Territory 1 (Air)
   let platoonRow = 2;
   let zone = 0;
   resetPlatoon(phase, zone, platoonRow, MAX_PLATOON_HEROES, phase >= 3);
-  setZoneName(phase, zone, sheet, platoonRow);
+  setZoneName_(phase, zone, sheet, platoonRow);
   zone += 1;
 
   // Territory 2
   platoonRow = 20;
   resetPlatoon(phase, zone, platoonRow, MAX_PLATOON_HEROES, phase >= 1);
-  setZoneName(phase, zone, sheet, platoonRow);
+  setZoneName_(phase, zone, sheet, platoonRow);
   zone += 1;
 
   // Territory 3
   platoonRow = 38;
   resetPlatoon(phase, zone, platoonRow, MAX_PLATOON_HEROES, phase >= 1);
-  setZoneName(phase, zone, sheet, platoonRow);
+  setZoneName_(phase, zone, sheet, platoonRow);
   // zone += 1;
 }
 
@@ -278,9 +279,10 @@ function getRecommendedPlayers_(
 function createDropdown_(
   playerList: [string, number][],
   range: GoogleAppsScript.Spreadsheet.Range,
-) {
+): void {
 
   const formatList = [];
+
   for (const p of playerList) {
     formatList.push(p[0]);
   }
@@ -292,24 +294,28 @@ function createDropdown_(
 }
 
 /** Reset the needed counts */
-function resetNeededCount(count: number): number[][] {
-  return Array(count).fill([0]);
+function resetNeededCount(count: number): [number][] {
+
+  const result = [];
+  for (let i = 0; i < count; i += 1) {
+    result[i] = [0];
+  }
+
+  return result;
 }
 
 /** Reset the units used */
 function resetUsedUnits(data: string[][]): (string|boolean)[][] {
 
   const result = [];
+
   for (let r = 0, rLen = data.length; r < rLen; r += 1) {
+
     if (r === 0) {
       // first row, so copy it all
       result[r] = data[r];
     } else {
       result[r] = Array(data[r].length).fill(false);
-      // result[r] = [];
-      // for (let c = 0, cLen = data[r].length; c < cLen; c += 1) {
-      //   result[r].push(false);
-      // }
     }
   }
 
@@ -347,8 +353,6 @@ function recommendPlatoons() {
   PLATOON_SHIP_NEEDED_COUNT = resetNeededCount(shipCount);
 
   // reset the used heroes
-  // let usedHeroes = [];
-  // let usedShips = [];
   const usedHeroes = resetUsedUnits(heroData);
   const usedShips = resetUsedUnits(shipData);
 
@@ -360,9 +364,12 @@ function recommendPlatoons() {
 
   // setup a custom order for walking the platoons
   const platoonOrder: PlatoonDetails[] = [];
+
   for (let p = MAX_PLATOONS - 1; p >= 0; p -= 1) {
+
     // last platoon to first platoon
     for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
+
       // zone by zone
       platoonOrder.push(new PlatoonDetails(phase, z, p));
     }
@@ -370,11 +377,12 @@ function recommendPlatoons() {
 
   // set the zone names and show/hide rows
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
+
     // for each zone
     const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
 
     // set the zone name
-    const zoneName = setZoneName(phase, z, sheet, platoonRow);
+    const zoneName = setZoneName_(phase, z, sheet, platoonRow);
 
     // see if we should skip the zone
     if (z !== 1) {
@@ -391,42 +399,38 @@ function recommendPlatoons() {
   // hero, hero row, count, player count, player list (player, gear...)
   const platoonMatrix: PlatoonUnit[] = [];
   const baseCol = 4;
-  for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
-    const cur = platoonOrder[o];
 
+  for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
+
+    const cur = platoonOrder[o];
     const platoonOffset = cur.num * 4;
     // const platoonRange = sheet.getRange(cur.row, baseCol + platoonOffset);
 
     // clear previous contents
-    const range = sheet.getRange(
-      cur.row,
-      baseCol + 1 + platoonOffset,
-      MAX_PLATOON_HEROES,
-      1,
-    );
-    range.clearContent();
-    range.clearDataValidations();
-    range.setFontColor(COLOR.BLACK);
-    range.offset(0, -1).setFontColor(COLOR.BLACK);
+    sheet.getRange(cur.row, baseCol + platoonOffset + 1, MAX_PLATOON_HEROES, 1)
+      .clearContent()
+      .clearDataValidations()
+      .offset(0, -1, MAX_PLATOON_HEROES, 2)
+      .setFontColor(COLOR.BLACK);
+      // .setFontColors([[COLOR.BLACK, COLOR.BLACK]]);
 
     if (cur.skip) {
       // skip this platoon
       continue;
     }
 
-    const skip =
-      sheet
-        .getRange(cur.row + 15, baseCol + platoonOffset + 1, 1, 1)
+    const skip = sheet.getRange(cur.row + 15, baseCol + platoonOffset + 1, 1, 1)
         .getValue() === 'SKIP';
     if (skip) {
       cur.possible = false;
     }
 
     // cycle through the units
-    const units = sheet
-      .getRange(cur.row, baseCol + platoonOffset, MAX_PLATOON_HEROES, 1)
+    const units = sheet.getRange(cur.row, baseCol + platoonOffset, MAX_PLATOON_HEROES, 1)
       .getValues() as string[][];
+
     for (let h = 0; h < MAX_PLATOON_HEROES; h += 1) {
+
       const unitName = units[h][0];
       const idx = platoonMatrix.length;
 
@@ -434,6 +438,7 @@ function recommendPlatoons() {
         cur.row + h,
         baseCol + 1 + platoonOffset,
       );
+
       if (unitName.length === 0) {
         // no unit was entered, so skip it
         platoonMatrix[idx] = new PlatoonUnit(unitName, 0, 0, 0);
@@ -448,6 +453,7 @@ function recommendPlatoons() {
         unavailable,
       );
       platoonMatrix[idx] = new PlatoonUnit(unitName, 0, 0, rec.length);
+
       if (rec.length > 0) {
         createDropdown_(rec, playersRange);
 
@@ -465,8 +471,10 @@ function recommendPlatoons() {
 
   // update the unit counts
   for (const p of platoonMatrix) {
+
     // find the unit's count
     for (let h = 1, hLen = heroData.length; h < hLen; h += 1) {
+
       if (heroData[h][0] === p.name) {
         p.row = h;
         p.count = PLATOON_HERO_NEEDED_COUNT[h - 1][0];
@@ -502,7 +510,10 @@ function recommendPlatoons() {
   }
 
   // initialize the placement counts
-  const placementCount = Array(MAX_PLATOON_ZONES).fill([]);
+  const placementCount = [];
+  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
+    placementCount[z] = [];
+  }
   const maxPlayerDonations = getMaximumPlatoonDonation_();
 
   // try to find an unused player to default to
@@ -528,7 +539,7 @@ function recommendPlatoons() {
       let defaultValue = '';
       const count = placementCount[cur.zone];
 
-      for (const player in platoonMatrix[matrixIdx].players) {
+      for (const player of platoonMatrix[matrixIdx].players) {
 
         // see if the recommended player's hero has been used
         const heroRow = platoonMatrix[matrixIdx].row;
@@ -615,18 +626,19 @@ function recommendPlatoons() {
 
       const plattonOffset = cur.num * 4;
       const platoonRange = sheet.getRange(cur.row + h, baseCol + 1 + plattonOffset);
+      const pp = platoonMatrix[matrixIdx];
       platoonRange.setValue(defaultValue);
 
       // see if we should highlight rare units
       if (platoonMatrix[matrixIdx].isMissing()) {
         // we don't have enough of this hero, so mark it
-        platoonRange.offset(0, -1, 1, 2).setFontColors([[COLOR.RED, COLOR.RED]]);
+        platoonRange.offset(0, -1, 1, 2).setFontColor(COLOR.RED);
         // const color = COLOR.RED;
         // platoonRange.setFontColor(color);
         // platoonRange.offset(0, -1).setFontColor(color);
       } else if (defaultValue.length > 0 && platoonMatrix[matrixIdx].isRare()) {
         // we barely have enough of this hero, so mark it
-        platoonRange.offset(0, -1, 1, 2).setFontColors([[COLOR.BLUE, COLOR.BLUE]]);
+        platoonRange.offset(0, -1, 1, 2).setFontColor(COLOR.BLUE);
         // const color = COLOR.BLUE;
         // platoonRange.setFontColor(color);
         // platoonRange.offset(0, -1).setFontColor(color);
