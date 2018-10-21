@@ -37,7 +37,7 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
         gp: true,
         gpChar: true,
         gpShip: true,
-        level: true,
+        level: true,  // TODO: store and process player level minimun requirement
         name: true,
         updated: true,
       },
