@@ -199,7 +199,6 @@ function getSwgohGgPlayerApiLink_(allyCode: number): string {
   const link = `https://swgoh.gg/api/player/${allyCode}/`;
 
   // TODO: data check
-
   return link;
 }
 

@@ -147,13 +147,8 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     }
   }
 
-  const sortFunction = getSortRoster_()
-    // sort roster by player name
-    ? (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-    // sort roster by GP
-    : (a, b) => b.gp - a.gp;
+  // TODO: regroup Name normalization, rename/add/delete
 
-  // TODO: relocate
   // fix name starting with single quote
   for (const e of members) {
     if (e.name[0] === '\'') {
@@ -178,6 +173,12 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
       }
     }
   }
+
+  const sortFunction = getSortRoster_()
+    // sort roster by player name
+    ? (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    // sort roster by GP
+    : (a, b) => b.gp - a.gp;
 
   members.sort(sortFunction);
 
@@ -219,6 +220,7 @@ function setupEvent(): void {
   // make sure the roster is up-to-date
 
   // Update Heroes and Ship Sheets
+  // TODO: re-read only if necessary
   // NOTE Currently not supported by Scorpio, so always using SWGOH.gg data
   let heroes: UnitDeclaration[];
   let ships: UnitDeclaration[];
@@ -228,7 +230,6 @@ function setupEvent(): void {
     heroes = getHeroListFromSwgohGg_();
     ships = getShipListFromSwgohGg_();
   } else {
-    // TODO: re-read only if necessary
     heroes = getHeroListFromSwgohGg_();
     ships = getShipListFromSwgohGg_();
   }
