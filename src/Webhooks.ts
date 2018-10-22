@@ -192,7 +192,13 @@ function getPlatoonDonations_(platoon: string[][],
       || result.some(e => e[0] === platoon[h][0]);
 
     if (!heroDonated) {
-      const criteria = rules[h][0].getCriteriaValues() as string[][];  // TODO: debugger
+
+      type RequireValueInListCriteria = [
+        [string],  // Array of player name
+        boolean  // true for dropdown
+      ];
+
+      const criteria = rules[h][0].getCriteriaValues() as RequireValueInListCriteria;
 
       // only add rare donations
       if (criteria[0].length < RARE_MAX) {
