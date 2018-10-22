@@ -63,15 +63,6 @@ function forceHttps(url: string): string {
   return result;
 }
 
-// TODO: use allycode instead of url
-function should_remove_(memberLink: string, removeMembers: [string][]): boolean {
-
-  const result = removeMembers
-  .some(e => memberLink === forceHttps(e[0]));  // return true if link is found within he list
-
-  return result;
-}
-
 function lowerCase_(a: string, b: string): number {
   return a.toLowerCase().localeCompare(b.toLowerCase());
 }
@@ -128,7 +119,6 @@ function getPlayerData_SwgohGgApi_(
     return undefined;
   }
 
-  // TODO: enrich with units name and tags
   const units = playerData.units;
   const filteredUnits: UnitInstances = {};
   for (const key in units) {
