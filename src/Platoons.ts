@@ -241,7 +241,7 @@ function getRecommendedPlayers_(
       // found the unit, now get the recommendations
       for (let p = 0; p < guildSize; p += 1) {
 
-        const playerIdx = HERO_PLAYER_COL_OFFSET + p;
+        const playerIdx = HERO_PLAYER_COL_OFFSET + p - 1;
         const playerName = data[0][playerIdx];
 
         if (playerAvailable(playerName, unavailable)) {
