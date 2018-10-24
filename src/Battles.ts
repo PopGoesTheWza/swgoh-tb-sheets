@@ -7,7 +7,7 @@ declare function getGuildDataFromSwgohHelp_(): PlayerData[];
 /** set the value and style in a cell */
 function setCellValue_(
   cell: GoogleAppsScript.Spreadsheet.Range,
-  value,
+  value: boolean|number|string|Date,
   bold: boolean,
   align?: 'left' | 'center' | 'right',
 ): void {
@@ -114,10 +114,13 @@ function populateEventTable_(
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  const unitsIndex = getHeroesTabIndex_().concat(getShipsTabIndex_());
-
   const add = sheet.getRange(2, META_ADD_PLAYER_COL, sheet.getLastRow(), 2)
     .getValues() as [string, number][];
+  const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
+    .getValues() as number[][];
+
+  const unitsIndex = getHeroesTabIndex_().concat(getShipsTabIndex_());
+
   for (const e of add) {
     const allyCode = e[1];
     if (allyCode && allyCode > 0) {
@@ -135,8 +138,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     }
   }
 
-  const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
-    .getValues() as number[][];
   for (const e of remove) {
     const allyCode = e && Number(e[0]) || 0;
     if (allyCode > 0) {
@@ -146,6 +147,12 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
       }
     }
   }
+
+  const fixName = (e: PlayerData) => {
+    if (e.name[0] === '\'') {
+      e.name = ` ${e.name}`;
+    }
+  };
 
   // TODO: regroup Name normalization, rename/add/delete
 
@@ -264,99 +271,136 @@ function setupEvent(): void {
   tbSheet.getRange(1, 10, 1, MAX_PLAYERS).clearContent();
   tbSheet.getRange(2, 1, 150, 9 + MAX_PLAYERS).clearContent();
 
-    // collect the meta data for the heroes
-  let row = 2;
+  type eventData = [
+    string,  // eventType
+    string,  // phase
+    string,  // unit
+    number,  // rarity
+    number,  // gearLevel
+    number,  // level
+    string,  // squad
+    string  // required
+  ];
+
+  // collect the meta data for the heroes
+  const row = 2;
   const col = isLight_(getSideFilter_()) ? META_HEROES_COL : META_HEROES_DS_COL;
-  let tbRow = 2;
-  let lastPhase = '1';
-  let phaseCount = 0;
-  let total = 0;
-  let lastSquad = '0';
-  let squadCount = 0;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
-  let curMeta = metaSheet.getRange(row, col, 1, 8);
-  let metaData = curMeta.getValues() as string[][];
-  let event = metaData[0][0];
-  const phaseList = [];
-  let phase;
+  const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row, 8)
+    .getValues() as eventData[];
 
-  while (event.length > 0) {
+  type eventUnit = {
+    name: string,
+    rarity: number,
+    gearLevel: number,
+    level: number,
+    required: string,
+  };
 
-    phase = metaData[0][1];
-    const name = metaData[0][2];
-    const stars = metaData[0][3];
-    const gear = metaData[0][4];
-    const level = metaData[0][5];
-    const squad = metaData[0][6];
-    const required = metaData[0][7];
+  type eventObject = {
+    squad: string,
+    eventType: string,
+    phase: string,
+    units: eventUnit[],
+  };
 
-    // see if the phase ended
-    if (lastPhase !== phase) {
-      if (tbRow > 2) {
-        // end the phase if this isn't the first row
-        const curTb = tbSheet.getRange(tbRow, 3);
-        setCellValue_(curTb, 'Phase Count:', true, 'right');
-        curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
-        curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
-        phaseList.push([lastPhase, tbRow]);
-        tbRow += 2;
+  const events = eventDefinition.reduce(
+    (acc: eventObject[], e) => {
+      const phase = e[1];
+      const squad = e[6];
+      if (
+        typeof phase === 'string'
+        && typeof squad === 'string'
+        && phase.length > 0
+        && squad.length > 0
+      ) {
+        let o = acc.find(e => e.phase === phase && e.squad === squad);
+        if (!o) {
+          o = {
+            phase,
+            squad,
+            eventType: e[0],
+            units: [],
+          };
+          acc.push(o);
+        }
+        o.units.push({
+          name: e[2],
+          rarity: e[3],
+          gearLevel: e[4],
+          level: e[5],
+          required: e[7],
+        });
       }
-      lastPhase = phase;
-      total += phaseCount;
-      phaseCount = 0;
+      return acc;
+    },
+    [],
+  )
+  .sort((a, b) => {
+    if (a.phase < b.phase) {
+      return -1;
+    }
+    if (a.phase > b.phase) {
+      return 1;
+    }
+    if (a.squad < b.squad) {
+      return -1;
+    }
+    if (a.squad > b.squad) {
+      return 1;
+    }
+    return 0;
+  });
+
+  let tbRow = 2;
+  const phaseList = [];
+  let total = 0;
+
+  for (const e of events) {
+    let phaseCount = 0;
+    let squadCount = 0;
+
+    for (const u of e.units) {
+      // store the meta data
+      let curTb = tbSheet.getRange(tbRow, 1, 1, 9);
+      const data = [
+        e.eventType,
+        e.phase,
+        u.name,  // see following setCellValue_
+        u.rarity,
+        u.gearLevel,
+        u.level,
+        e.squad,
+        u.required,
+        `=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`,
+      ];
+      curTb.setValues([data]);
+      curTb = tbSheet.getRange(tbRow, 1);
+      setCellValue_(curTb.offset(0, 2), u.name, false, 'left');
+      tbRow += 1;
+      squadCount += 1;
+
+      if (squadCount <= 5) {
+        phaseCount += 1;
+      }
     }
 
-    // see if the squad changed
-    if (lastSquad !== squad) {
-      lastSquad = squad;
-      squadCount = 0;
-    }
+    const curTb = tbSheet.getRange(tbRow, 3);
+    setCellValue_(curTb, 'Phase Count:', true, 'right');
+    curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
+    curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+    phaseList.push([e.phase, tbRow]);
+    tbRow += 2;
 
-    // store the meta data
-    let curTb = tbSheet.getRange(tbRow, 1, 1, 9);
-    const data = [];
-    data[0] = [
-      event,
-      phase,
-      name,
-      stars,
-      gear,
-      level,
-      squad,
-      required,
-      `=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`,
-    ];
-
-    curTb.setValues(data);
-    curTb = tbSheet.getRange(tbRow, 1);
-    setCellValue_(curTb.offset(0, 2), name, false, 'left');
-    tbRow += 1;
-    squadCount += 1;
-
-    if (squadCount <= 5) {
-      phaseCount += 1;
-    }
-
-    // get the next row
-    row += 1;
-    curMeta = metaSheet.getRange(row, col, 1, 8);
-    metaData = curMeta.getValues() as string[][];
-    event = metaData[0][0];
+    // lastPhase = e.phase;
+    total += phaseCount;
+    phaseCount = 0;
   }
 
   const lastHeroRow = tbRow;
 
-  // add the final phase
-  let curTb = tbSheet.getRange(tbRow, 3);
-  setCellValue_(curTb, 'Phase Count:', true, 'right');
-  curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
-  curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
-  phaseList.push([phase, tbRow]);
-
-  total += phaseCount;
-  tbRow += 1;
   // add the total
-  curTb = tbSheet.getRange(tbRow, 3);
+  let curTb = tbSheet.getRange(tbRow, 3);
   setCellValue_(curTb, 'Total:', true, 'right');
   curTb.offset(0, 1).setValue(total);
   curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
@@ -388,8 +432,7 @@ function setupEvent(): void {
   setCellValue_(curTb.offset(5, 0), 'Missing 1 Star', false, 'center');
 
   // setup player columns
-  let table: (string | number)[][] = [];
-  table = populateEventTable_(
+  let table = populateEventTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
     heroes,
@@ -399,7 +442,7 @@ function setupEvent(): void {
   const width = table.reduce((a: number, e) => Math.max(a, e.length), 0);
   table = table.map(
     e =>
-      e.length !== width ? e.concat(Array(width).fill(undefined)).slice(0, width) : e,
+      e.length !== width ? e.concat(Array(width).fill(null)).slice(0, width) : e,
   );
   tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
     .setValues(table);
