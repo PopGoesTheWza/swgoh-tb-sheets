@@ -446,6 +446,7 @@ function recommendPlatoons() {
       if (unitName.length === 0) {
         // no unit was entered, so skip it
         platoonMatrix[idx] = new PlatoonUnit(unitName, 0, 0, 0);
+        dropdowns.push([null]);
         continue;
       }
 
