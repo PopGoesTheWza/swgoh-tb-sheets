@@ -66,7 +66,7 @@ function updateShipsList(ships: UnitDeclaration[]): void {
 
     // insert the star count formulas
     const row = i + 2;
-    const rangeText = `$J${row}:$BI${row}`;
+    const rangeText = `$K${row}:$BH${row}`;
 
     {
       [2, 3, 4, 5, 6, 7].forEach((stars) => {
