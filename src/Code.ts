@@ -137,6 +137,7 @@ function getPlayerData_SwgohGgApi_(
   return playerData;
 }
 
+// TODO: move to Units.ts, as a method for both heroes and ships
 function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): PlayerData {
 
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
@@ -230,38 +231,6 @@ function get_metas_(tagFilter: string): [string, string][] {
   return meta;
 }
 
-function getHeroesTabIndex_(): UnitDeclaration[] {
-
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
-  const data = sheet.getRange(2, 1, getCharacterCount_(), 3)
-    .getValues() as string[][];
-  const index: UnitDeclaration[] = data.map((e) => {
-    return {
-      name: e[0],
-      baseId: e[1],
-      tags: e[2],
-    };
-  });
-
-  return index;
-}
-
-function getShipsTabIndex_(): UnitDeclaration[] {
-
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
-  const data = sheet.getRange(2, 1, getShipCount_(), 3)
-    .getValues() as string[][];
-  const index: UnitDeclaration[] = data.map((e) => {
-    return {
-      name: e[0],
-      baseId: e[1],
-      tags: e[2],
-    };
-  });
-
-  return index;
-}
-
 function playerSnapshotOutput_(
 
   sheet: GoogleAppsScript.Spreadsheet.Sheet,
@@ -279,7 +248,8 @@ function playerSnapshotOutput_(
 function playerSnapshot(): void {
 
   // cache the matrix of hero data
-  const heroesIndex = getHeroesTabIndex_();
+  const heroesTable = new HeroesTable();
+  const heroesIndex = heroesTable.getDefinitions();
 
   // collect the meta data for the heroes
   const tagFilter = getSideFilter_(); // TODO: potentially broken if TB not sync
