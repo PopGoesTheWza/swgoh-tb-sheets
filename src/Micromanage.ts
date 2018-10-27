@@ -79,7 +79,7 @@ function sendMicroByPlayerWebhook(): void {
     // cycle throught the platoons in a zone
     for (let p = 0; p < MAX_PLATOONS; p += 1) {
       const platoonData = sheet
-        .getRange(platoonRow, 4 + p * 4, MAX_PLATOON_HEROES, 2)
+        .getRange(platoonRow, 4 + p * 4, MAX_PLATOON_UNITS, 2)
         .getValues() as string[][];
 
       // cycle through the heroes

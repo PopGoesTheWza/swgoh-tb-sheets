@@ -70,7 +70,7 @@ function getPlatoonString_(platoon: string[][]): string {
   const results: string[] = [];
 
   // cycle through the heroes
-  for (let h = 0; h < MAX_PLATOON_HEROES; h += 1) {
+  for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
     if (platoon[h][1].length === 0 || platoon[h][1] === 'Skip') {
       // impossible platoon
       return '';  // TODO: return undefined
@@ -148,7 +148,7 @@ function sendPlatoonDepthWebhook(): void {
 
     // cycle throught the platoons in a zone
     for (let p = 0; p < MAX_PLATOONS; p += 1) {
-      const platoonData = sheet.getRange(platoonRow, (p * 4) + 4, MAX_PLATOON_HEROES, 2)
+      const platoonData = sheet.getRange(platoonRow, (p * 4) + 4, MAX_PLATOON_UNITS, 2)
         .getValues() as string[][];
       const platoon = getPlatoonString_(platoonData);
 
@@ -178,7 +178,7 @@ function getPlatoonDonations_(platoon: string[][],
   const result: string[][] = [];
 
   // cycle through the heroes
-  for (let h = 0; h < MAX_PLATOON_HEROES; h += 1) {
+  for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
     if (platoon[h][0].length === 0) {
       continue; // no unit needed here
     }
@@ -215,25 +215,6 @@ function getPlatoonDonations_(platoon: string[][],
   }
 
   return result;
-}
-
-/** Get a list of units that are required a high number of times */
-function getHighNeedList_(sheetName: string, unitCount: number): string[] {
-
-  const counts = SPREADSHEET.getSheetByName(sheetName)
-    .getRange(2, 1, unitCount, HERO_PLAYER_COL_OFFSET)
-    .getValues() as [string, number][];
-  const results: string[] = [];
-  const idx = HERO_PLAYER_COL_OFFSET - 1;
-
-  for (const row of counts) {
-    // unit's count is over the min bar to be too high
-    if (row[idx] >= HIGH_MIN) {
-      results.push(`${row[0]} (${row[idx]})`);
-    }
-  }
-
-  return results;
 }
 
 /** Send the message to Discord */
@@ -282,9 +263,9 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
 
       // cycle throught the platoons in a zone
       for (let p = 0; p < MAX_PLATOONS; p += 1) {
-        const platoonData = sheet.getRange(platoonRow, (p * 4) + 4, MAX_PLATOON_HEROES, 2)
+        const platoonData = sheet.getRange(platoonRow, (p * 4) + 4, MAX_PLATOON_UNITS, 2)
           .getValues() as string[][];
-        const rules = sheet.getRange(platoonRow, (p * 4) + 5, MAX_PLATOON_HEROES, 1)
+        const rules = sheet.getRange(platoonRow, (p * 4) + 5, MAX_PLATOON_UNITS, 1)
           .getDataValidations();
         const platoon = getPlatoonDonations_(platoonData, donations, rules, playerMentions);
 
@@ -315,11 +296,13 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
   }
 
   // format the high needed units
-  const highNeedShips = getHighNeedList_(SHEETS.SHIPS, getShipCount_());
+  const heroesTable = new HeroesTable();
+  const highNeedShips = heroesTable.getHighNeedList();
   if (highNeedShips.length > 0) {
     fields.push(`**High Need Ships**\n${highNeedShips.join(', ')}`);
   }
-  const highNeedHeroes = getHighNeedList_(SHEETS.HEROES, getCharacterCount_());
+  const shipsTable = new ShipsTable;
+  const highNeedHeroes = shipsTable.getHighNeedList();
   if (highNeedHeroes.length > 0) {
     fields.push(`**High Need Heroes**\n${highNeedHeroes.join(', ')}`);
   }
@@ -418,7 +401,7 @@ function getUniquePlatoonUnits_(zone: number): string[] {
 
   let units: string[][] = [];
   for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
-    const range = sheet.getRange(platoonRow, (platoon * 4) + 4, MAX_PLATOON_HEROES, 1);
+    const range = sheet.getRange(platoonRow, (platoon * 4) + 4, MAX_PLATOON_UNITS, 1);
     const values = range.getValues() as string[][];
     units = units.concat(values);
   }
@@ -427,45 +410,6 @@ function getUniquePlatoonUnits_(zone: number): string[] {
   return units
     .map(e => e[0])
     .unique();
-}
-
-/** Get the list of Rare units needed for the phase */
-function getRareUnits_(sheetName: string, phase: number): string[] {
-
-  const useBottomTerritory = !isLight_(getSideFilter_()) || phase > 1;
-  const count = getCharacterCount_() + 1;
-  const data = (SPREADSHEET.getSheetByName(sheetName)
-    .getRange(1, 1, count, 8)
-    .getValues() as [string, number][])
-    .slice(1);  // Drop first line
-
-  const idx = phase + 2;  // HEROES/SHIPS, column D
-
-  // cycle through each unit
-  const units: string[] = data.reduce(
-    (acc: [string], row) => {
-      if (row[0].length > 0 && row[idx] < RARE_MAX) {
-        acc.push(row[0]);
-      }
-      return acc;
-    },
-    [])  // keep only the unit's name
-    .sort();  // sort the list of units
-
-  let platoonUnits: string[];
-  if (sheetName === SHEETS.SHIPS) {
-    platoonUnits = getUniquePlatoonUnits_(0);
-  } else {
-    platoonUnits = getUniquePlatoonUnits_(1);
-    if (useBottomTerritory) {
-      platoonUnits = platoonUnits.concat(getUniquePlatoonUnits_(2));
-    }
-  }
-
-  // filter out rare units that do not appear in platoons
-  const results = units.filter(unit => platoonUnits.some(el => el === unit));
-
-  return results;
 }
 
 /** Send a message to Discord that lists all units to watch out for in the current phase */
@@ -488,7 +432,8 @@ function allRareUnitsWebhook(): void {
   // TODO: regroup phases and zones management
   if (phase >= 3) {
     // get the ships list
-    const ships = getRareUnits_(SHEETS.SHIPS, phase);
+    const shipsTable = new ShipsTable();
+    const ships = shipsTable.getRares(phase);
     if (ships.length > 0) {
       fields.push({
         name: 'Rare Ships',
@@ -499,7 +444,8 @@ function allRareUnitsWebhook(): void {
   }
 
   // get the hero list
-  const heroes = getRareUnits_(SHEETS.HEROES, phase);
+  const heroesTable = new HeroesTable();
+  const heroes = heroesTable.getRares(phase);
   if (heroes.length > 0) {
     fields.push({
       name: 'Rare Heroes',

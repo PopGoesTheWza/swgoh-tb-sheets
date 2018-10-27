@@ -1,7 +1,4 @@
-// ****************************************
-// TB functions
-// ****************************************
-
+/** workaround to tslint issue of namespace scope after imoorting  type definitions */
 declare function getGuildDataFromSwgohHelp_(): PlayerData[];
 
 /** set the value and style in a cell */
@@ -114,12 +111,14 @@ function populateEventTable_(
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  const add = sheet.getRange(2, META_ADD_PLAYER_COL, sheet.getLastRow(), 2)
+  const add = sheet.getRange(2, META_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2)
     .getValues() as [string, number][];
   const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
     .getValues() as number[][];
 
-  const unitsIndex = getHeroesTabIndex_().concat(getShipsTabIndex_());
+  const heroesTable = new HeroesTable();
+  const shipsTable = new ShipsTable();
+  const unitsIndex = heroesTable.getDefinitions().concat(shipsTable.getDefinitions());
 
   for (const e of add) {
     const allyCode = e[1];
@@ -222,8 +221,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 /** Setup the Territory Battle for Hoth */
 function setupEvent(): void {
 
-  // const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
-
   // make sure the roster is up-to-date
 
   // Update Heroes and Ship Sheets
@@ -240,8 +237,10 @@ function setupEvent(): void {
     heroes = getHeroListFromSwgohGg_();
     ships = getShipListFromSwgohGg_();
   }
-  updateHeroesList(heroes);
-  updateShipsList(ships);
+  const heroesTable = new HeroesTable();
+  const shipsTable = new ShipsTable();
+  heroesTable.updateList(heroes);
+  shipsTable.updateList(ships);
 
   // Figure out which data source to use
   let members: PlayerData[];
@@ -263,8 +262,8 @@ function setupEvent(): void {
   // will also return a new members array with added/deleted from sheet
   members = updateGuildRoster_(members);
 
-  populateHeroesList(members);
-  populateShipsList(members);
+  heroesTable.populateList(members);
+  shipsTable.populateList(members);
 
   // clear the hero data
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);

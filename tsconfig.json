@@ -3,7 +3,7 @@
   "files": [
     "src/Code.ts",
     "src/Settings.ts",
-    "src/Ships.ts",
+    // "src/Ships.ts",
     "src/Exclusions.ts",
     "src/Units.ts",
     "src/Battles.ts",

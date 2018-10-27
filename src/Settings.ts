@@ -9,38 +9,35 @@ const MAX_PLAYERS = 50;
 // const POWER_TARGET = 14000
 
 // Meta tab columns
-const META_GUILD_COL = 1;
-const META_FILTER_COL = 2;
 const META_FILTER_ROW = 2;
-const META_TAG_COL = 3;
+const META_FILTER_COL = 2;
 const META_TAG_ROW = 2;
-const META_UNDERGEAR_COL = 4;
+const META_TAG_COL = 3;
 const META_UNDERGEAR_ROW = 2;
-const META_UNIT_PER_PLAYER_ROW = 11;
-
+const META_UNDERGEAR_COL = 4;
+const META_SORT_ROSTER_ROW = 2;
+const META_SORT_ROSTER_COL = 5;
+const META_EXCLUSSIONS_ROW = 7;
+const META_EXCLUSSIONS_COL = 1;
 const META_MIN_LEVEL_ROW = 5;
-const META_UNIT_POWER_ROW = 8;
+const META_MIN_LEVEL_COL = 4;
+const META_MIN_GP_ROW = 8;
+const META_MIN_GP_COL = 4;
+const META_UNIT_PER_PLAYER_ROW = 11;
+const META_UNIT_PER_PLAYER_COL = 4;
+
+const META_DATASOURCE_ROW = 14;
+const META_DATASOURCE_COL = 4;
 
 const META_HEROES_COL = 7;
 const META_HEROES_DS_COL = 16;
-// const META_HEROES_SIZE_COL = 25;
-const META_SORT_ROSTER_COL = 5;
 
-// Hoth tab columns
-// const HERO_PLAYER_COL_OFFSET = 9
-// const SHIP_PLAYER_COL_OFFSET = 9
-
-// Roster tab columns
-// const ROSTER_SHIP_COUNT_COL = 10
-
-const META_DATASOURCE_COL = 4;
-const META_DATASOURCE_ROW = 14;
-
-const META_UNIT_COUNTS_COL = 5;
 const META_HEROES_COUNT_ROW = 5;
+const META_HEROES_COUNT_COL = 5;
 const META_SHIPS_COUNT_ROW = 8;
+const META_SHIPS_COUNT_COL = 5;
 
-const META_ADD_PLAYER_COL = 16;
+const META_RENAME_ADD_PLAYER_COL = 16;
 const META_REMOVE_PLAYER_COL = 18;
 
 // Hero/Ship tab columns
@@ -55,7 +52,7 @@ const META_TB_COL_OFFSET = 10;
 
 const WAIT_TIME = 2000; // TODO: expose as config variable
 
-const MAX_PLATOON_HEROES = 15;
+const MAX_PLATOON_UNITS = 15;
 const MAX_PLATOONS = 6;
 const MAX_PLATOON_ZONES = 3;
 const PLATOON_ZONE_ROW_OFFSET = 18;
@@ -72,6 +69,9 @@ const WEBHOOK_DEPTH_ROW = 8;
 const WEBHOOK_DESC_ROW = 9;
 const WEBHOOK_CLEAR_ROW = 15;
 const WEBHOOK_DISPLAY_SLOT_ROW = 16;
+
+const META_UPDATETIME_COL = 1;  // ADDED FOR TIMESTAMP
+const META_UPDATETIME_ROW = 11;  // ADDED FOR TIMESTAMP
 
 type KeyedArray = {
   [key: string]: string;
@@ -95,6 +95,7 @@ interface UnitDeclaration {
   name: string;
   /** Alignment, role and tags */
   tags: string;
+  type?: number;
 }
 
 interface UnitInstance {
@@ -168,10 +169,19 @@ function getSideFilter_(): string {
   return value;
 }
 
+function getTagFilter_(): string {
+
+  const value = SPREADSHEET.getSheetByName(SHEETS.META)
+    .getRange(META_TAG_ROW, META_TAG_COL)
+    .getValue() as string;
+
+  return value;
+}
+
 function getCharacterCount_(): number {
 
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_HEROES_COUNT_ROW, META_UNIT_COUNTS_COL)
+    .getRange(META_HEROES_COUNT_ROW, META_HEROES_COUNT_COL)
     .getValue() as number;
 
   return value;
@@ -180,17 +190,8 @@ function getCharacterCount_(): number {
 function getShipCount_(): number {
 
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_SHIPS_COUNT_ROW, META_UNIT_COUNTS_COL)
+    .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
     .getValue() as number;
-
-  return value;
-}
-
-function getTagFilter_(): string {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_TAG_ROW, META_TAG_COL)
-    .getValue() as string;
 
   return value;
 }
@@ -207,16 +208,16 @@ function getTagFilter_(): string {
 function getMinimumCharacterGp_(): number {
 
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)
+    .getRange(META_MIN_GP_ROW, META_MIN_GP_COL)
     .getValue() as number;
 
   return value;
 }
 
-// function getMinimunPlayerGp_(): number {
+// function getMinimunPlayerLevel_(): number {
 
 //   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-//     .getRange(META_UNIT_POWER_ROW, META_UNDERGEAR_COL)
+//     .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
 //     .getValue() as number;
 
 //   return value;
@@ -225,7 +226,7 @@ function getMinimumCharacterGp_(): number {
 function getMaximumPlatoonDonation_(): number {
 
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_UNIT_PER_PLAYER_ROW, META_UNDERGEAR_COL)
+    .getRange(META_UNIT_PER_PLAYER_ROW, META_UNIT_PER_PLAYER_COL)
     .getValue() as number;
 
   return value;
@@ -234,7 +235,7 @@ function getMaximumPlatoonDonation_(): number {
 function getSortRoster_(): boolean {
 
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(2, META_SORT_ROSTER_COL)
+    .getRange(META_SORT_ROSTER_ROW, META_SORT_ROSTER_COL)
     .getValue() as string;
 
   return value === 'Yes';
@@ -243,7 +244,7 @@ function getSortRoster_(): boolean {
 function getExclusionId_(): string {
 
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(7, META_GUILD_COL)
+    .getRange(META_EXCLUSSIONS_ROW, META_EXCLUSSIONS_COL)
     .getValue() as string;
 
   return value;
