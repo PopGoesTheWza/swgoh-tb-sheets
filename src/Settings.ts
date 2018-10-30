@@ -55,7 +55,7 @@ const META_GUILD_SIZE_COL = 12;
 
 const META_TB_COL_OFFSET = 10;
 
-const WAIT_TIME = 2000; // TODO: expose as config variable
+const WAIT_TIME = 2000;
 
 const MAX_PLATOON_UNITS = 15;
 const MAX_PLATOONS = 6;

@@ -1,4 +1,4 @@
-/** workaround to tslint issue of namespace scope after imoorting  type definitions */
+/** workaround to tslint issue of namespace scope after importing type definitions */
 declare function getGuildDataFromSwgohHelp_(): PlayerData[];
 
 /** set the value and style in a cell */
@@ -14,6 +14,7 @@ function setCellValue_(
     .setValue(value);
 }
 
+/** process and output members data for current event */
 function populateEventTable_(
   data: string[][],
   members: PlayerData[],
@@ -102,12 +103,7 @@ function populateEventTable_(
   return table;
 }
 
-/**
- * Update the Guild Roster
- *
- * @return The Roster sheet is updated.
- * @customfunction
- */
+/** update the guild roster */
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
@@ -120,6 +116,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const shipsTable = new ShipsTable();
   const unitsIndex = heroesTable.getDefinitions().concat(shipsTable.getDefinitions());
 
+  // add & rename
   for (const e of add) {
     const allyCode = e[1];
     if (allyCode && allyCode > 0) {
@@ -131,12 +128,14 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
         if (member) {
           members.push(member);
         }
-      } else if (name.length > 0 && members[index].name !== name) {
+      }
+      if (name.length > 0 && members[index].name !== name) {
         members[index].name = name;  // rename member
       }
     }
   }
 
+  // remove
   for (const e of remove) {
     const allyCode = e && Number(e[0]) || 0;
     if (allyCode > 0) {
@@ -146,14 +145,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
       }
     }
   }
-
-  const fixName = (e: PlayerData) => {
-    if (e.name[0] === '\'') {
-      e.name = ` ${e.name}`;
-    }
-  };
-
-  // TODO: regroup Name normalization, rename/add/delete
 
   // fix name starting with single quote
   for (const e of members) {
@@ -218,14 +209,13 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   return members;
 }
 
-/** Setup the Territory Battle for Hoth */
+/** setup the current event */
 function setupEvent(): void {
 
   // make sure the roster is up-to-date
 
   // Update Heroes and Ship Sheets
   // TODO: re-read only if necessary
-  // NOTE Currently not supported by Scorpio, so always using SWGOH.gg data
   let heroes: UnitDeclaration[];
   let ships: UnitDeclaration[];
   if (isDataSourceSwgohHelp_()) {

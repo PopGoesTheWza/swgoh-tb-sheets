@@ -73,7 +73,7 @@ function getPlatoonString_(platoon: string[][]): string {
   for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
     if (platoon[h][1].length === 0 || platoon[h][1] === 'Skip') {
       // impossible platoon
-      return '';  // TODO: return undefined
+      return undefined;
     }
 
     // remove the gear
@@ -152,7 +152,7 @@ function sendPlatoonDepthWebhook(): void {
         .getValues() as string[][];
       const platoon = getPlatoonString_(platoonData);
 
-      if (platoon.length > 0) {
+      if (platoon && platoon.length > 0) {
         fields.push({
           name: `${zone}: #${p + 1}`,
           value: platoon,

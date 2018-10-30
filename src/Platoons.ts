@@ -283,7 +283,7 @@ function recommendPlatoons() {
   // remove heroes listed on Exclusions sheet
   const exclusionsId = getExclusionId_();
   if (exclusionsId.length > 0) {
-    const exclusions = get_exclusions_();
+    const exclusions = getExclusionList_();
     processExclusions_(allHeroes, exclusions);
     processExclusions_(allShips, exclusions);
   }

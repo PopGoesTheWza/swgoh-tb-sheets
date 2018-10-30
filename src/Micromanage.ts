@@ -2,8 +2,8 @@
 // Micromanaged Webhook Functions
 // ****************************************
 
-/** Format the player's label */
-function player_label_(player: string, mention: string) {
+/** add discord mention to the player label */
+function playerLabel_(player: string, mention: string) {
 
   const value: string = (mention)
     ? `Assignments for **${player}** (${mention})`
@@ -12,35 +12,32 @@ function player_label_(player: string, mention: string) {
   return value;
 }
 
-/** Format the platoon label with number icons */
-function player_label_as_icon_(label: string, type: string, platoon: number) {
+/** output platoon numner as discord icon */
+function platoonAsIcon_(label: string, type: string, platoon: number) {
 
   const platoonIcon = [':one:', ':two:', ':three:', ':four:', ':five:', ':six:'][platoon];
 
   return `__${label}__ · ${type} ${platoonIcon}`;
 }
 
-/** Check if the unit can be easily confused */
-function is_group_unit_(unit: string): boolean {
+/** check if the unit can be difficult to identify */
+function isUnitHardToRead_(unit: string): boolean {
 
   return unit.search(
       /X-wing|U-wing|ARC-170|Geonosian|CC-|CT-|Dathcha|Jawa|Hoth Rebel/,
     ) > -1;
 }
 
-/** Convert an array index to a string */
-function array_index_to_string_(index: string): string {
-
-  const indexNum = parseInt(index, 10) + 1;
-
-  return indexNum.toString();
+/** convert an array index to uhman friendly string (0 => '1') */
+function arrayIndexToString_(index: string): string {
+  return (parseInt(index, 10) + 1).toString();
 }
 
-/** Format the unit name */
-function unit_label_(unit: string, slot: string, force: boolean = undefined): string {
+/** format the unit name */
+function unitLabel_(unit: string, slot: string, force: boolean = undefined): string {
 
-  if (force || is_group_unit_(unit)) {
-    return `[slot ${array_index_to_string_(slot)}] ${unit}`;
+  if (force || isUnitHardToRead_(unit)) {
+    return `[slot ${arrayIndexToString_(slot)}] ${unit}`;
   }
 
   return unit;
@@ -130,7 +127,7 @@ function sendMicroByPlayerWebhook(): void {
     currentEmbed.fields = [];
     let currentField: any = {};
     currentEmbed.fields.push(currentField);
-    currentField.name = player_label_as_icon_(
+    currentField.name = platoonAsIcon_(
       currentZone.label,
       currentZone.type,
       currentPlatoon,
@@ -157,7 +154,7 @@ function sendMicroByPlayerWebhook(): void {
         currentPlatoon = currentValue.platoon;
         currentField = {};
         currentEmbed.fields.push(currentField);
-        currentField.name = player_label_as_icon_(
+        currentField.name = platoonAsIcon_(
           currentZone.label,
           currentZone.type,
           currentPlatoon,
@@ -175,12 +172,12 @@ function sendMicroByPlayerWebhook(): void {
         currentField.value += '\n';
       }
       currentField.value += displaySlot
-        ? unit_label_(currentValue.unit, currentValue.slot, forceDisplay)
+        ? unitLabel_(currentValue.unit, currentValue.slot, forceDisplay)
         : currentValue.unit;
     }
 
     const mention = playerMentions[player];
-    const content = player_label_(player, mention);
+    const content = playerLabel_(player, mention);
     const jsonObject: any = {};
     jsonObject.content = content;
     jsonObject.embeds = embeds;

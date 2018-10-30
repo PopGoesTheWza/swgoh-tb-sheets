@@ -1,5 +1,5 @@
-/** Get the list of exclusions */
-function get_exclusions_(): KeyedType<KeyedBooleans> {
+/** get the list of units to exclude */
+function getExclusionList_(): KeyedType<KeyedBooleans> {
 
   const data = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS).getDataRange()
     .getValues() as string[][];
@@ -38,7 +38,7 @@ function get_exclusions_(): KeyedType<KeyedBooleans> {
   return exclusions;
 }
 
-/** Process all the excluded units */
+/** remove excluded units */
 function processExclusions_(
   data: KeyedType<UnitInstances>,
   exclusions: KeyedType<KeyedBooleans>,

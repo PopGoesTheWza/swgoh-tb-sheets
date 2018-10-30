@@ -1,4 +1,4 @@
-/** workaround to tslint issue of namespace scope after imoorting  type definitions */
+/** workaround to tslint issue of namespace scope after importingtype definitions */
 declare function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData;
 
 /**
