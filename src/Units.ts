@@ -315,7 +315,7 @@ class HeroesTable extends UnitsTable {
   /** return a list of Rare heroes needed for a phase */
   getNeededRareList(phase: number): string[] {
 
-    const platoonUnits: string[] = (!isLight_(getSideFilter_()) || phase > 1)
+    const platoonUnits: string[] = (!isLight_(getEventFilter_()) || phase > 1)
       ? getUniquePlatoonUnits_(1).concat(getUniquePlatoonUnits_(2))
       : getUniquePlatoonUnits_(1);
 

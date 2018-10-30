@@ -179,7 +179,7 @@ function playerSnapshot(): void {
   const unitsIndex = heroesTable.getDefinitions().concat(shipsTable.getDefinitions());
 
   // collect the meta data for the heroes
-  const filter = getSideFilter_(); // TODO: potentially broken if TB not sync
+  const filter = getEventFilter_(); // TODO: potentially broken if TB not sync
   const meta = getEventDefinition_(filter);
 
   // get all hero stats

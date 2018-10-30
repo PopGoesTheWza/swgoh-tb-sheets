@@ -167,7 +167,7 @@ enum SHEETS {
   INSTRUCTIONS = 'Instructions',
 }
 
-function getSideFilter_(): string {
+function getEventFilter_(): string {
 
   const value = SPREADSHEET.getSheetByName(SHEETS.META)
     .getRange(META_FILTER_ROW, META_FILTER_COL)
@@ -362,7 +362,7 @@ function getWebhookTemplate_(phase: number, row: number, defaultVal: string): st
 /** Get the Description for the phase */
 function getWebhookDesc_(phase: number): string {
 
-  const columnOffset = isLight_(getSideFilter_()) ? 0 : 1;
+  const columnOffset = isLight_(getEventFilter_()) ? 0 : 1;
   const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
     .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
     .getValue() as string;

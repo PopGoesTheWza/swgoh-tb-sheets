@@ -57,7 +57,7 @@ class PlatoonUnit {
 /** Initialize the list of Territory names */
 function initPlatoonPhases_(): void {
 
-  const filter = getSideFilter_();
+  const filter = getEventFilter_();
 
   // Names of Territories, # of Platoons
   if (isLight_(filter)) {
@@ -108,7 +108,7 @@ function setZoneName_(phase: number, zone: number, sheet: Sheet, platoonRow: num
 function readSlice_(phase: number, zone: number): string[][] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
-  const filter = getSideFilter_();
+  const filter = getEventFilter_();
 
   // format the cell name
   let cellName = filter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
@@ -133,7 +133,7 @@ function writeSlice_(data: string[][], platoon: number, range: Range): void {
 function fillSlice_(phase: number, zone: number, platoon: number, range: Range): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
-  const filter = getSideFilter_();
+  const filter = getEventFilter_();
 
   // format the cell name
   let cellName = filter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
