@@ -137,7 +137,6 @@ function getPlayerData_SwgohGgApi_(
   return playerData;
 }
 
-// TODO: move to Units.ts, as a method for both heroes and ships
 function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): PlayerData {
 
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
@@ -153,48 +152,25 @@ function getPlayerData_HeroesTab_(memberName: string, tagFilter: string): Player
       shipsGp: p[4],
       units: {},
     };
-    const sheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
-    const rows = getCharacterCount_() + 1;
-    const cols = HERO_PLAYER_COL_OFFSET + getGuildSize_() - 1;
-    const heroes = sheet.getRange(1, 1, rows, cols)
-      .getValues() as string[][];
+    const filter = tagFilter.toLowerCase();
 
-    // find the member column
-    const headers = heroes[0];
-    let playerCol = -1;
-    for (let i = HERO_PLAYER_COL_OFFSET - 1; i < headers.length; i += 1) {
-      if (headers[i] === memberName) {
-        playerCol = i;
-        break;
+    const heroesTable = new HeroesTable();
+    const heroes = heroesTable.getMemberInstances(memberName);
+    for (const baseId in heroes) {
+      const u = heroes[baseId];
+      if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
+        playerData.units[baseId] = u;
+        playerData.level = Math.max(playerData.level, u.level);
       }
     }
-    if (playerCol > -1) {
-      const filter = tagFilter.toLowerCase();
-      for (let i = 1; i < heroes.length; i += 1) {
-        const tags = heroes[i][2];
-        if (filter.length === 0 || tags.indexOf(filter) > -1) {
-          const stats = heroes[i][playerCol];
-          const m = stats.match(/(\d+)\*L(\d+)G(\d+)P(\d+)/);
-          if (m) {
-            const baseId = heroes[i][1];
-            const gearLevel = Number(m[3]);
-            const level = Number(m[2]);
-            const name = heroes[i][0];
-            const power = Number(m[4]);
-            const rarity = Number(m[1]);
-            playerData.units[baseId] = {
-              // baseId,
-              gearLevel,
-              level,
-              name,
-              power,
-              rarity,
-              stats,
-              tags,
-            };
-            playerData.level = Math.max(playerData.level, level);
-          }
-        }
+
+    const shipsTable = new ShipsTable();
+    const ships = shipsTable.getMemberInstances(memberName);
+    for (const baseId in ships) {
+      const u = ships[baseId];
+      if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
+        playerData.units[baseId] = u;
+        playerData.level = Math.max(playerData.level, u.level);
       }
     }
 

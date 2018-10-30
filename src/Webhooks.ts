@@ -45,12 +45,12 @@ function getWebhookDepthIntro_(phase: number, mention: string): string {
 }
 
 /** Get the player Discord IDs for mentions */
-function getPlayerMentions_(): KeyedArray {
+function getPlayerMentions_(): KeyedStrings {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.DISCORD);
   const data = sheet.getRange(2, 1, sheet.getLastRow(), 2)
     .getValues() as string[][];
-  const result: KeyedArray = {};
+  const result: KeyedStrings = {};
 
   for (const e of data) {
     const name = e[0];
@@ -173,7 +173,7 @@ function sendPlatoonDepthWebhook(): void {
 function getPlatoonDonations_(platoon: string[][],
                               donations: string[][],
                               rules: GoogleAppsScript.Spreadsheet.DataValidation[][],
-                              playerMentions: KeyedArray): string[][] {
+                              playerMentions: KeyedStrings): string[][] {
 
   const result: string[][] = [];
 
@@ -433,7 +433,7 @@ function allRareUnitsWebhook(): void {
   if (phase >= 3) {
     // get the ships list
     const shipsTable = new ShipsTable();
-    const ships = shipsTable.getRares(phase);
+    const ships = shipsTable.getNeededRareList(phase);
     if (ships.length > 0) {
       fields.push({
         name: 'Rare Ships',
@@ -445,7 +445,7 @@ function allRareUnitsWebhook(): void {
 
   // get the hero list
   const heroesTable = new HeroesTable();
-  const heroes = heroesTable.getRares(phase);
+  const heroes = heroesTable.getNeededRareList(phase);
   if (heroes.length > 0) {
     fields.push({
       name: 'Rare Heroes',

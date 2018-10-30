@@ -73,9 +73,13 @@ const WEBHOOK_DISPLAY_SLOT_ROW = 16;
 const META_UPDATETIME_COL = 1;  // ADDED FOR TIMESTAMP
 const META_UPDATETIME_ROW = 11;  // ADDED FOR TIMESTAMP
 
-type KeyedArray = {
-  [key: string]: string;
+type KeyedType<T> = {
+  [key: string]: T;
 };
+
+type KeyedBooleans = KeyedType<boolean>;
+type KeyedNumbers = KeyedType<number>;
+type KeyedStrings = KeyedType<string>;
 
 interface PlayerData {
   allyCode: number;
@@ -85,7 +89,7 @@ interface PlayerData {
   link?: string;
   name: string;
   shipsGp: number;
-  units: {[key: string]: UnitInstance};
+  units: UnitInstances;
 }
 
 /** A unit's name, baseId and tags */
@@ -109,9 +113,7 @@ interface UnitInstance {
   tags?: string;
 }
 
-type UnitInstances = {
-  [key: string]: UnitInstance;
-};
+type UnitInstances = KeyedType<UnitInstance>;
 
 enum ALIGNMENT {
   DARKSIDE = 'Dark Side',
@@ -177,33 +179,6 @@ function getTagFilter_(): string {
 
   return value;
 }
-
-function getCharacterCount_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_HEROES_COUNT_ROW, META_HEROES_COUNT_COL)
-    .getValue() as number;
-
-  return value;
-}
-
-function getShipCount_(): number {
-
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
-    .getValue() as number;
-
-  return value;
-}
-
-// function getMinimumGearLevel_(): number {
-
-//   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-//     .getRange(META_UNDERGEAR_ROW, META_UNDERGEAR_COL)
-//     .getValue() as number;
-
-//   return value;
-// }
 
 function getMinimumCharacterGp_(): number {
 

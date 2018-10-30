@@ -24,7 +24,7 @@ function populateEventTable_(
     .getRange(2, 2, getGuildSize_(), 1)
     .getValues() as [string][];
 
-  const nameToBaseId: KeyedArray = {};
+  const nameToBaseId: KeyedStrings = {};
   for (const e of heroes) {
     nameToBaseId[e.name] = e.baseId;
   }
@@ -163,7 +163,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   }
 
   // find duplicate names and append allycode
-  const index: { [key: string] : number[] } = {};
+  const index: KeyedType<number[]> = {};
   members.forEach((e, i) => {
     if (index.hasOwnProperty(e.name)) {
       index[e.name].push(i);
@@ -239,8 +239,8 @@ function setupEvent(): void {
   }
   const heroesTable = new HeroesTable();
   const shipsTable = new ShipsTable();
-  heroesTable.updateList(heroes);
-  shipsTable.updateList(ships);
+  heroesTable.setDefinitions(heroes);
+  shipsTable.setDefinitions(ships);
 
   // Figure out which data source to use
   let members: PlayerData[];
@@ -262,8 +262,8 @@ function setupEvent(): void {
   // will also return a new members array with added/deleted from sheet
   members = updateGuildRoster_(members);
 
-  heroesTable.populateList(members);
-  shipsTable.populateList(members);
+  heroesTable.setInstances(members);
+  shipsTable.setInstances(members);
 
   // clear the hero data
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);

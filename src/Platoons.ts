@@ -2,10 +2,9 @@
 // Platoon Functions
 // ****************************************
 
-// var usedHeroes = [];
 let PLATOON_PHASES: [string, string, string][] = [];
-let PLATOON_HERO_NEEDED_COUNT: number[][] = [];
-let PLATOON_SHIP_NEEDED_COUNT: number[][] = [];
+let PLATOON_HERO_NEEDED_COUNT: KeyedNumbers = {};
+let PLATOON_SHIP_NEEDED_COUNT: KeyedNumbers = {};
 
 /** Custom object for creating custom order to walk through platoons */
 class PlatoonDetails {
@@ -29,19 +28,17 @@ class PlatoonDetails {
 
 /**
  * Custom object for platoon units
- * hero, hero row, count, player count, player list (player, gear...)
+ * hero, count, player count, player list (player, gear...)
  */
 class PlatoonUnit {
 
   public readonly name: string;
-  public row: number;
   public count: number;
   private readonly pCount: number;
-  public readonly players: string[];
+  public players: string[];
 
-  constructor(name: string, row: number, count: number, pCount:number) {
+  constructor(name: string, count: number, pCount:number) {
     this.name = name;
-    this.row = row;
     this.count = count;
     this.pCount = pCount;
     this.players = [];
@@ -206,71 +203,51 @@ function resetPlatoons(): void {
 }
 
 /** Check if the player is available for the current phase */
-function playerAvailable_(player: string, unavailable: string[][]): boolean {
+function playerUnavailable_(player: string, unavailable: string[][]): boolean {
   return unavailable.some(e => e[0].length > -1 && player === e[0]);
+}
+
+function getNeededCount_(unitName: string, isHero: boolean) {
+  const count = isHero ? PLATOON_HERO_NEEDED_COUNT : PLATOON_SHIP_NEEDED_COUNT;
+  if (count[unitName]) {
+    count[unitName] += 1;
+  } else {
+    count[unitName] = 1;
+  }
 }
 
 /** Get a sorted list of recommended players */
 function getRecommendedPlayers_(
   unitName: string,
   phase: number,
-  data: string[][],
-  isHero: boolean,
+  data: KeyedType<UnitInstances>,
   unavailable: string[][],
 ): [string, number][] {
 
   // see how many stars are needed
-  const minStars = phase + 1;
+  const minRarity = phase + 1;
 
   const rec: [string, number][] = [];
 
-  if (unitName.length === 0) {  // no unit selected
-    return rec;
-  }
+  const members = data[unitName];
+  if (members) {
+    for (const player in members) {
 
-  // find the hero in the list
-  const guildSize = getGuildSize_();
-
-  for (let h = 1, hLen = data.length; h < hLen; h += 1) {
-
-    if (unitName === data[h][0]) {
-
-      // increment the number of times this unit was needed
-      (isHero ? PLATOON_HERO_NEEDED_COUNT : PLATOON_SHIP_NEEDED_COUNT)[h - 1][0] += 1;
-
-      // found the unit, now get the recommendations
-      for (let p = 0; p < guildSize; p += 1) {
-
-        const playerIdx = HERO_PLAYER_COL_OFFSET + p - 1;
-        const playerName = data[0][playerIdx];
-
-        if (playerAvailable_(playerName, unavailable)) {
-          // we shouldn't use this player
-          continue;
-        }
-
-        const playerUnit = data[h][playerIdx];
-        if (playerUnit.length === 0) {
-          // player doesn't own the unit
-          continue;
-        }
-
-        const playerStars = Number(playerUnit[0]);  // weak
-        if (playerStars >= minStars) {
-          const power = parseInt(getSubstringRe_(playerUnit, /P(.*)/), 10);
-          rec.push([playerName, power]);
-        }
+      if (playerUnavailable_(player, unavailable)) {
+        // we shouldn't use this player
+        continue;
       }
 
-      // finished with the hero, so break
-      break;
+      const playerUnit = members[player];
+
+      if (playerUnit.rarity >= minRarity) {
+        rec.push([player, playerUnit.power]);
+      }
     }
   }
 
   // sort list by power
-  const playerList = rec.sort((a, b) => {
-    return a[1] - b[1]; // sorts by 2nd element ascending
-  });
+  const playerList = rec.sort((a, b) => a[1] - b[1]);  // sorts by 2nd element ascending
 
   return playerList;
 }
@@ -287,29 +264,18 @@ function buildDropdown_(
     .build();
 }
 
-/** Reset the needed counts */
-function resetNeededCount_(count: number): [number][] {
-
-  const result = [];
-  for (let i = 0; i < count; i += 1) {
-    result[i] = [0];
-  }
-
-  return result;
-}
-
 /** Reset the units used */
-function resetUsedUnits_(data: string[][]): (string|boolean)[][] {
+function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBooleans> {
 
-  const result = [];
+  const result: KeyedType<KeyedBooleans> = {};
 
-  for (let r = 0, rLen = data.length; r < rLen; r += 1) {
-
-    if (r === 0) {
-      // first row, so copy it all
-      result[r] = data[r];
-    } else {
-      result[r] = Array(data[r].length).fill(false);
+  for (const unit in data) {
+    const members = data[unit];
+    for (const player in members) {
+      if (!result[unit]) {
+        result[unit] = {};
+      }
+      result[unit][player] = false;
     }
   }
 
@@ -319,37 +285,28 @@ function resetUsedUnits_(data: string[][]): (string|boolean)[][] {
 /** Recommend players for each Platoon */
 function recommendPlatoons() {
 
-  // see how many heroes are listed
-  const heroCount = getCharacterCount_();
-  const shipCount = getShipCount_();
+  const heroesTable = new HeroesTable();
+  const shipsTable = new ShipsTable();
 
   // cache the matrix of hero data
-  const heroesSheet = SPREADSHEET.getSheetByName(SHEETS.HEROES);
-  // TODO: move to Units.ts, as a method for both heroes and ships
-  let heroData: string[][] = heroesSheet
-    .getRange(1, 1, 1 + heroCount, HERO_PLAYER_COL_OFFSET + getGuildSize_())
-    .getValues() as string[][];
-  const shipsSheet = SPREADSHEET.getSheetByName(SHEETS.SHIPS);
-  // TODO: move to Units.ts, as a method for both heroes and ships
-  let shipData: string[][] = shipsSheet
-    .getRange(1, 1, 1 + shipCount, SHIP_PLAYER_COL_OFFSET + getGuildSize_())
-    .getValues() as string[][];
+  const allHeroes = heroesTable.getAllInstancesByUnits();
+  const allShips = shipsTable.getAllInstancesByUnits();
 
   // remove heroes listed on Exclusions sheet
   const exclusionsId = getExclusionId_();
   if (exclusionsId.length > 0) {
     const exclusions = get_exclusions_();
-    heroData = processExclusions_(heroData, exclusions);
-    shipData = processExclusions_(shipData, exclusions);
+    processExclusions_(allHeroes, exclusions);
+    processExclusions_(allShips, exclusions);
   }
 
   // reset the needed counts
-  PLATOON_HERO_NEEDED_COUNT = resetNeededCount_(heroCount);
-  PLATOON_SHIP_NEEDED_COUNT = resetNeededCount_(shipCount);
+  PLATOON_HERO_NEEDED_COUNT = {};
+  PLATOON_SHIP_NEEDED_COUNT = {};
 
   // reset the used heroes
-  const usedHeroes = resetUsedUnits_(heroData);
-  const usedShips = resetUsedUnits_(shipData);
+  const usedHeroes = resetUsedUnits_(allHeroes);
+  const usedShips = resetUsedUnits_(allShips);
 
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
@@ -391,7 +348,6 @@ function recommendPlatoons() {
   }
 
   // initialize platoon matrix
-  // hero, hero row, count, player count, player list (player, gear...)
   const platoonMatrix: PlatoonUnit[] = [];
   const baseCol = 4;
 
@@ -399,6 +355,7 @@ function recommendPlatoons() {
     GoogleAppsScript.Spreadsheet.Range,
     [GoogleAppsScript.Spreadsheet.DataValidation][]
   ][] = [];
+
   for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
 
     const cur = platoonOrder[o];
@@ -439,34 +396,30 @@ function recommendPlatoons() {
       const unitName = units[h][0];
       const idx = platoonMatrix.length;
 
-      const playersRange = sheet.getRange(
-        cur.row + h,
-        baseCol + 1 + platoonOffset,
-      );
-
       if (unitName.length === 0) {
         // no unit was entered, so skip it
-        platoonMatrix[idx] = new PlatoonUnit(unitName, 0, 0, 0);
+        platoonMatrix.push(new PlatoonUnit(unitName, 0, 0));
         dropdowns.push([null]);
+
         continue;
       }
+
+      getNeededCount_(unitName, cur.isGround);
 
       const rec = getRecommendedPlayers_(
         unitName,
         phase,
-        cur.isGround ? heroData : shipData,
-        cur.isGround,
+        cur.isGround ? allHeroes : allShips,
         unavailable,
       );
-      platoonMatrix[idx] = new PlatoonUnit(unitName, 0, 0, rec.length);
+
+      platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
 
       if (rec.length > 0) {
         dropdowns.push([buildDropdown_(rec)]);
 
         // add the players to the matrix
-        for (const r of rec) {
-          platoonMatrix[idx].players.push(r[0]); // player name
-        }
+        platoonMatrix[idx].players = rec.map(r => r[0]); // player name
       } else {
         dropdowns.push([null]);
         // impossible to fill the platoon if no one can donate
@@ -483,23 +436,13 @@ function recommendPlatoons() {
   // update the unit counts
   for (const p of platoonMatrix) {
 
-    // find the unit's count
-    for (let h = 1, hLen = heroData.length; h < hLen; h += 1) {
-
-      if (heroData[h][0] === p.name) {
-        p.row = h;
-        p.count = PLATOON_HERO_NEEDED_COUNT[h - 1][0];
-        break;
-      }
-    }
+    const unit = p.name;
 
     // find the unit's count
-    for (let h = 1, hLen = shipData.length; h < hLen; h += 1) {
-      if (shipData[h][0] === p.name) {
-        p.row = h;
-        p.count = PLATOON_SHIP_NEEDED_COUNT[h - 1][0];
-        break;
-      }
+    if (PLATOON_HERO_NEEDED_COUNT[unit]) {
+      p.count = PLATOON_HERO_NEEDED_COUNT[unit];
+    } else if (PLATOON_SHIP_NEEDED_COUNT[unit]) {
+      p.count = PLATOON_SHIP_NEEDED_COUNT[unit];
     }
   }
 
@@ -559,38 +502,38 @@ function recommendPlatoons() {
       let defaultValue = '';
       const count = placementCount[cur.zone];
 
+      const unit = platoonMatrix[matrixIdx].name;
       for (const player of platoonMatrix[matrixIdx].players) {
 
+        const available = count[player] == null || count[player] < maxPlayerDonations;
+        if (!available) {
+          continue;
+        }
+
         // see if the recommended player's hero has been used
-        const heroRow = platoonMatrix[matrixIdx].row;
         if (cur.isGround) {
           // ground units
+          if (usedHeroes[unit]
+            && usedHeroes[unit].hasOwnProperty(player)
+            && !usedHeroes[unit][player]
+          ) {
+            usedHeroes[unit][player] = true;
+            defaultValue = player;
+            count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
 
-          for (let u = 1, uLen = usedHeroes[heroRow].length; u < uLen; u += 1) {
-
-            const available = count[player] == null || count[player] < maxPlayerDonations;
-            if (available && usedHeroes[0][u] === player && usedHeroes[heroRow][u] === false) {
-              usedHeroes[heroRow][u] = true;
-              defaultValue = player;
-              count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
-
-              break;
-            }
+            break;
           }
         } else {
           // ships
+          if (usedShips[unit]
+            && usedShips[unit].hasOwnProperty(player)
+            && !usedShips[unit][player]
+          ) {
+            usedShips[unit][player] = true;
+            defaultValue = player;
+            count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
 
-          for (let u = 1, uLen = usedShips[heroRow].length; u < uLen; u += 1) {
-
-            const available = count[player] == null || count[player] < maxPlayerDonations;
-
-            if (available && usedShips[0][u] === player && usedShips[heroRow][u] === false) {
-              usedShips[heroRow][u] = true;
-              defaultValue = player;
-              count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
-
-              break;
-            }
+            break;
           }
         }
 

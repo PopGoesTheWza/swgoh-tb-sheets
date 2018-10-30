@@ -12,7 +12,7 @@ interface SwgohGgUnit {
     level: number;
     power: number;
     rarity: number;
-    stats: {[key: string]: number};
+    stats: KeyedNumbers;
     url: string;
     zeta_abilities: string[];
   };
