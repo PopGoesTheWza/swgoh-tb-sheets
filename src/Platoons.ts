@@ -180,11 +180,6 @@ function resetPlatoons(): void {
   });
 }
 
-/** Check if the player is available for the current phase */
-function playerUnavailable_(player: string, unavailable: string[][]): boolean {
-  return unavailable.some(e => e[0].length > -1 && player === e[0]);
-}
-
 function getNeededCount_(unitName: string, isHero: boolean) {
   const count = isHero ? PLATOON_HERO_NEEDED_COUNT : PLATOON_SHIP_NEEDED_COUNT;
   if (count[unitName]) {
@@ -199,7 +194,6 @@ function getRecommendedPlayers_(
   unitName: string,
   phase: number,
   data: KeyedType<UnitInstances>,
-  unavailable: string[][],
 ): [string, number][] {
 
   // see how many stars are needed
@@ -210,11 +204,6 @@ function getRecommendedPlayers_(
   const members = data[unitName];
   if (members) {
     for (const player in members) {
-
-      if (playerUnavailable_(player, unavailable)) {
-        // we shouldn't use this player
-        continue;
-      }
 
       const playerUnit = members[player];
 
@@ -258,6 +247,17 @@ function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBoolean
   return result;
 }
 
+function processUnavailable_(data: KeyedType<UnitInstances>, list: [string][]) {
+  for (const unit in data) {
+    const members = Object.assign({}, data[unit]);
+    for (const player in members) {
+      if (list.findIndex(e => e[0] === player) !== -1) {
+        delete data[unit][player];
+      }
+    }
+  }
+}
+
 /** Recommend players for each Platoon */
 function recommendPlatoons() {
 
@@ -276,6 +276,14 @@ function recommendPlatoons() {
     processExclusions_(allShips, exclusions, getEventFilter_());
   }
 
+  // setup platoon phases
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues() as [string][];
+  processUnavailable_(allHeroes, unavailable);
+  processUnavailable_(allShips, unavailable);
+  const phase = sheet.getRange(2, 1).getValue() as number;
+  initPlatoonPhases_();
+
   // reset the needed counts
   PLATOON_HERO_NEEDED_COUNT = {};
   PLATOON_SHIP_NEEDED_COUNT = {};
@@ -283,12 +291,6 @@ function recommendPlatoons() {
   // reset the used heroes
   const usedHeroes = resetUsedUnits_(allHeroes);
   const usedShips = resetUsedUnits_(allShips);
-
-  // setup platoon phases
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues() as [string][];
-  const phase = sheet.getRange(2, 1).getValue() as number;
-  initPlatoonPhases_();
 
   // setup a custom order for walking the platoons
   const platoonOrder: PlatoonDetails[] = [];
@@ -383,7 +385,6 @@ function recommendPlatoons() {
         unitName,
         phase,
         cur.isGround ? allHeroes : allShips,
-        unavailable,
       );
 
       platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
