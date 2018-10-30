@@ -104,6 +104,31 @@ function setZoneName_(phase: number, zone: number, sheet: Sheet, platoonRow: num
   return zoneName;
 }
 
+/** retrieve current slices */
+function readSlice_(phase: number, zone: number): string[][] {
+
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
+  const filter = getSideFilter_();
+
+  // format the cell name
+  let cellName = filter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
+  cellName += `Slice${phase}Z${zone + 1}`;
+
+  if (phase > 2 || zone !== 0) {
+    try {  // TODO: avoid try/catch
+      return sheet.getRange(cellName).getValues() as string[][];
+    } catch (e) {}
+  }
+
+  return undefined;
+}
+
+/** Populate platoon with slices if available */
+function writeSlice_(data: string[][], platoon: number, range: Range): void {
+  const slice = data.map(e => [e[platoon]]);
+  range.setValues(slice);
+}
+
 /** Populate platoon with slices if available */
 function fillSlice_(phase: number, zone: number, platoon: number, range: Range): void {
 
@@ -145,6 +170,7 @@ function resetPlatoon_(
       sheet.hideRows(platoonRow, rows);
     }
   }
+  const slice = readSlice_(phase, zone);
 
   for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
     // clear the contents
@@ -153,15 +179,18 @@ function resetPlatoon_(
     range.clearContent()
         .setFontColor(COLOR.BLACK);
 
-    fillSlice_(
-      phase,
-      zone,
-      platoon,
-      range.offset(0, 0, MAX_PLATOON_UNITS, 1),
-    );  // TODO: read once, then write all
+    writeSlice_(slice, platoon, range.offset(0, 0, MAX_PLATOON_UNITS, 1));
+    // fillSlice_(
+    //   phase,
+    //   zone,
+    //   platoon,
+    //   range.offset(0, 0, MAX_PLATOON_UNITS, 1),
+    // );  // TODO: read once, then write all
 
     range.offset(0, 1, MAX_PLATOON_UNITS, 1)
       .clearDataValidations();
+    // clear 'Skip this' checkbox
+    range.offset(15, 1, 1, 1).clearContent();
   }
 }
 
@@ -172,24 +201,29 @@ function resetPlatoons(): void {
   const phase = sheet.getRange(2, 1).getValue() as number;
   initPlatoonPhases_();
 
+  [2, 20, 38].forEach((platoonRow, zone) => {
+    resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 3);
+    setZoneName_(phase, zone, sheet, platoonRow);
+  });
+
   // Territory 1 (Air)
-  let platoonRow = 2;
-  let zone = 0;
-  resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 3);
-  setZoneName_(phase, zone, sheet, platoonRow);
-  zone += 1;
-
-  // Territory 2
-  platoonRow = 20;
-  resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 1);
-  setZoneName_(phase, zone, sheet, platoonRow);
-  zone += 1;
-
-  // Territory 3
-  platoonRow = 38;
-  resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 1);
-  setZoneName_(phase, zone, sheet, platoonRow);
+  // let platoonRow = 2;
+  // let zone = 0;
+  // resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 3);
+  // setZoneName_(phase, zone, sheet, platoonRow);
   // zone += 1;
+
+  // // Territory 2
+  // platoonRow = 20;
+  // resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 1);
+  // setZoneName_(phase, zone, sheet, platoonRow);
+  // zone += 1;
+
+  // // Territory 3
+  // platoonRow = 38;
+  // resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 1);
+  // setZoneName_(phase, zone, sheet, platoonRow);
+  // // zone += 1;
 }
 
 /** Check if the player is available for the current phase */
