@@ -46,7 +46,7 @@ function processExclusions_(
 ) {
   const filter = event ? event.trim().toLowerCase() : undefined;
   for (const player in exclusions) {
-    const units = exclusions[player];
+    const units = Object.assign({}, exclusions[player]);
     for (const unit in units) {
       if (units[unit] && data[unit] && data[unit][player]) {
         if (!filter || data[unit][player].tags.indexOf(filter) !== -1) {
