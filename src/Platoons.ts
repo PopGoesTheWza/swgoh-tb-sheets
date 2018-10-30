@@ -273,7 +273,7 @@ function recommendPlatoons() {
   if (exclusionsId.length > 0) {
     const exclusions = getExclusionList_();
     processExclusions_(allHeroes, exclusions);
-    processExclusions_(allShips, exclusions);
+    processExclusions_(allShips, exclusions, getEventFilter_());
   }
 
   // reset the needed counts

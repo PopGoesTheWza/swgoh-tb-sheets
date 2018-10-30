@@ -42,12 +42,16 @@ function getExclusionList_(): KeyedType<KeyedBooleans> {
 function processExclusions_(
   data: KeyedType<UnitInstances>,
   exclusions: KeyedType<KeyedBooleans>,
+  event: string = undefined,  // used to validate ship alignment
 ) {
+  const filter = event ? event.trim().toLowerCase() : undefined;
   for (const player in exclusions) {
     const units = exclusions[player];
     for (const unit in units) {
       if (units[unit] && data[unit] && data[unit][player]) {
-        delete data[unit][player];
+        if (!filter || data[unit][player].tags.indexOf(filter) !== -1) {
+          delete data[unit][player];
+        }
       }
     }
   }
