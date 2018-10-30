@@ -129,27 +129,6 @@ function writeSlice_(data: string[][], platoon: number, range: Range): void {
   range.setValues(slice);
 }
 
-/** Populate platoon with slices if available */
-function fillSlice_(phase: number, zone: number, platoon: number, range: Range): void {
-
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
-  const filter = getEventFilter_();
-
-  // format the cell name
-  let cellName = filter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
-  cellName += `Slice${phase}Z${zone + 1}`;
-
-  if (phase < 3 && zone === 0) {
-    return;
-  }
-
-  try {  // TODO: avoid try/catch
-    const data = sheet.getRange(cellName).getValues() as string[][];
-    const slice = data.map(e => [e[platoon]]);
-    range.setValues(slice);
-  } catch (e) {}
-}
-
 /** Clear out a platoon */
 function resetPlatoon_(
   phase: number,
@@ -180,12 +159,6 @@ function resetPlatoon_(
         .setFontColor(COLOR.BLACK);
 
     writeSlice_(slice, platoon, range.offset(0, 0, MAX_PLATOON_UNITS, 1));
-    // fillSlice_(
-    //   phase,
-    //   zone,
-    //   platoon,
-    //   range.offset(0, 0, MAX_PLATOON_UNITS, 1),
-    // );  // TODO: read once, then write all
 
     range.offset(0, 1, MAX_PLATOON_UNITS, 1)
       .clearDataValidations();
@@ -205,25 +178,6 @@ function resetPlatoons(): void {
     resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 3);
     setZoneName_(phase, zone, sheet, platoonRow);
   });
-
-  // Territory 1 (Air)
-  // let platoonRow = 2;
-  // let zone = 0;
-  // resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 3);
-  // setZoneName_(phase, zone, sheet, platoonRow);
-  // zone += 1;
-
-  // // Territory 2
-  // platoonRow = 20;
-  // resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 1);
-  // setZoneName_(phase, zone, sheet, platoonRow);
-  // zone += 1;
-
-  // // Territory 3
-  // platoonRow = 38;
-  // resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 1);
-  // setZoneName_(phase, zone, sheet, platoonRow);
-  // // zone += 1;
 }
 
 /** Check if the player is available for the current phase */

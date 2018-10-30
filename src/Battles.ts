@@ -199,8 +199,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     [e.shipsGp],
   ]);
 
-  // result.sort(sortFunction)
-
   // write the roster
   sheet.getRange(1, 2, 60, result[0].length).clearContent();
   sheet.getRange(1, 2, header.length, header[0].length).setValues(header);
