@@ -3,7 +3,7 @@ declare function getGuildDataFromSwgohHelp_(): PlayerData[];
 
 /** set the value and style in a cell */
 function setCellValue_(
-  cell: GoogleAppsScript.Spreadsheet.Range,
+  cell: Range,
   value: boolean|number|string|Date,
   bold: boolean,
   align?: 'left' | 'center' | 'right',
@@ -127,7 +127,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
       const index = members.findIndex(m => m.allyCode === allyCode);
       if (index === -1) {
         // get PlayerData and update members
-        const member = (getPlayerData_SwgohGgApi_(allyCode, undefined, unitsIndex));
+        const member = (getPlayerDataFromDataSource_(allyCode, undefined, unitsIndex));
         if (member) {
           members.push(member);
         }

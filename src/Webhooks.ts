@@ -170,10 +170,12 @@ function sendPlatoonDepthWebhook(): void {
 }
 
 /** Get an array representing the new platoon assignements */
-function getPlatoonDonations_(platoon: string[][],
-                              donations: string[][],
-                              rules: GoogleAppsScript.Spreadsheet.DataValidation[][],
-                              playerMentions: KeyedStrings): string[][] {
+function getPlatoonDonations_(
+  platoon: string[][],
+  donations: string[][],
+  rules: DataValidation[][],
+  playerMentions: KeyedStrings,
+): string[][] {
 
   const result: string[][] = [];
 
@@ -202,7 +204,7 @@ function getPlatoonDonations_(platoon: string[][],
 
       // only add rare donations
       if (criteria[0].length < RARE_MAX) {
-        const sorted = criteria[0].sort(lowerCase_);
+        const sorted = criteria[0].sort(caseInsensitive_);
         const names: string[] = [];
         for (const name of sorted) {
           const mention = playerMentions[name];
@@ -345,7 +347,7 @@ function sendPlatoonSimplifiedWebhook_(byType: 'Player' | 'Unit'): void {
       [],
     );
     // sort by player
-    donations = acc.sort(firstElementToLowerCase_);
+    donations = acc.sort(firstElementCaseInsensitive_);
   }
 
   // format the needed donations
