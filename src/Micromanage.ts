@@ -184,8 +184,7 @@ function sendMicroByPlayerWebhook(): void {
     const jsonObject: any = {};
     jsonObject.content = content;
     jsonObject.embeds = embeds;
-    const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions
-    = urlFetchMakeParam_(jsonObject);
+    const options: URLFetchRequestOptions = urlFetchMakeParam_(jsonObject);
     urlFetchExecute_(webhookURL, options);
     Utilities.sleep(WAIT_TIME);
   }
@@ -193,9 +192,9 @@ function sendMicroByPlayerWebhook(): void {
 
 /** Setup the fetch parameters */
 // TODO: Make generic for all Discord webhooks
-function urlFetchMakeParam_(jsonObject: object): GoogleAppsScript.URL_Fetch.URLFetchRequestOptions {
+function urlFetchMakeParam_(jsonObject: object): URLFetchRequestOptions {
 
-  const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+  const options: URLFetchRequestOptions = {
     method: 'post',
     contentType: 'application/json',
     // Convert the JavaScript object to a JSON string.

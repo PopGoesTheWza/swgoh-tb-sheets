@@ -4,9 +4,9 @@ abstract class UnitsTable {
   /** column which holds units for the first member */
   private columnOffset: number;
   /** name of the sheet on which the units are stored */
-  private sheet: GoogleAppsScript.Spreadsheet.Sheet;
+  private sheet: Sheet;
 
-  constructor(offset: number, sheet: GoogleAppsScript.Spreadsheet.Sheet) {
+  constructor(offset: number, sheet: Sheet) {
 
     this.columnOffset = offset;
     this.sheet = sheet;

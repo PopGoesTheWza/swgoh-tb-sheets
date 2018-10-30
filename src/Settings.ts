@@ -3,6 +3,11 @@
 const SPREADSHEET = SpreadsheetApp.getActive();
 const UI = SpreadsheetApp.getUi();
 
+type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation;
+type Range = GoogleAppsScript.Spreadsheet.Range;
+type Sheet = GoogleAppsScript.Spreadsheet.Sheet;
+type URLFetchRequestOptions = GoogleAppsScript.URL_Fetch.URLFetchRequestOptions;
+
 /** Global constants */
 const MAX_PLAYERS = 50;
 // const MIN_PLAYER_LEVEL = 65

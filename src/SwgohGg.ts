@@ -79,7 +79,7 @@ function requestSwgohGgApi_<T>(
 
   let json;
   try {
-    const params: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+    const params: URLFetchRequestOptions = {
       // followRedirects: true,
       muteHttpExceptions: true,
     };

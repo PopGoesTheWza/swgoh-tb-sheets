@@ -57,10 +57,10 @@ class PlatoonUnit {
 /** Initialize the list of Territory names */
 function initPlatoonPhases_(): void {
 
-  const tagFilter = getSideFilter_();
+  const filter = getSideFilter_();
 
   // Names of Territories, # of Platoons
-  if (isLight_(tagFilter)) {
+  if (isLight_(filter)) {
     PLATOON_PHASES = [
       ['', 'Rebel Base', ''],
       ['', 'Ion Cannon', 'Overlook'],
@@ -69,7 +69,7 @@ function initPlatoonPhases_(): void {
       ['Contested Airspace', 'Snowfields', 'Forward Stronghold'],
       ['Imperial Fleet Staging Area', 'Imperial Flank', 'Imperial Landing'],
     ];
-  } else if (tagFilter === ALIGNMENT.DARKSIDE) {
+  } else if (filter === ALIGNMENT.DARKSIDE) {
     PLATOON_PHASES = [
       ['', 'Imperial Flank', 'Imperial Landing'],
       ['', 'Snowfields', 'Forward Stronghold'],
@@ -95,12 +95,7 @@ function initPlatoonPhases_(): void {
 }
 
 /** Get the zone name and update the cell */
-function setZoneName_(
-  phase: number,
-  zone: number,
-  sheet: GoogleAppsScript.Spreadsheet.Sheet,
-  platoonRow: number,
-): string {
+function setZoneName_(phase: number, zone: number, sheet: Sheet, platoonRow: number): string {
 
   // set the zone name
   const zoneName = PLATOON_PHASES[phase - 1][zone];
@@ -110,18 +105,13 @@ function setZoneName_(
 }
 
 /** Populate platoon with slices if available */
-function fillSlice_(
-  phase: number,
-  zone: number,
-  platoon: number,
-  range: GoogleAppsScript.Spreadsheet.Range,
-): void {
+function fillSlice_(phase: number, zone: number, platoon: number, range: Range): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
-  const tagFilter = getSideFilter_();
+  const filter = getSideFilter_();
 
   // format the cell name
-  let cellName = tagFilter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
+  let cellName = filter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
   cellName += `Slice${phase}Z${zone + 1}`;
 
   if (phase < 3 && zone === 0) {
@@ -253,9 +243,7 @@ function getRecommendedPlayers_(
 }
 
 /** create the dropdown list */
-function buildDropdown_(
-  playerList: [string, number][],
-): GoogleAppsScript.Spreadsheet.DataValidation {
+function buildDropdown_(playerList: [string, number][]): DataValidation {
 
   const formatList = playerList.map(e => e[0]);
 
@@ -351,10 +339,7 @@ function recommendPlatoons() {
   const platoonMatrix: PlatoonUnit[] = [];
   const baseCol = 4;
 
-  const allDropdowns: [
-    GoogleAppsScript.Spreadsheet.Range,
-    [GoogleAppsScript.Spreadsheet.DataValidation][]
-  ][] = [];
+  const allDropdowns: [Range, [DataValidation][]][] = [];
 
   for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
 
@@ -384,7 +369,7 @@ function recommendPlatoons() {
     const units = sheet.getRange(cur.row, baseCol + platoonOffset, MAX_PLATOON_UNITS, 1)
       .getValues() as string[][];
 
-    const dropdowns: [GoogleAppsScript.Spreadsheet.DataValidation][] = [];
+    const dropdowns: [DataValidation][] = [];
     const dropdownsRange = sheet.getRange(
       cur.row,
       baseCol + platoonOffset + 1,
@@ -472,14 +457,8 @@ function recommendPlatoons() {
   // try to find an unused player to default to
   let matrixIdx = 0;
 
-  const allDonors:[
-    GoogleAppsScript.Spreadsheet.Range,
-    [string][]
-  ][] = [];
-  const allColors:[
-    GoogleAppsScript.Spreadsheet.Range,
-    [COLOR, COLOR][]
-  ][] = [];
+  const allDonors:[Range, [string][]][] = [];
+  const allColors: [Range, [COLOR, COLOR][]][] = [];
   for (const cur of platoonOrder) {
 
     if (cur.skip) {
