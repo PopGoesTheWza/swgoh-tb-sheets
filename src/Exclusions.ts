@@ -45,7 +45,8 @@ function processExclusions_(
   event: string = undefined,  // used to validate ship alignment
 ) {
   const filter = event ? event.trim().toLowerCase() : undefined;
-  for (const player in exclusions) {
+  const members = Object.assign({}, data);
+  for (const player in members) {
     const units = Object.assign({}, exclusions[player]);
     for (const unit in units) {
       if (units[unit] && data[unit] && data[unit][player]) {
@@ -53,6 +54,9 @@ function processExclusions_(
           delete data[unit][player];
         }
       }
+    }
+    if (Object.keys(data[player]).length === 0) {
+      delete data[player];
     }
   }
 
