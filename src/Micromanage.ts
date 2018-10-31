@@ -62,7 +62,7 @@ function sendMicroByPlayerWebhook(): void {
 
   // get data from the platoons
   let entries = [];
-  for (let z = 0; z <= 2; z += 1) {
+  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
     if (z === 0 && phase < 3) {
       // skip this zone
       continue;
