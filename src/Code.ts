@@ -15,6 +15,27 @@ function firstElementCaseInsensitive_(a: [string, undefined], b: [string, undefi
   return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
 }
 
+function getMemberNames_(): [string][] {
+
+  return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    .getRange(2, 2, getGuildSize_(), 1)
+    .getValues() as [string][];
+}
+
+function getMemberAllycodes_(): [string, number][] {
+
+  return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    .getRange(2, 2, getGuildSize_(), 2)
+    .getValues() as [string, number][];
+}
+
+function getMemberBaseAttributes_(): [string, number, number, number, number][] {
+
+  return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+  .getRange(2, 2, getGuildSize_(), 5)
+  .getValues() as [string, number, number, number, number][];
+}
+
 /** retrieve player's data from unit tabs or a data source */
 function getSnapshopData_(
   sheet: Sheet,
@@ -22,15 +43,13 @@ function getSnapshopData_(
   unitsIndex: UnitDefinition[],
 ): PlayerData {
 
-  const members = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(2, 2, getGuildSize_(), 2)
-    .getValues() as [string, number][];
+  const members = getMemberAllycodes_();
 
   const memberName = (sheet.getRange(5, 1).getValue() as string).trim();
 
   // get the player's link from the Roster
   if (memberName.length > 0 && members.find(e => e[0] === memberName)) {
-    return getPlayerDataFromUnitsTab_(memberName, filter.toLowerCase());
+    return getPlayerDataFromSheet_(memberName, filter.toLowerCase());
   }
 
   // check if ally code
@@ -41,7 +60,7 @@ function getSnapshopData_(
     // check if ally code exist in roster
     const member = members.find(e => e[1] === allyCode);
     if (member) {
-      return getPlayerDataFromUnitsTab_(member[0], filter.toLowerCase());
+      return getPlayerDataFromSheet_(member[0], filter.toLowerCase());
     }
 
     return getPlayerDataFromDataSource_(allyCode, filter, unitsIndex);
@@ -92,11 +111,53 @@ function getPlayerDataFromDataSource_(
   return undefined;
 }
 
-/** read player's data from unit tabs */
-function getPlayerDataFromUnitsTab_(memberName: string, tag: string): PlayerData {
+function getMembersFromSheet_(): PlayerData[] {
 
-  const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(2, 2, getGuildSize_(), 5).getValues() as [string, number, number, number, number][];
+  const roster = getMemberBaseAttributes_();
+  const heroesTable = new HeroesTable();
+  const shipsTable = new ShipsTable();
+  const heroes = heroesTable.getAllInstancesByMember();
+  const ships = shipsTable.getAllInstancesByMember();
+
+  const members = roster.map((e) => {
+    const memberName = e[0];
+    const playerData: PlayerData = {
+      allyCode: e[1],
+      gp: e[2],
+      heroesGp: e[3],
+      name: memberName,
+      shipsGp: e[4],
+      units: {},
+    };
+
+    const h = heroes[memberName];
+    if (h) {
+      for (const baseId in h) {
+        const u = h[baseId];
+        playerData.units[baseId] = u;
+        playerData.level = Math.max(playerData.level, u.level);
+      }
+    }
+
+    const s = ships[memberName];
+    if (s) {
+      for (const baseId in s) {
+        const u = s[baseId];
+        playerData.units[baseId] = u;
+        playerData.level = Math.max(playerData.level, u.level);
+      }
+    }
+
+    return playerData;
+  });
+
+  return members;
+}
+
+/** read player's data from unit tabs */
+function getPlayerDataFromSheet_(memberName: string, tag: string): PlayerData {
+
+  const roster = getMemberBaseAttributes_();
   const p = roster.find(e => e[0] === memberName);
   if (p) {
     const playerData: PlayerData = {

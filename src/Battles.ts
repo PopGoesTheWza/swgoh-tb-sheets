@@ -21,10 +21,7 @@ function populateEventTable_(
   unitsIndex: UnitDefinition[],
 ): (string|number)[][] {
 
-  const memberNames = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(2, 2, getGuildSize_(), 1)
-    .getValues() as [string][];
-
+  const memberNames = getMemberNames_();
   const nameToBaseId: KeyedStrings = {};
   for (const e of unitsIndex) {
     nameToBaseId[e.name] = e.baseId;
@@ -285,8 +282,7 @@ function getMembers_(): PlayerData[] {
 
   if (cachedHash && cachedHash === settingsHash) {
     debugger;
-    // read from sheet
-    // and return
+    return getMembersFromSheet_();
   }
   // Figure out which data source to use
   if (isDataSourceSwgohHelp_()) {

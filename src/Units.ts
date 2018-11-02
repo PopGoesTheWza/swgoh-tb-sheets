@@ -283,9 +283,7 @@ abstract class UnitsTable {
       .getValues() as string[][];
 
     // Build a Member index by Name
-    const memberList = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-      .getRange(2, 2, getGuildSize_(), 1)
-      .getValues() as [string][];
+    const memberList = getMemberNames_();
 
     // This will hold all our data
     const data = baseIDs.map(e => Array(memberList.length).fill(null));  // Initialize our data
