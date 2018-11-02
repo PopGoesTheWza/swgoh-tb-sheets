@@ -84,7 +84,7 @@ export namespace  swgohhelpapi {
       constructor(settings: Settings)
       /**
        * Attempts to log into the SWGoH.help API.
-       * @returns A SWGoH.help API session token
+       * returns A SWGoH.help API session token
        */
       login(): string
       /** Fetch Player data */
