@@ -19,7 +19,7 @@ function firstElementCaseInsensitive_(a: [string, undefined], b: [string, undefi
 function getSnapshopData_(
   sheet: Sheet,
   filter: string,
-  unitsIndex: UnitDeclaration[],
+  unitsIndex: UnitDefinition[],
 ): PlayerData {
 
   const members = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
@@ -54,7 +54,7 @@ function getSnapshopData_(
 function getPlayerDataFromDataSource_(
   allyCode: number,
   tag: string = '',
-  unitsIndex: UnitDeclaration[] = undefined,
+  unitsIndex: UnitDefinition[] = undefined,
 ): PlayerData {
 
   const playerData = isDataSourceSwgohHelp_()
@@ -68,6 +68,7 @@ function getPlayerDataFromDataSource_(
 
     for (const baseId in units) {
       const u = units[baseId];
+      // TODO: reload units definition if no match
       const d = unitsIndex.find(e => e.baseId === baseId);
       if (d && d.tags.indexOf(filter) > -1) {
         u.name = d.name;
@@ -198,6 +199,11 @@ function playerSnapshot(): void {
       if (u.rarity >= 7 && u.power >= powerTarget) {
         countFiltered += 1;
         // does the hero meet the tagged requirements?
+        if (u.tags) {
+          // TODO: check if u.tags exists
+          debugger;
+        }
+        // TODO: reload units definition if no match
         unitsIndex.some((e) => {
           const found = e.baseId === baseId;
           if (found && e.tags.indexOf(characterTag) !== -1) {

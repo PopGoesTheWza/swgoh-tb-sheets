@@ -19,12 +19,12 @@ abstract class UnitsTable {
   protected abstract toUnitInstance(stats: string): UnitInstance;
 
   /** return an array of all units definition (name, baseId, tags) */
-  getDefinitions(): UnitDeclaration[] {
+  getDefinitions(): UnitDefinition[] {
 
     const data = this.sheet.getRange(2, 1, this.getCount(), 3)
       .getValues() as string[][];
 
-    const definitions: UnitDeclaration[] = data.map((e) => {
+    const definitions: UnitDefinition[] = data.map((e) => {
       const name = e[0];
       const baseId = e[1];
       const tags = e[2];
@@ -238,7 +238,7 @@ abstract class UnitsTable {
   }
 
   /** set the unit definitions and phase count formulas */
-  protected setDefinitions(units: UnitDeclaration[], formula: (u: number) => string): void {
+  protected setDefinitions(units: UnitDefinition[], formula: (u: number) => string): void {
 
     // update the sheet
     const result = units.map((e, i) => {
@@ -332,7 +332,7 @@ class HeroesTable extends UnitsTable {
   }
 
   /** set the hero definitions and phase count formulas */
-  setDefinitions(units: UnitDeclaration[]): void {
+  setDefinitions(units: UnitDefinition[]): void {
 
     const formula = row => `=COUNTIF({${SHEETS.PLATOONS}!$D$20:$D$34,${SHEETS.PLATOONS}!$H$20:$H$34,
 ${SHEETS.PLATOONS}!$L$20:$L$34,${SHEETS.PLATOONS}!$P$20:$P$34,
@@ -393,7 +393,7 @@ class ShipsTable extends UnitsTable {
   }
 
   /** set the ship definitions and phase count formulas */
-  setDefinitions(units: UnitDeclaration[]): void {
+  setDefinitions(units: UnitDefinition[]): void {
 
     const formula = row => `=COUNTIF({${SHEETS.PLATOONS}!$D$2:$D$16,${SHEETS.PLATOONS}!$H$2:$H$16,
 ${SHEETS.PLATOONS}!$L$2:$L$16,${SHEETS.PLATOONS}!$P$2:$P$16,

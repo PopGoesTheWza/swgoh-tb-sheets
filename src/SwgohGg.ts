@@ -68,9 +68,9 @@ interface SwgohGgPlayerResponse {
 
 /**
  * Send request to SwgohGg API
- * @param link API 'GET' request
- * @param errorMsg Message to display on error
- * @returns JSON object response
+ * param link API 'GET' request
+ * param errorMsg Message to display on error
+ * returns JSON object response
  */
 function requestSwgohGgApi_<T>(
   link: string,
@@ -95,9 +95,9 @@ function requestSwgohGgApi_<T>(
 
 /**
  * Pull base Character data from SwgohGg
- * @returns Array of Characters with [tags, baseId, name]
+ * returns Array of Characters with [tags, baseId, name]
  */
-function getHeroListFromSwgohGg_(): UnitDeclaration[] {
+function getHeroListFromSwgohGg_(): UnitDefinition[] {
 
   const json = requestSwgohGgApi_<SwgohGgUnitResponse[]>(
     'https://swgoh.gg/api/characters/',
@@ -106,7 +106,7 @@ function getHeroListFromSwgohGg_(): UnitDeclaration[] {
     const tags = [e.alignment, e.role, ...e.categories]
       .join(' ')
       .toLowerCase();
-    const unit: UnitDeclaration = {
+    const unit: UnitDefinition = {
       tags,
       baseId: e.base_id,
       name: e.name,
@@ -119,9 +119,9 @@ function getHeroListFromSwgohGg_(): UnitDeclaration[] {
 
 /**
  * Pull base Ship data from SwgohGg
- * @returns Array of Characters with [tags, baseId, name]
+ * returns Array of Characters with [tags, baseId, name]
  */
-function getShipListFromSwgohGg_(): UnitDeclaration[] {
+function getShipListFromSwgohGg_(): UnitDefinition[] {
 
   const json = requestSwgohGgApi_<SwgohGgUnitResponse[]>(
     'https://swgoh.gg/api/ships/',
@@ -130,7 +130,7 @@ function getShipListFromSwgohGg_(): UnitDeclaration[] {
     const tags = [e.alignment, e.role, ...e.categories]
       .join(' ')
       .toLowerCase();
-    const unit: UnitDeclaration = {
+    const unit: UnitDefinition = {
       tags,
       baseId: e.base_id,
       name: e.name,
@@ -153,7 +153,7 @@ function getSwgohGgGuildApiLink_(guildId: number): string {
 /**
  * Pull Guild data from SwgohGg
  * Units name and tags are not populated
- * @returns Array of Guild members and their units data
+ * returns Array of Guild members and their units data
  */
 function getGuildDataFromSwgohGg_(guildId: number): PlayerData[] {
 
@@ -205,7 +205,7 @@ function getSwgohGgPlayerApiLink_(allyCode: number): string {
 /**
  * Pull Player data from SwgohGg
  * Units name and tags are not populated
- * @returns Player data, including its units data
+ * returns Player data, including its units data
  */
 function getPlayerDataFromSwgohGg_(allyCode: number): PlayerData {
 

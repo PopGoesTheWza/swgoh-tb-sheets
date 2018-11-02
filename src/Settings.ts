@@ -98,7 +98,7 @@ interface PlayerData {
 }
 
 /** A unit's name, baseId and tags */
-interface UnitDeclaration {
+interface UnitDefinition {
   /** Unit Id */
   baseId: string;
   name: string;
