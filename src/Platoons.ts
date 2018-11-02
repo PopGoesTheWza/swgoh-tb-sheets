@@ -10,19 +10,22 @@ let PLATOON_SHIP_NEEDED_COUNT: KeyedNumbers = {};
 class PlatoonDetails {
 
   public readonly zone: number;
-  public readonly num: number;
+  public readonly platoon: number;
   public readonly row: number;
   public possible: boolean;
   public readonly isGround: boolean;
-  public readonly skip: boolean;
+  public readonly exist: boolean;
 
-  constructor(phase: number, zone: number, num: number) {
+  constructor(phase: number, zone: number, platoon: number) {
     this.zone = zone;
-    this.num = num;
+    this.platoon = platoon;
     this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
-    this.skip = zone === 0 && phase < 3;
+    this.exist = zone === 0 && phase < 3;
+  }
+  getOffset() {
+    return this.platoon * 4;
   }
 }
 
@@ -115,9 +118,13 @@ function readSlice_(phase: number, zone: number): string[][] {
   cellName += `Slice${phase}Z${zone + 1}`;
 
   if (phase > 2 || zone !== 0) {
-    try {  // TODO: avoid try/catch
-      return sheet.getRange(cellName).getValues() as string[][];
-    } catch (e) {}
+    const range = sheet.getRange(cellName);
+    if (range) {
+      return range.getValues() as string[][];
+    }
+    // try {  // TODO: avoid try/catch
+    //   return sheet.getRange(cellName).getValues() as string[][];
+    // } catch (e) {}
   }
 
   return undefined;
@@ -247,26 +254,223 @@ function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBoolean
   return result;
 }
 
-function processUnavailable_(data: KeyedType<UnitInstances>, list: [string][]) {
-  for (const unit in data) {
+function filterUnits_(data: KeyedType<UnitInstances>, filter: (u: UnitInstance) => boolean) {
+  const units = Object.assign({}, data);
+  for (const unit in units) {
     const members = Object.assign({}, data[unit]);
     for (const player in members) {
-      if (list.findIndex(e => e[0] === player) !== -1) {
+      if (!filter(members[player])) {
         delete data[unit][player];
       }
+    }
+    if (Object.keys(data[unit]).length === 0) {
+      delete data[unit];
     }
   }
 }
 
+// function processUnavailable_(data: KeyedType<UnitInstances>, list: [string][]) {
+//   for (const unit in data) {
+//     const members = Object.assign({}, data[unit]);
+//     for (const player in members) {
+//       if (list.findIndex(e => e[0] === player) !== -1) {
+//         delete data[unit][player];
+//       }
+//     }
+//   }
+// }
+
+// function loop1_(
+//   cur: PlatoonDetails,
+//   platoonMatrix: PlatoonUnit[],
+//   sheet: Sheet,
+// ) {
+//   const baseCol = 4;  // TODO: should it be a setting
+
+//   const row = cur.row;
+//   const column = cur.getOffset() + baseCol;
+//   const range = sheet.getRange(row, column, MAX_PLATOON_UNITS, 1);
+
+//   // clear previous contents
+//   range.offset(0, 1)
+//     .clearContent()
+//     .clearDataValidations()
+//     .offset(0, -1, MAX_PLATOON_UNITS, 2)
+//     .setFontColor(COLOR.BLACK);
+
+//   if (cur.exist) {
+
+//     /** 'Skip this' checkbox */
+//     const skip = sheet.getRange(row + 15, column + 1)
+//       .getValue() === 'SKIP';
+//     if (skip) {
+//       cur.possible = false;
+//     } else {
+
+//       // cycle through the units
+//       const units = range.getValues().map((e: string[]) => e[0]);
+
+//       const dropdowns: [DataValidation][] = [];
+//       const dropdownsRange = range.offset(0, 1);
+
+//       units.forEach((unitName, h) => {
+//         const idx = platoonMatrix.length;
+//         if (unitName.length === 0) {  // no unit was entered, so skip it
+//           platoonMatrix.push(new PlatoonUnit(unitName, 0, 0));
+//           dropdowns.push([null]);
+//         } else {
+//           getNeededCount_(unitName, cur.isGround);
+
+//           const rec = getRecommendedPlayers_(
+//             unitName,
+//             phase,
+//             cur.isGround ? allHeroes : allShips,
+//           );
+
+//           platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
+
+//           if (rec.length > 0) {
+//             dropdowns.push([buildDropdown_(rec)]);
+
+//             // add the players to the matrix
+//             platoonMatrix[idx].players = rec.map(r => r[0]); // player name
+//           } else {
+//             dropdowns.push([null]);
+//             // impossible to fill the platoon if no one can donate
+//             cur.possible = false;
+//             sheet.getRange(row + h, column).setFontColor(COLOR.RED);
+//           }
+//         }
+
+//       });
+//       allDropdowns.push([dropdownsRange, dropdowns]);
+//     }
+//   }
+// }
+
+// function loop2_(cur: PlatoonDetails, sheet: Sheet) {
+//   if (cur.exist && !cur.possible) {
+//     const baseCol = 4;  // TODO: should it be a setting
+
+//     const row = cur.row;
+//     const column = cur.getOffset() + baseCol;
+//     const range = sheet.getRange(row, column + 1, MAX_PLATOON_UNITS, 1);
+
+//     range.setValue('Skip')
+//       .clearDataValidations()
+//       .setFontColor(COLOR.RED);
+//   }
+// }
+
+// function loop3_(cur: PlatoonDetails, sheet: Sheet) {
+//   if (cur.exist) {
+//     if (!cur.possible) {
+//       // skip this platoon
+//       matrixIdx += MAX_PLATOON_UNITS;
+//     } else {
+//       // cycle through the heroes
+//       const donors: [string][] = [];
+//       const colors: [COLOR, COLOR][] = [];
+//       const plattonOffset = cur.getOffset();
+//       for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
+
+//         let defaultValue = '';
+//         const count = placementCount[cur.zone];
+
+//         const unit = platoonMatrix[matrixIdx].name;
+//         for (const player of platoonMatrix[matrixIdx].players) {
+
+//           const available = count[player] == null || count[player] < maxPlayerDonations;
+//           if (!available) {
+//             continue;
+//           }
+
+//           // see if the recommended player's hero has been used
+//           if (cur.isGround) {
+//             // ground units
+//             if (usedHeroes[unit]
+//               && usedHeroes[unit].hasOwnProperty(player)
+//               && !usedHeroes[unit][player]
+//             ) {
+//               usedHeroes[unit][player] = true;
+//               defaultValue = player;
+//               count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+
+//               break;
+//             }
+//           } else {
+//             // ships
+//             if (usedShips[unit]
+//               && usedShips[unit].hasOwnProperty(player)
+//               && !usedShips[unit][player]
+//             ) {
+//               usedShips[unit][player] = true;
+//               defaultValue = player;
+//               count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+
+//               break;
+//             }
+//           }
+
+//           if (defaultValue.length > 0) {
+//             // we already have a recommended player
+//             break;
+//           }
+//         }
+
+//         donors.push([defaultValue]);
+
+//         // see if we should highlight rare units
+//         if (platoonMatrix[matrixIdx].isMissing()) {
+//           colors.push([COLOR.RED, COLOR.RED]);
+//         } else if (defaultValue.length > 0 && platoonMatrix[matrixIdx].isRare()) {
+//           colors.push([COLOR.BLUE, COLOR.BLUE]);
+//         } else {
+//           colors.push([COLOR.BLACK, COLOR.BLACK]);
+//         }
+
+//         matrixIdx += 1;
+//       }
+//       const donorsRange = sheet.getRange(cur.row, baseCol + plattonOffset + 1, MAX_PLATOON_UNITS, 1);
+//       allDonors.push([donorsRange, donors]);
+//       const colorsRange = sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2);
+//       allColors.push([colorsRange, colors]);
+//     }
+//   }
+// }
+
 /** Recommend players for each Platoon */
 function recommendPlatoons() {
 
-  const heroesTable = new HeroesTable();
-  const shipsTable = new ShipsTable();
+  // setup platoon phases
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+  const phase = sheet.getRange(2, 1).getValue() as number;
+  const alignment = getEventFilter_().toLowerCase();
+  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues() as [string][];
 
   // cache the matrix of hero data
+  const heroesTable = new HeroesTable();
   const allHeroes = heroesTable.getAllInstancesByUnits();
+  const shipsTable = new ShipsTable();
   const allShips = shipsTable.getAllInstancesByUnits();
+
+  filterUnits_(
+    allHeroes,
+    (u: UnitInstance) => {
+      return u.rarity > phase
+        && u.tags.indexOf(alignment) !== -1
+        && unavailable.findIndex(e => e[0] === u.name) !== -1;
+    },
+  );
+  filterUnits_(
+    allShips,
+    (u: UnitInstance) => {
+      return u.rarity > phase
+        && unavailable.findIndex(e => e[0] === u.name) !== -1;
+    },
+  );
+  // processUnavailable_(allHeroes, unavailable);
+  // processUnavailable_(allShips, unavailable);
 
   // remove heroes listed on Exclusions sheet
   const exclusionsId = getExclusionId_();
@@ -276,12 +480,6 @@ function recommendPlatoons() {
     processExclusions_(allShips, exclusions, getEventFilter_());
   }
 
-  // setup platoon phases
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues() as [string][];
-  processUnavailable_(allHeroes, unavailable);
-  processUnavailable_(allShips, unavailable);
-  const phase = sheet.getRange(2, 1).getValue() as number;
   initPlatoonPhases_();
 
   // reset the needed counts
@@ -295,13 +493,10 @@ function recommendPlatoons() {
   // setup a custom order for walking the platoons
   const platoonOrder: PlatoonDetails[] = [];
 
-  for (let p = MAX_PLATOONS - 1; p >= 0; p -= 1) {
+  for (let platoon = MAX_PLATOONS - 1; platoon >= 0; platoon -= 1) {
 
-    // last platoon to first platoon
-    for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-
-      // zone by zone
-      platoonOrder.push(new PlatoonDetails(phase, z, p));
+    for (let zone = 0; zone < MAX_PLATOON_ZONES; zone += 1) {  // last platoon to first platoon
+      platoonOrder.push(new PlatoonDetails(phase, zone, platoon));
     }
   }
 
@@ -331,10 +526,9 @@ function recommendPlatoons() {
 
   const allDropdowns: [Range, [DataValidation][]][] = [];
 
-  for (let o = 0, oLen = platoonOrder.length; o < oLen; o += 1) {
+  for (const cur of platoonOrder) {
 
-    const cur = platoonOrder[o];
-    const platoonOffset = cur.num * 4;
+    const platoonOffset = cur.getOffset();
 
     // clear previous contents
     sheet.getRange(cur.row, baseCol + platoonOffset + 1, MAX_PLATOON_UNITS, 1)
@@ -343,8 +537,7 @@ function recommendPlatoons() {
       .offset(0, -1, MAX_PLATOON_UNITS, 2)
       .setFontColor(COLOR.BLACK);
 
-    if (cur.skip) {
-      // skip this platoon
+    if (!cur.exist) {  // skip this zone
       continue;
     }
 
@@ -403,6 +596,7 @@ function recommendPlatoons() {
     }
     allDropdowns.push([dropdownsRange, dropdowns]);
   }
+
   for (const dropdown of allDropdowns) {
     dropdown[0].setDataValidations(dropdown[1]);
   }
@@ -423,12 +617,12 @@ function recommendPlatoons() {
   // make sure the platoon is possible to fill
   for (const cur of platoonOrder) {
 
-    if (cur.skip) {  // skip this platoon
+    if (!cur.exist) {  // skip this zone
       continue;
     }
 
     if (!cur.possible) {
-      const plattonOffset = cur.num * 4;
+      const plattonOffset = cur.getOffset();
       sheet.getRange(cur.row, baseCol + 1 + plattonOffset, MAX_PLATOON_UNITS, 1)
         .setValue('Skip')
         .clearDataValidations()
@@ -450,12 +644,11 @@ function recommendPlatoons() {
   const allColors: [Range, [COLOR, COLOR][]][] = [];
   for (const cur of platoonOrder) {
 
-    if (cur.skip) {
-      // skip this zone
+    if (!cur.exist) {  // skip this zone
       continue;
     }
 
-    if (cur.possible === false) {
+    if (!cur.possible) {
       // skip this platoon
       matrixIdx += MAX_PLATOON_UNITS;
       continue;
@@ -464,7 +657,7 @@ function recommendPlatoons() {
     // cycle through the heroes
     const donors: [string][] = [];
     const colors: [COLOR, COLOR][] = [];
-    const plattonOffset = cur.num * 4;
+    const plattonOffset = cur.getOffset();
     for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
 
       let defaultValue = '';
@@ -529,6 +722,7 @@ function recommendPlatoons() {
     const colorsRange = sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2);
     allColors.push([colorsRange, colors]);
   }
+
   for (const donors of allDonors) {
     donors[0].setValues(donors[1]);
   }
