@@ -68,8 +68,15 @@ function getPlayerDataFromDataSource_(
 
     for (const baseId in units) {
       const u = units[baseId];
-      // TODO: reload units definition if no match
-      const d = unitsIndex.find(e => e.baseId === baseId);
+      let d = unitsIndex.find(e => e.baseId === baseId);
+      if (!d) {  // baseId not found
+        // refresh from data source
+        const definitions = getUnitsDefinitionsFromDataSource_();
+        // replace content of unitsIndex with definitions
+        unitsIndex.splice(0, unitsIndex.length, ...definitions.heroes.concat(definitions.ships));
+        // try again... once
+        d = unitsIndex.find(e => e.baseId === baseId);
+      }
       if (d && d.tags.indexOf(filter) > -1) {
         u.name = d.name;
         u.stats = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
@@ -174,10 +181,8 @@ function playerSnapshotOutput_(
 /** create a snapshot of a player or guild member */
 function playerSnapshot(): void {
 
-  // cache the matrix of hero data
-  const heroesTable = new HeroesTable();
-  const shipsTable = new ShipsTable();
-  const unitsIndex = heroesTable.getDefinitions().concat(shipsTable.getDefinitions());
+  const definitions = getUnitsDefinitions_();
+  const unitsIndex = definitions.heroes.concat(definitions.ships);
 
   // collect the meta data for the heroes
   const filter = getEventFilter_(); // TODO: potentially broken if TB not sync
@@ -199,19 +204,10 @@ function playerSnapshot(): void {
       if (u.rarity >= 7 && u.power >= powerTarget) {
         countFiltered += 1;
         // does the hero meet the tagged requirements?
-        if (u.tags) {
-          // TODO: check if u.tags exists
-          debugger;
+        if (u.tags.indexOf(characterTag) !== -1) {
+          // the hero was tagged with the characterTag we're looking for
+          countTagged += 1;
         }
-        // TODO: reload units definition if no match
-        unitsIndex.some((e) => {
-          const found = e.baseId === baseId;
-          if (found && e.tags.indexOf(characterTag) !== -1) {
-            // the hero was tagged with the characterTag we're looking for
-            countTagged += 1;
-          }
-          return found;
-        });
       }
 
       // store hero if required

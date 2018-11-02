@@ -18,7 +18,7 @@ function setCellValue_(
 function populateEventTable_(
   data: string[][],
   members: PlayerData[],
-  heroes: UnitDefinition[],
+  unitsIndex: UnitDefinition[],
 ): (string|number)[][] {
 
   const memberNames = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
@@ -26,8 +26,7 @@ function populateEventTable_(
     .getValues() as [string][];
 
   const nameToBaseId: KeyedStrings = {};
-  for (const e of heroes) {
-    // TODO: reload units definition if no match
+  for (const e of unitsIndex) {
     nameToBaseId[e.name] = e.baseId;
   }
 
@@ -78,7 +77,20 @@ function populateEventTable_(
       lastSquad = squad;
 
       // Get Hero for member
-      const o = m['units'][nameToBaseId[curHero[0]]];
+      let baseId = nameToBaseId[curHero[0]];
+      if (!baseId) {
+        // refresh from data source
+        const definitions = getUnitsDefinitionsFromDataSource_();
+        // replace content of unitsIndex with definitions
+        unitsIndex.splice(0, unitsIndex.length, ...definitions.heroes.concat(definitions.ships));
+        // refresh nameToBaseId with updated unitsIndex
+        for (const e of unitsIndex) {
+          nameToBaseId[e.name] = e.baseId;
+        }
+        // try again... once
+        baseId = nameToBaseId[curHero[0]];
+      }
+      const o = m['units'][baseId];
       if (o == null) {
         continue;
       }
@@ -145,37 +157,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   return members;
 }
 
-// TODO: refactor as UnitsTable method
-function getUnitsDefinitions_(): { heroes: UnitDefinition[]; ships: UnitDefinition[]; } {
-
-  let result: {
-    heroes: UnitDefinition[];
-    ships: UnitDefinition[];
-  };
-
-  const cacheId = 'cachedUnits';
-  const cache = CacheService.getScriptCache();
-  const cachedUnits = cache.get(cacheId);
-
-  if (cachedUnits) {
-    return JSON.parse(cachedUnits);
-  }
-
-  // Update definitions on Heroes and Ship tabs
-  if (isDataSourceSwgohHelp_()) {
-    // heroes = getHeroesFromSWGOHhelp();
-    // ships = getShipsFromSWGOHhelp();
-    result = { heroes: getHeroListFromSwgohGg_(), ships: getShipListFromSwgohGg_() };
-  } else {
-    result = { heroes: getHeroListFromSwgohGg_(), ships: getShipListFromSwgohGg_() };
-  }
-
-  const seconds = 21600;  // 6 hours (maximum value)
-  cache.put(cacheId, JSON.stringify(result), seconds);
-
-  return result;
-}
-
 function getSettingsHash_() {
   // const roster = xxxxxx
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
@@ -226,9 +207,8 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
     .getValues() as number[][];
 
-  const heroesTable = new HeroesTable();
-  const shipsTable = new ShipsTable();
-  const unitsIndex = heroesTable.getDefinitions().concat(shipsTable.getDefinitions());
+  const definitions = getUnitsDefinitions_();
+  const unitsIndex = definitions.heroes.concat(definitions.ships);
 
   // add & rename
   for (const e of add) {
@@ -323,13 +303,10 @@ function getMembers_(): PlayerData[] {
 /** setup the current event */
 function setupEvent(): void {
 
-  const heroesTable = new HeroesTable();
-  const shipsTable = new ShipsTable();
-
-  // make sure the roster is up-to-date
-  const { heroes, ships } = getUnitsDefinitions_();
-  heroesTable.setDefinitions(heroes);
-  shipsTable.setDefinitions(ships);
+  // // make sure the roster is up-to-date
+  // const { heroes, ships } = getUnitsDefinitions_();
+  const definitions = getUnitsDefinitions_();
+  const unitsIndex = definitions.heroes.concat(definitions.ships);
 
   // Figure out which data source to use
   let members = getMembers_();
@@ -347,6 +324,8 @@ function setupEvent(): void {
   // will also return a new members array with added/deleted from sheet
   members = updateGuildRoster_(members);
 
+  const heroesTable = new HeroesTable();
+  const shipsTable = new ShipsTable();
   heroesTable.setInstances(members);
   shipsTable.setInstances(members);
 
@@ -519,7 +498,7 @@ function setupEvent(): void {
   let table = populateEventTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
-    heroes,
+    unitsIndex,
   );
 
   // store the table of player data

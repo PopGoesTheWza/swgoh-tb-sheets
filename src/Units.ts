@@ -1,3 +1,82 @@
+type UnitsDefinitions = {
+  heroes: UnitDefinition[];
+  ships: UnitDefinition[];
+};
+
+/** request units definitions from data source (and cache them for 6 hours) */
+function getUnitsDefinitionsFromDataSource_(): UnitsDefinitions {
+
+  let definitions: UnitsDefinitions;
+  const cacheId = 'cachedUnits';
+  const seconds = 21600;  // 6 hours (maximum value)
+
+  if (isDataSourceSwgohHelp_()) {
+    // TODO: read from SwgohHelp
+    definitions = { heroes: getHeroListFromSwgohGg_(), ships: getShipListFromSwgohGg_() };
+  } else {
+    definitions = { heroes: getHeroListFromSwgohGg_(), ships: getShipListFromSwgohGg_() };
+  }
+
+  const heroesTable = new HeroesTable();
+  const shipsTable = new ShipsTable();
+  heroesTable.setDefinitions(definitions.heroes);
+  shipsTable.setDefinitions(definitions.ships);
+
+  CacheService.getScriptCache().put(cacheId, JSON.stringify(definitions), seconds);
+
+  return definitions;
+}
+
+/** retrieve units definition (name, baseId, tags) from cache */
+function getUnitsDefinitionsFromCache_(): UnitsDefinitions {
+
+  const cacheId = 'cachedUnits';
+  const cachedUnits = CacheService.getScriptCache().get(cacheId);
+
+  if (cachedUnits) {
+    return JSON.parse(cachedUnits) as UnitsDefinitions;
+  }
+
+  return undefined;
+}
+
+/** return an array of all units definition (name, baseId, tags) */
+function getUnitsDefinitionsFromSheet_(sheetName: string): UnitDefinition[] {
+
+  const sheet = SPREADSHEET.getSheetByName(sheetName);
+  const data = sheet.getRange(2, 1, sheet.getMaxRows() - 1, 3)
+    .getValues() as string[][];
+
+  const definitions = data.reduce(
+    (acc: UnitDefinition[], e) => {
+      const name = e[0];
+      const baseId = e[1];
+      const tags = e[2];
+      if (typeof name === 'string' && typeof baseId === 'string'
+        && name.length > 0 && baseId.length > 0
+      ) {
+        acc.push({ name, baseId, tags });
+      }
+      return acc;
+    },
+    [],
+  );
+
+  return definitions;
+}
+
+/** return an array of all units definition (name, baseId, tags) */
+function getUnitsDefinitions_(): UnitsDefinitions {
+
+  const definitions = getUnitsDefinitionsFromCache_()
+    || {
+      heroes: getUnitsDefinitionsFromSheet_(SHEETS.HEROES),
+      ships: getUnitsDefinitionsFromSheet_(SHEETS.SHIPS),
+    };
+
+  return definitions;
+}
+
 /** abstract class for unit sheets (Heroes & Ships) */
 abstract class UnitsTable {
 
@@ -19,21 +98,21 @@ abstract class UnitsTable {
   protected abstract toUnitInstance(stats: string): UnitInstance;
 
   /** return an array of all units definition (name, baseId, tags) */
-  getDefinitions(): UnitDefinition[] {
+  // getDefinitions(): UnitDefinition[] {
 
-    const data = this.sheet.getRange(2, 1, this.getCount(), 3)
-      .getValues() as string[][];
+  //   const data = this.sheet.getRange(2, 1, this.getCount(), 3)
+  //     .getValues() as string[][];
 
-    const definitions: UnitDefinition[] = data.map((e) => {
-      const name = e[0];
-      const baseId = e[1];
-      const tags = e[2];
+  //   const definitions: UnitDefinition[] = data.map((e) => {
+  //     const name = e[0];
+  //     const baseId = e[1];
+  //     const tags = e[2];
 
-      return { name, baseId, tags };
-    });
+  //     return { name, baseId, tags };
+  //   });
 
-    return definitions;
-  }
+  //   return definitions;
+  // }
 
   /** return a list of units that are required a high number of times (HIGH_MIN) */
   getHighNeedList(): string[] {
