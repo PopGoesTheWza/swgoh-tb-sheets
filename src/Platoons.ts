@@ -111,6 +111,7 @@ function setZoneName_(phase: number, zone: number, sheet: Sheet, platoonRow: num
 function readSlice_(phase: number, zone: number): string[][] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
+  const namedRanges = sheet.getNamedRanges();
   const filter = getEventFilter_();
 
   // format the cell name
@@ -118,13 +119,10 @@ function readSlice_(phase: number, zone: number): string[][] {
   cellName += `Slice${phase}Z${zone + 1}`;
 
   if (phase > 2 || zone !== 0) {
-    const range = sheet.getRange(cellName);
-    if (range) {
-      return range.getValues() as string[][];
+    const namedRange = namedRanges.find(e => e.getName() === cellName);
+    if (namedRange) {
+      return namedRange.getRange().getValues() as string[][];
     }
-    // try {  // TODO: avoid try/catch
-    //   return sheet.getRange(cellName).getValues() as string[][];
-    // } catch (e) {}
   }
 
   return undefined;
@@ -142,20 +140,9 @@ function resetPlatoon_(
   zone: number,
   platoonRow: number,
   rows: number,
-  show: boolean,
 ): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-
-  if (show) {
-    sheet.showRows(platoonRow, MAX_PLATOON_UNITS);
-  } else {
-    if (platoonRow === 2) {
-      sheet.hideRows(platoonRow + 1, rows - 1);
-    } else {
-      sheet.hideRows(platoonRow, rows);
-    }
-  }
   const slice = readSlice_(phase, zone);
 
   for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
@@ -165,7 +152,9 @@ function resetPlatoon_(
     range.clearContent()
         .setFontColor(COLOR.BLACK);
 
-    writeSlice_(slice, platoon, range.offset(0, 0, MAX_PLATOON_UNITS, 1));
+    if (slice) {
+      writeSlice_(slice, platoon, range.offset(0, 0, MAX_PLATOON_UNITS, 1));
+    }
 
     range.offset(0, 1, MAX_PLATOON_UNITS, 1)
       .clearDataValidations();
@@ -182,8 +171,16 @@ function resetPlatoons(): void {
   initPlatoonPhases_();
 
   [2, 20, 38].forEach((platoonRow, zone) => {
-    resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS, phase >= 3);
-    setZoneName_(phase, zone, sheet, platoonRow);
+    resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS);
+    const zoneName = setZoneName_(phase, zone, sheet, platoonRow);
+    if (zone !== 1) {
+      if (zoneName.length === 0) {
+        const hideOffset = zone === 0 ? 1 : 0;
+        sheet.hideRows(platoonRow + hideOffset, MAX_PLATOON_UNITS - hideOffset);
+      } else {
+        sheet.showRows(platoonRow, MAX_PLATOON_UNITS);
+      }
+    }
   });
 }
 
