@@ -281,7 +281,6 @@ function getMembers_(): PlayerData[] {
   const cachedHash = cache.get(cacheId);
 
   if (cachedHash && cachedHash === settingsHash) {
-    debugger;
     return getMembersFromSheet_();
   }
   // Figure out which data source to use
