@@ -18,7 +18,7 @@ function setCellValue_(
 function populateEventTable_(
   data: string[][],
   members: PlayerData[],
-  heroes: UnitDeclaration[],
+  heroes: UnitDefinition[],
 ): (string|number)[][] {
 
   const memberNames = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
@@ -27,6 +27,7 @@ function populateEventTable_(
 
   const nameToBaseId: KeyedStrings = {};
   for (const e of heroes) {
+    // TODO: reload units definition if no match
     nameToBaseId[e.name] = e.baseId;
   }
 
@@ -107,6 +108,119 @@ function populateEventTable_(
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
+
+  const sortFunction = getSortRoster_()
+    // sort roster by player name
+    ? (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    // sort roster by GP
+    : (a, b) => b.gp - a.gp;
+
+  members.sort(sortFunction);
+
+  if (members.length > MAX_PLAYERS) {
+    members.splice(MAX_PLAYERS);
+    UI.alert(`Guild roster was truncated to the first ${MAX_PLAYERS} members.`);
+  }
+
+  // get the filter & tag
+  // var POWER_TARGET = getMinimumCharacterGp_()
+
+  // cleanup the header
+  const header = [['Name', 'Hyper Link', 'GP', 'GP Heroes', 'GP Ships']];
+
+  const result = members.map(e => [
+    [e.name],
+    // [e.link],
+    [e.allyCode],
+    [e.gp],
+    [e.heroesGp],
+    [e.shipsGp],
+  ]);
+
+  // write the roster
+  sheet.getRange(1, 2, 60, result[0].length).clearContent();
+  sheet.getRange(1, 2, header.length, header[0].length).setValues(header);
+  sheet.getRange(2, 2, result.length, result[0].length).setValues(result);
+
+  return members;
+}
+
+// TODO: refactor as UnitsTable method
+function getUnitsDefinitions_(): { heroes: UnitDefinition[]; ships: UnitDefinition[]; } {
+
+  let result: {
+    heroes: UnitDefinition[];
+    ships: UnitDefinition[];
+  };
+
+  const cacheId = 'cachedUnits';
+  const cache = CacheService.getScriptCache();
+  const cachedUnits = cache.get(cacheId);
+
+  if (cachedUnits) {
+    return JSON.parse(cachedUnits);
+  }
+
+  // Update definitions on Heroes and Ship tabs
+  if (isDataSourceSwgohHelp_()) {
+    // heroes = getHeroesFromSWGOHhelp();
+    // ships = getShipsFromSWGOHhelp();
+    result = { heroes: getHeroListFromSwgohGg_(), ships: getShipListFromSwgohGg_() };
+  } else {
+    result = { heroes: getHeroListFromSwgohGg_(), ships: getShipListFromSwgohGg_() };
+  }
+
+  const seconds = 21600;  // 6 hours (maximum value)
+  cache.put(cacheId, JSON.stringify(result), seconds);
+
+  return result;
+}
+
+function getSettingsHash_() {
+  // const roster = xxxxxx
+  const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
+  const meta = SPREADSHEET.getSheetByName(SHEETS.META);
+
+  // members name & ally code
+  const members = (roster.getRange(2, 2, 50, 2)
+    .getValues() as [string, number][])
+    .reduce(
+      (acc: [string, number][], e) => {
+        if (e[1] > 0) acc.push(e);
+        return acc;
+      },
+      [],
+    ).sort((a, b) => a[1] - b[1]);
+
+  // rename/add/remove settings
+  const rar = (roster.getRange(2, 16, roster.getMaxRows(), 3)
+    .getValues() as [string, number, number][])
+    .reduce(
+      (acc: [string, number, number][], e) => {
+        if (e[1] > 0 || e[2] > 0) acc.push(e);
+        return acc;
+      },
+      [],
+    ).sort((a, b) => a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]);
+
+  // data source
+  const dataSource = meta.getRange(14, 4).getValue();
+  // SwgohGg settings
+  const swgohGg = meta.getRange(2, 1).getValue();
+  // SwgohGg settings
+  const swgohHelp = meta.getRange(20, 1, 5).getValues();
+
+  const hash = String(Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    JSON.stringify({ members, rar, dataSource, swgohGg, swgohHelp }),
+  ));
+
+  return hash;
+}
+
+function renameAddRemove_(members: PlayerData[]): PlayerData[] {
+
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   const add = sheet.getRange(2, META_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2)
     .getValues() as [string, number][];
   const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
@@ -146,6 +260,11 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     }
   }
 
+  return members;
+}
+
+function normalizeRoster_(members: PlayerData[]): PlayerData[] {
+
   // fix name starting with single quote
   for (const e of members) {
     if (e.name[0] === '\'') {
@@ -171,72 +290,50 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     }
   }
 
-  const sortFunction = getSortRoster_()
-    // sort roster by player name
-    ? (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-    // sort roster by GP
-    : (a, b) => b.gp - a.gp;
-
-  members.sort(sortFunction);
-
-  if (members.length > MAX_PLAYERS) {
-    members.splice(MAX_PLAYERS);
-    UI.alert(`Guild roster was truncated to the first ${MAX_PLAYERS} members.`);
-  }
-
-  // get the filter & tag
-  // var POWER_TARGET = getMinimumCharacterGp_()
-
-  // cleanup the header
-  const header = [['Name', 'Hyper Link', 'GP', 'GP Heroes', 'GP Ships']];
-
-  const result = members.map(e => [
-    [e.name],
-    // [e.link],
-    [e.allyCode],
-    [e.gp],
-    [e.heroesGp],
-    [e.shipsGp],
-  ]);
-
-  // write the roster
-  sheet.getRange(1, 2, 60, result[0].length).clearContent();
-  sheet.getRange(1, 2, header.length, header[0].length).setValues(header);
-  sheet.getRange(2, 2, result.length, result[0].length).setValues(result);
-
   return members;
 }
 
-/** setup the current event */
-function setupEvent(): void {
+function getMembers_(): PlayerData[] {
 
-  // make sure the roster is up-to-date
-
-  // Update Heroes and Ship Sheets
-  // TODO: re-read only if necessary
-  let heroes: UnitDeclaration[];
-  let ships: UnitDeclaration[];
-  if (isDataSourceSwgohHelp_()) {
-    // heroes = getHeroesFromSWGOHhelp();
-    // ships = getShipsFromSWGOHhelp();
-    heroes = getHeroListFromSwgohGg_();
-    ships = getShipListFromSwgohGg_();
-  } else {
-    heroes = getHeroListFromSwgohGg_();
-    ships = getShipListFromSwgohGg_();
-  }
-  const heroesTable = new HeroesTable();
-  const shipsTable = new ShipsTable();
-  heroesTable.setDefinitions(heroes);
-  shipsTable.setDefinitions(ships);
-
-  // Figure out which data source to use
   let members: PlayerData[];
+
+  const settingsHash =  getSettingsHash_();
+
+  const cacheId = SPREADSHEET.getId();
+  const cache = CacheService.getScriptCache();
+  const cachedHash = cache.get(cacheId);
+
+  if (cachedHash && cachedHash === settingsHash) {
+    debugger;
+    // read from sheet
+    // and return
+  }
+  // Figure out which data source to use
   if (isDataSourceSwgohHelp_()) {
     members = getGuildDataFromSwgohHelp_();
   } else if (isDataSourceSwgohGg_()) {
     members = getGuildDataFromSwgohGg_(getSwgohGgGuildId_());
   }
+  const seconds = 3600;  // 1 hour
+  cache.put(cacheId, settingsHash, seconds);
+
+  return normalizeRoster_(renameAddRemove_(members));
+}
+
+/** setup the current event */
+function setupEvent(): void {
+
+  const heroesTable = new HeroesTable();
+  const shipsTable = new ShipsTable();
+
+  // make sure the roster is up-to-date
+  const { heroes, ships } = getUnitsDefinitions_();
+  heroesTable.setDefinitions(heroes);
+  shipsTable.setDefinitions(ships);
+
+  // Figure out which data source to use
+  let members = getMembers_();
+
   if (!members) {
     UI.alert(
       'Parsing Error',
