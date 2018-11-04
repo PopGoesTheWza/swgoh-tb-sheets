@@ -1,5 +1,9 @@
 /** workaround to tslint issue of namespace scope after importingtype definitions */
-declare function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData;
+declare namespace SwgohHelp {
+
+  function getPlayerData(allyCode: number): PlayerData;
+
+}
 
 /**
  * @OnlyCurrentDoc
@@ -93,7 +97,7 @@ namespace Player {
   ): PlayerData {
 
     const playerData = config.dataSource.isSwgohHelp()
-      ? getPlayerDataFromSwgohHelp_(allyCode)
+      ? SwgohHelp.getPlayerData(allyCode)
       : SwgohGg.getPlayerData(allyCode);
 
     if (playerData) {

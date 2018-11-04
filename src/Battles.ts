@@ -1,5 +1,9 @@
 /** workaround to tslint issue of namespace scope after importing type definitions */
-declare function getGuildDataFromSwgohHelp_(): PlayerData[];
+declare namespace SwgohHelp {
+
+  function getGuildData(): PlayerData[];
+
+}
 
 /** set the value and style in a cell */
 function setCellValue_(
@@ -285,7 +289,7 @@ function getMembers_(): PlayerData[] {
   }
   // Figure out which data source to use
   if (config.dataSource.isSwgohHelp()) {
-    members = getGuildDataFromSwgohHelp_();
+    members = SwgohHelp.getGuildData();
   } else if (config.dataSource.isSwgohGg()) {
     members = SwgohGg.getGuildData(config.SwgohGg.guild());
   }

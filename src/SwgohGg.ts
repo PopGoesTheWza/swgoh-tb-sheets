@@ -74,7 +74,7 @@ namespace SwgohGg {
    * param errorMsg Message to display on error
    * returns JSON object response
    */
-  function requestSwgohGgApi_<T>(
+  function requestApi<T>(
     link: string,
     errorMsg: string = 'Error when retreiving data from swgoh.gg API',
   ): T {
@@ -101,7 +101,7 @@ namespace SwgohGg {
    */
   export function getHeroList(): UnitDefinition[] {
 
-    const json = requestSwgohGgApi_<SwgohGgUnitResponse[]>(
+    const json = requestApi<SwgohGgUnitResponse[]>(
       'https://swgoh.gg/api/characters/',
     );
     const mapping = (e: SwgohGgUnitResponse) => {
@@ -125,7 +125,7 @@ namespace SwgohGg {
    */
   export function getShipList(): UnitDefinition[] {
 
-    const json = requestSwgohGgApi_<SwgohGgUnitResponse[]>(
+    const json = requestApi<SwgohGgUnitResponse[]>(
       'https://swgoh.gg/api/ships/',
     );
     const mapping = (e: SwgohGgUnitResponse) => {
@@ -159,7 +159,7 @@ namespace SwgohGg {
    */
   export function getGuildData(guildId: number): PlayerData[] {
 
-    const json = requestSwgohGgApi_<SwgohGgGuildResponse>(
+    const json = requestApi<SwgohGgGuildResponse>(
       getGuildApiLink(guildId),
     );
     if (json && json.players) {
@@ -211,7 +211,7 @@ namespace SwgohGg {
    */
   export function getPlayerData(allyCode: number): PlayerData {
 
-    const json = requestSwgohGgApi_<SwgohGgPlayerResponse>(
+    const json = requestApi<SwgohGgPlayerResponse>(
       getPlayerApiLink(allyCode),
     );
 
