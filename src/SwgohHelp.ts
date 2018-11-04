@@ -1,5 +1,12 @@
 import { swgohhelpapi } from '../lib';
 
+interface SwgohHelpUnitListResponse {
+  nameKey: string;
+  forceAlignment: number;
+  combatType: number;
+  baseId: string;
+}
+
 function checkSwgohHelpLibrary_(): boolean {
 
   const result = Boolean(swgohhelpapi);
@@ -12,6 +19,43 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`);
   return result;
 }
 
+function getUnitListFromSwgohHelp_(): UnitDefinition[] {
+
+  if (!checkSwgohHelpLibrary_()) {
+    return undefined;
+  }
+
+  const settings: swgohhelpapi.exports.Settings = {
+    username: config.SwgohHelp.username(),
+    password: config.SwgohHelp.password(),
+  };
+  const client = new swgohhelpapi.exports.Client(settings);
+
+  const units = client.fetchData({
+    collection: 'unitsList',
+    language: swgohhelpapi.Languages.eng_us,
+    match: {
+      rarity: 7,
+      obtainable: true,
+      obtainableTime: 0,
+    },
+    project: {
+      nameKey: true,
+      forceAlignment: true,
+      combatType: true,
+      categoryIdList: true,
+      baseId: true,
+    },
+  });
+
+  if (units && units.length && units.length > 1 && !units[0].hasOwnProperty('error')) {
+
+    return units;
+  }
+
+  return undefined;
+}
+
 function getGuildDataFromSwgohHelp_(): PlayerData[] {
 
   if (!checkSwgohHelpLibrary_()) {
@@ -19,12 +63,12 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
   }
 
   const settings: swgohhelpapi.exports.Settings = {
-    username: getSwgohHelpUsername_(),
-    password: getSwgohHelpPassword_(),
+    username: config.SwgohHelp.username(),
+    password: config.SwgohHelp.password(),
   };
   const client = new swgohhelpapi.exports.Client(settings);
 
-  const allycode = getSwgohHelpAllycode_();
+  const allycode = config.SwgohHelp.allyCode();
   const guild: swgohhelpapi.exports.GuildResponse[] = client.fetchGuild({
     allycode,
     language: swgohhelpapi.Languages.eng_us,
@@ -117,7 +161,7 @@ function getGuildDataFromSwgohHelp_(): PlayerData[] {
 /**
  * Pull Player data from SwgohHelp
  * Units name and tags are not populated
- * @returns Player data, including its units data
+ * returns Player data, including its units data
  */
 function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData {
 
@@ -126,8 +170,8 @@ function getPlayerDataFromSwgohHelp_(allyCode: number): PlayerData {
   }
 
   const settings = {
-    username: getSwgohHelpUsername_(),
-    password: getSwgohHelpPassword_(),
+    username: config.SwgohHelp.username(),
+    password: config.SwgohHelp.password(),
   };
   const client = new swgohhelpapi.exports.Client(settings);
 

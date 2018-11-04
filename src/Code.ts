@@ -15,185 +15,160 @@ function firstElementCaseInsensitive_(a: [string, undefined], b: [string, undefi
   return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
 }
 
-function getMemberNames_(): [string][] {
+namespace Members {
 
-  return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(2, 2, getGuildSize_(), 1)
-    .getValues() as [string][];
-}
+  export function getNames(): [string][] {
 
-function getMemberAllycodes_(): [string, number][] {
-
-  return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(2, 2, getGuildSize_(), 2)
-    .getValues() as [string, number][];
-}
-
-function getMemberBaseAttributes_(): [string, number, number, number, number][] {
-
-  return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-  .getRange(2, 2, getGuildSize_(), 5)
-  .getValues() as [string, number, number, number, number][];
-}
-
-/** retrieve player's data from unit tabs or a data source */
-function getSnapshopData_(
-  sheet: Sheet,
-  filter: string,
-  unitsIndex: UnitDefinition[],
-): PlayerData {
-
-  const members = getMemberAllycodes_();
-
-  const memberName = (sheet.getRange(5, 1).getValue() as string).trim();
-
-  // get the player's link from the Roster
-  if (memberName.length > 0 && members.find(e => e[0] === memberName)) {
-    return getPlayerDataFromSheet_(memberName, filter.toLowerCase());
+    return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+      .getRange(2, 2, config.memberCount(), 1)
+      .getValues() as [string][];
   }
 
-  // check if ally code
-  const allyCode = (sheet.getRange(2, 1).getValue() as number);
+  export function getAllycodes(): [string, number][] {
 
-  if (allyCode > 0) {
-
-    // check if ally code exist in roster
-    const member = members.find(e => e[1] === allyCode);
-    if (member) {
-      return getPlayerDataFromSheet_(member[0], filter.toLowerCase());
-    }
-
-    return getPlayerDataFromDataSource_(allyCode, filter, unitsIndex);
+    return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+      .getRange(2, 2, config.memberCount(), 2)
+      .getValues() as [string, number][];
   }
 
-  return undefined;
-}
+  export function getBaseAttributes(): [string, number, number, number, number][] {
 
-/** read player's data from a data source */
-function getPlayerDataFromDataSource_(
-  allyCode: number,
-  tag: string = '',
-  unitsIndex: UnitDefinition[] = undefined,
-): PlayerData {
-
-  const playerData = isDataSourceSwgohHelp_()
-    ? getPlayerDataFromSwgohHelp_(allyCode)
-    : getPlayerDataFromSwgohGg_(allyCode);
-
-  if (playerData) {
-    const units = playerData.units;
-    const filteredUnits: UnitInstances = {};
-    const filter = tag.toLowerCase();
-
-    for (const baseId in units) {
-      const u = units[baseId];
-      let d = unitsIndex.find(e => e.baseId === baseId);
-      if (!d) {  // baseId not found
-        // refresh from data source
-        const definitions = getUnitsDefinitionsFromDataSource_();
-        // replace content of unitsIndex with definitions
-        unitsIndex.splice(0, unitsIndex.length, ...definitions.heroes.concat(definitions.ships));
-        // try again... once
-        d = unitsIndex.find(e => e.baseId === baseId);
-      }
-      if (d && d.tags.indexOf(filter) > -1) {
-        u.name = d.name;
-        u.stats = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
-        u.tags = d.tags;
-        filteredUnits[baseId] = u;
-      }
-    }
-    playerData.units = filteredUnits;
-
-    return playerData;
+    return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    .getRange(2, 2, config.memberCount(), 5)
+    .getValues() as [string, number, number, number, number][];
   }
 
-  return undefined;
-}
+  export function getFromSheet(): PlayerData[] {
 
-function getMembersFromSheet_(): PlayerData[] {
+    const roster = Members.getBaseAttributes();
+    const heroesTable = new Units.Heroes();
+    const shipsTable = new Units.Ships();
+    const heroes = heroesTable.getAllInstancesByMember();
+    const ships = shipsTable.getAllInstancesByMember();
 
-  const roster = getMemberBaseAttributes_();
-  const heroesTable = new HeroesTable();
-  const shipsTable = new ShipsTable();
-  const heroes = heroesTable.getAllInstancesByMember();
-  const ships = shipsTable.getAllInstancesByMember();
+    const members = roster.map((e) => {
+      const memberName = e[0];
+      const playerData: PlayerData = {
+        allyCode: e[1],
+        gp: e[2],
+        heroesGp: e[3],
+        name: memberName,
+        shipsGp: e[4],
+        units: {},
+      };
 
-  const members = roster.map((e) => {
-    const memberName = e[0];
-    const playerData: PlayerData = {
-      allyCode: e[1],
-      gp: e[2],
-      heroesGp: e[3],
-      name: memberName,
-      shipsGp: e[4],
-      units: {},
-    };
-
-    const h = heroes[memberName];
-    if (h) {
-      for (const baseId in h) {
-        const u = h[baseId];
-        playerData.units[baseId] = u;
-        playerData.level = Math.max(playerData.level, u.level);
+      const h = heroes[memberName];
+      if (h) {
+        for (const baseId in h) {
+          const u = h[baseId];
+          playerData.units[baseId] = u;
+          playerData.level = Math.max(playerData.level, u.level);
+        }
       }
-    }
 
-    const s = ships[memberName];
-    if (s) {
-      for (const baseId in s) {
-        const u = s[baseId];
-        playerData.units[baseId] = u;
-        playerData.level = Math.max(playerData.level, u.level);
+      const s = ships[memberName];
+      if (s) {
+        for (const baseId in s) {
+          const u = s[baseId];
+          playerData.units[baseId] = u;
+          playerData.level = Math.max(playerData.level, u.level);
+        }
       }
-    }
 
-    return playerData;
-  });
+      return playerData;
+    });
 
-  return members;
-}
-
-/** read player's data from unit tabs */
-function getPlayerDataFromSheet_(memberName: string, tag: string): PlayerData {
-
-  const roster = getMemberBaseAttributes_();
-  const p = roster.find(e => e[0] === memberName);
-  if (p) {
-    const playerData: PlayerData = {
-      allyCode: p[1],
-      gp: p[2],
-      heroesGp: p[3],
-      name: memberName,
-      shipsGp: p[4],
-      units: {},
-    };
-    const filter = tag.toLowerCase();
-
-    const heroesTable = new HeroesTable();
-    const heroes = heroesTable.getMemberInstances(memberName);
-    for (const baseId in heroes) {
-      const u = heroes[baseId];
-      if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
-        playerData.units[baseId] = u;
-        playerData.level = Math.max(playerData.level, u.level);
-      }
-    }
-
-    const shipsTable = new ShipsTable();
-    const ships = shipsTable.getMemberInstances(memberName);
-    for (const baseId in ships) {
-      const u = ships[baseId];
-      if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
-        playerData.units[baseId] = u;
-        playerData.level = Math.max(playerData.level, u.level);
-      }
-    }
-
-    return playerData;
+    return members;
   }
 
-  return undefined;
+}
+
+namespace Player {
+
+  /** read player's data from a data source */
+  export function getFromDataSource(
+    allyCode: number,
+    tag: string = '',
+    unitsIndex: UnitDefinition[] = undefined,
+  ): PlayerData {
+
+    const playerData = config.dataSource.isSwgohHelp()
+      ? getPlayerDataFromSwgohHelp_(allyCode)
+      : SwgohGg.getPlayerData(allyCode);
+
+    if (playerData) {
+      const units = playerData.units;
+      const filteredUnits: UnitInstances = {};
+      const filter = tag.toLowerCase();
+
+      for (const baseId in units) {
+        const u = units[baseId];
+        let d = unitsIndex.find(e => e.baseId === baseId);
+        if (!d) {  // baseId not found
+          // refresh from data source
+          const definitions = Units.getDefinitionsFromDataSource();
+          // replace content of unitsIndex with definitions
+          unitsIndex.splice(0, unitsIndex.length, ...definitions.heroes.concat(definitions.ships));
+          // try again... once
+          d = unitsIndex.find(e => e.baseId === baseId);
+        }
+        if (d && d.tags.indexOf(filter) > -1) {
+          u.name = d.name;
+          u.stats = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
+          u.tags = d.tags;
+          filteredUnits[baseId] = u;
+        }
+      }
+      playerData.units = filteredUnits;
+
+      return playerData;
+    }
+
+    return undefined;
+  }
+
+  /** read player's data from unit tabs */
+  export function getFromSheet(memberName: string, tag: string): PlayerData {
+
+    const roster = Members.getBaseAttributes();
+    const p = roster.find(e => e[0] === memberName);
+    if (p) {
+      const playerData: PlayerData = {
+        allyCode: p[1],
+        gp: p[2],
+        heroesGp: p[3],
+        name: memberName,
+        shipsGp: p[4],
+        units: {},
+      };
+      const filter = tag.toLowerCase();
+
+      const heroesTable = new Units.Heroes();
+      const heroes = heroesTable.getMemberInstances(memberName);
+      for (const baseId in heroes) {
+        const u = heroes[baseId];
+        if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
+          playerData.units[baseId] = u;
+          playerData.level = Math.max(playerData.level, u.level);
+        }
+      }
+
+      const shipsTable = new Units.Ships();
+      const ships = shipsTable.getMemberInstances(memberName);
+      for (const baseId in ships) {
+        const u = ships[baseId];
+        if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
+          playerData.units[baseId] = u;
+          playerData.level = Math.max(playerData.level, u.level);
+        }
+      }
+
+      return playerData;
+    }
+
+    return undefined;
+  }
+
 }
 
 /** is alignment 'Light Side' */
@@ -225,37 +200,74 @@ function getEventDefinition_(filter: string): [string, string][] {
   return meta;
 }
 
-/** output to Snapshot sheet */
-function playerSnapshotOutput_(
-  sheet: Sheet,
-  rowGp: number,
-  baseData: string[][],
-  rowHeroes: number,
-  meta: string[][],
-): void {
+namespace Snapshot {
 
-  sheet.getRange(1, 3, 50, 2).clearContent();  // clear the sheet
-  sheet.getRange(rowGp, 3, baseData.length, 2).setValues(baseData);
-  sheet.getRange(rowHeroes, 3, meta.length, 2).setValues(meta);
+  /** retrieve player's data from unit tabs or a data source */
+  export function getData(
+    sheet: Sheet,
+    filter: string,
+    unitsIndex: UnitDefinition[],
+  ): PlayerData {
+
+    const members = Members.getAllycodes();
+
+    const memberName = (sheet.getRange(5, 1).getValue() as string).trim();
+
+    // get the player's link from the Roster
+    if (memberName.length > 0 && members.find(e => e[0] === memberName)) {
+      return Player.getFromSheet(memberName, filter.toLowerCase());
+    }
+
+    // check if ally code
+    const allyCode = (sheet.getRange(2, 1).getValue() as number);
+
+    if (allyCode > 0) {
+
+      // check if ally code exist in roster
+      const member = members.find(e => e[1] === allyCode);
+      if (member) {
+        return Player.getFromSheet(member[0], filter.toLowerCase());
+      }
+
+      return Player.getFromDataSource(allyCode, filter, unitsIndex);
+    }
+
+    return undefined;
+  }
+
+  /** output to Snapshot sheet */
+  export function output(
+    sheet: Sheet,
+    rowGp: number,
+    baseData: string[][],
+    rowHeroes: number,
+    meta: string[][],
+  ): void {
+
+    sheet.getRange(1, 3, 50, 2).clearContent();  // clear the sheet
+    sheet.getRange(rowGp, 3, baseData.length, 2).setValues(baseData);
+    sheet.getRange(rowHeroes, 3, meta.length, 2).setValues(meta);
+  }
+
 }
 
 /** create a snapshot of a player or guild member */
 function playerSnapshot(): void {
 
-  const definitions = getUnitsDefinitions_();
+  const definitions = Units.getDefinitions();
   const unitsIndex = definitions.heroes.concat(definitions.ships);
 
   // collect the meta data for the heroes
-  const filter = getEventFilter_(); // TODO: potentially broken if TB not sync
+  const filter = config.currentEvent(); // TODO: potentially broken if TB not sync
   const meta = getEventDefinition_(filter);
 
   // get all hero stats
   let countFiltered = 0;
   let countTagged = 0;
-  const characterTag = getTagFilter_(); // TODO: potentially broken if TB not sync
-  const powerTarget = getMinimumCharacterGp_();
+  const characterTag = config.tagFilter(); // TODO: potentially broken if TB not sync
+  const powerTarget = config.requiredHeroGp();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
-  const playerData = getSnapshopData_(sheet, filter, unitsIndex);
+  const playerData = Snapshot.getData(sheet, filter, unitsIndex);
   if (playerData) {
     for (const baseId in playerData.units) {
       const u = playerData.units[baseId];
@@ -289,7 +301,7 @@ function playerSnapshot(): void {
     const rowGp = 1;
     const rowHeroes = 6;
     // output the results
-    playerSnapshotOutput_(sheet, rowGp, baseData, rowHeroes, meta);
+    Snapshot.output(sheet, rowGp, baseData, rowHeroes, meta);
   } else {
     UI.alert('ERROR: Failed to retrieve player\'s data.');
   }

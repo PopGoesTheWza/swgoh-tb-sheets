@@ -46,14 +46,14 @@ function unitLabel_(unit: string, slot: string, force: boolean = undefined): str
 /** Send a Webhook to Discord */
 function sendMicroByPlayerWebhook(): void {
 
-  const displaySetting = getWebhookDisplaySlot_();
+  const displaySetting = config.discord.displaySlots();
   const displaySlot = displaySetting !== DISPLAYSLOT.NEVER;
   const forceDisplay = displaySetting === DISPLAYSLOT.ALWAYS;
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
 
   // get the webhook
-  const webhookURL = getWebhook_();
+  const webhookURL = config.discord.webhookUrl();
   if (webhookURL.length === 0) {
     // we need a url to proceed
     UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
@@ -70,7 +70,7 @@ function sendMicroByPlayerWebhook(): void {
 
     // for each zone
     const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
-    const label = getZoneName_(phase, z, false);
+    const label = discord.getZoneName(phase, z, false);
     const type = z === 0 ? 'squadron' : 'platoon';
 
     // cycle throught the platoons in a zone
@@ -113,7 +113,7 @@ function sendMicroByPlayerWebhook(): void {
     return a.player.toLowerCase().localeCompare(b.player.toLowerCase());
   });
 
-  const playerMentions = getPlayerMentions_();
+  const playerMentions = discord.getPlayerMentions();
   while (entries.length > 0) {
     const player = entries[0].player;
     const bucket = entries.filter(e => e.player === player);

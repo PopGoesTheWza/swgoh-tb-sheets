@@ -60,7 +60,7 @@ class PlatoonUnit {
 /** Initialize the list of Territory names */
 function initPlatoonPhases_(): void {
 
-  const filter = getEventFilter_();
+  const filter = config.currentEvent();
 
   // Names of Territories, # of Platoons
   if (isLight_(filter)) {
@@ -112,7 +112,7 @@ function readSlice_(phase: number, zone: number): string[][] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
   const namedRanges = sheet.getNamedRanges();
-  const filter = getEventFilter_();
+  const filter = config.currentEvent();
 
   // format the cell name
   let cellName = filter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
@@ -135,12 +135,7 @@ function writeSlice_(data: string[][], platoon: number, range: Range): void {
 }
 
 /** Clear out a platoon */
-function resetPlatoon_(
-  phase: number,
-  zone: number,
-  platoonRow: number,
-  rows: number,
-): void {
+function resetPlatoon_(phase: number, zone: number, platoonRow: number): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const slice = readSlice_(phase, zone);
@@ -171,7 +166,7 @@ function resetPlatoons(): void {
   initPlatoonPhases_();
 
   [2, 20, 38].forEach((platoonRow, zone) => {
-    resetPlatoon_(phase, zone, platoonRow, MAX_PLATOON_UNITS);
+    resetPlatoon_(phase, zone, platoonRow);
     const zoneName = setZoneName_(phase, zone, sheet, platoonRow);
     if (zone !== 1) {
       if (zoneName.length === 0) {
@@ -442,13 +437,13 @@ function recommendPlatoons() {
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
-  const alignment = getEventFilter_().toLowerCase();
-  const unavailable = sheet.getRange(56, 4, getGuildSize_(), 1).getValues() as [string][];
+  const alignment = config.currentEvent().toLowerCase();
+  const unavailable = sheet.getRange(56, 4, config.memberCount(), 1).getValues() as [string][];
 
   // cache the matrix of hero data
-  const heroesTable = new HeroesTable();
+  const heroesTable = new Units.Heroes();
   const allHeroes = heroesTable.getAllInstancesByUnits();
-  const shipsTable = new ShipsTable();
+  const shipsTable = new Units.Ships();
   const allShips = shipsTable.getAllInstancesByUnits();
 
   filterUnits_(
@@ -470,11 +465,11 @@ function recommendPlatoons() {
   // processUnavailable_(allShips, unavailable);
 
   // remove heroes listed on Exclusions sheet
-  const exclusionsId = getExclusionId_();
+  const exclusionsId = config.exclusionId();
   if (exclusionsId.length > 0) {
-    const exclusions = getExclusionList_();
-    processExclusions_(allHeroes, exclusions);
-    processExclusions_(allShips, exclusions, getEventFilter_());
+    const exclusions = Exclusions.getList();
+    Exclusions.process(allHeroes, exclusions);
+    Exclusions.process(allShips, exclusions, config.currentEvent());
   }
 
   initPlatoonPhases_();
@@ -632,7 +627,7 @@ function recommendPlatoons() {
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
     placementCount[z] = [];
   }
-  const maxPlayerDonations = getMaximumPlatoonDonation_();
+  const maxPlayerDonations = config.maxDonationsPerTerritory();
 
   // try to find an unused player to default to
   let matrixIdx = 0;

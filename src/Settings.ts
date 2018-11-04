@@ -1,4 +1,3 @@
-
 /** Shortcuts for Google Apps Script classes */
 const SPREADSHEET = SpreadsheetApp.getActive();
 const UI = SpreadsheetApp.getUi();
@@ -167,225 +166,245 @@ enum SHEETS {
   INSTRUCTIONS = 'Instructions',
 }
 
-function getEventFilter_(): string {
+namespace config {
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_FILTER_ROW, META_FILTER_COL)
-    .getValue() as string;
+  export function currentEvent(): string {
 
-  return value;
-}
+    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_FILTER_ROW, META_FILTER_COL)
+      .getValue() as string;
 
-function getTagFilter_(): string {
+    return value;
+  }
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_TAG_ROW, META_TAG_COL)
-    .getValue() as string;
+  export function tagFilter(): string {
 
-  return value;
-}
+    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_TAG_ROW, META_TAG_COL)
+      .getValue() as string;
 
-function getMinimumCharacterGp_(): number {
+    return value;
+  }
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_MIN_GP_ROW, META_MIN_GP_COL)
-    .getValue() as number;
+  export function requiredHeroGp(): number {
 
-  return value;
-}
+    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_MIN_GP_ROW, META_MIN_GP_COL)
+      .getValue() as number;
 
-// function getMinimunPlayerLevel_(): number {
+    return value;
+  }
 
-//   const value = SPREADSHEET.getSheetByName(SHEETS.META)
-//     .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
-//     .getValue() as number;
+  export function requiredPlayerLevel(): number {
 
-//   return value;
-// }
+    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
+      .getValue() as number;
 
-function getMaximumPlatoonDonation_(): number {
+    return value;
+  }
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_UNIT_PER_PLAYER_ROW, META_UNIT_PER_PLAYER_COL)
-    .getValue() as number;
+  export function maxDonationsPerTerritory(): number {
 
-  return value;
-}
+    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_UNIT_PER_PLAYER_ROW, META_UNIT_PER_PLAYER_COL)
+      .getValue() as number;
 
-function getSortRoster_(): boolean {
+    return value;
+  }
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_SORT_ROSTER_ROW, META_SORT_ROSTER_COL)
-    .getValue() as string;
+  export function sortRoster(): boolean {
 
-  return value === 'Yes';
-}
+    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_SORT_ROSTER_ROW, META_SORT_ROSTER_COL)
+      .getValue() as string;
 
-function getExclusionId_(): string {
+    return value === 'Yes';
+  }
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_EXCLUSSIONS_ROW, META_EXCLUSSIONS_COL)
-    .getValue() as string;
+  export function exclusionId(): string {
 
-  return value;
-}
+    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_EXCLUSSIONS_ROW, META_EXCLUSSIONS_COL)
+      .getValue() as string;
 
-/** should we use the SWGoH.help API? */
-function isDataSourceSwgohHelp_(): boolean {
-  return getDataSource_() === DATASOURCES.SWGOH_HELP;
-}
+    return value;
+  }
 
-/** should we use the SWGoH.gg API? */
-function isDataSourceSwgohGg_(): boolean {
-  return getDataSource_() === DATASOURCES.SWGOH_GG;
-}
+  export function memberCount(): number {
 
-function getDataSource_(): string {
+    const value = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+      .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
+      .getValue() as number;
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
-    .getValue() as string;
+    return value;
+  }
 
-  return value;
-}
+  export namespace dataSource {
 
-function getGuildSize_(): number {
+    /** should we use the SWGoH.help API? */
+    export function isSwgohHelp(): boolean {
+      return getDataSource() === DATASOURCES.SWGOH_HELP;
+    }
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
-    .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
-    .getValue() as number;
+    /** should we use the SWGoH.gg API? */
+    export function isSwgohGg(): boolean {
+      return getDataSource() === DATASOURCES.SWGOH_GG;
+    }
 
-  return value;
-}
+    export function getDataSource(): string {
 
-/** Get the guild id */
-function getSwgohGgGuildId_(): number {
+      const value = SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
+        .getValue() as string;
 
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 2;
-  const guildLink = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as string;
-  const parts = guildLink.split('/');
-  // TODO: input check
-  const guildId = Number(parts[4]);
+      return value;
+    }
 
-  return guildId;
-}
+  }
 
-/** Get the SwgohHelp API username */
-function getSwgohHelpUsername_(): string {
+  export namespace SwgohGg {
 
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 16;
-  const result = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as string;
+    /** Get the guild id */
+    export function guild(): number {
 
-  return result;
-}
+      const metaSWGOHLinkCol = 1;
+      const metaSWGOHLinkRow = 2;
+      const guildLink = SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
+        .getValue() as string;
+      const parts = guildLink.split('/');
+      // TODO: input check
+      const guildId = Number(parts[4]);
 
-/** Get the SwgohHelp API password */
-function getSwgohHelpPassword_(): string {
+      return guildId;
+    }
 
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 18;
-  const result = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as string;
+  }
 
-  return result;
-}
+  export namespace SwgohHelp {
 
-/** Get the guild member ally code */
-function getSwgohHelpAllycode_(): number {
+    /** Get the SwgohHelp API username */
+    export function username(): string {
 
-  const metaSWGOHLinkCol = 1;
-  const metaSWGOHLinkRow = 20;
-  const result = SPREADSHEET.getSheetByName(SHEETS.META)
-    .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-    .getValue() as number;
+      const metaSWGOHLinkCol = 1;
+      const metaSWGOHLinkRow = 16;
+      const result = SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
+        .getValue() as string;
 
-  return result;
-}
+      return result;
+    }
 
-/** Get the webhook address */
-function getWebhook_(): string {
+    /** Get the SwgohHelp API password */
+    export function password(): string {
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(1, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
+      const metaSWGOHLinkCol = 1;
+      const metaSWGOHLinkRow = 18;
+      const result = SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
+        .getValue() as string;
 
-  return value;
-}
+      return result;
+    }
 
-/** Get the role to mention */
-function getRole_(): string {
+    /** Get the guild member ally code */
+    export function allyCode(): number {
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(2, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
+      const metaSWGOHLinkCol = 1;
+      const metaSWGOHLinkRow = 20;
+      const result = SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
+        .getValue() as number;
 
-  return value;
-}
+      return result;
+    }
 
-/** Get the time and date when the TB started */
-function getTBStartTime_(): Date {
+  }
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_TB_START_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as Date;
+  export namespace discord {
 
-  return value;
-}
+    /** Get the webhook address */
+    export function webhookUrl(): string {
 
-/** Get the number of hours in each phase */
-function getPhaseHours_(): number {
+      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(1, DISCORD_WEBHOOK_COL)
+        .getValue() as string;
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as number;
+      return value;
+    }
 
-  return value;
-}
+    /** Get the role to mention */
+    export function roleId(): string {
 
-/** Get the template for a webhooks */
-function getWebhookTemplate_(phase: number, row: number, defaultVal: string): string {
+      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(2, DISCORD_WEBHOOK_COL)
+        .getValue() as string;
 
-  const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(row, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
+      return value;
+    }
 
-  return text.length > 0 ? text.replace('{0}', String(phase)) : defaultVal;
-}
+    /** Get the time and date when the TB started */
+    export function startTime(): Date {
 
-/** Get the Description for the phase */
-function getWebhookDesc_(phase: number): string {
+      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_TB_START_ROW, DISCORD_WEBHOOK_COL)
+        .getValue() as Date;
 
-  const columnOffset = isLight_(getEventFilter_()) ? 0 : 1;
-  const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
-    .getValue() as string;
+      return value;
+    }
 
-  return `\n\n${text}`;
-}
+    /** Get the number of hours in each phase */
+    export function phaseDuration(): number {
 
-/** See if the platoons should be cleared */
-function getWebhookClear_(): boolean {
+      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
+        .getValue() as number;
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_CLEAR_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
+      return value;
+    }
 
-  return value === 'Yes';
-}
+    /** Get the template for a webhooks */
+    export function webhookTemplate(phase: number, row: number, defaultVal: string): string {
 
-/** See if the slot number should be displayed */
-function getWebhookDisplaySlot_(): string {
+      const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(row, DISCORD_WEBHOOK_COL)
+        .getValue() as string;
 
-  const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-    .getRange(WEBHOOK_DISPLAY_SLOT_ROW, DISCORD_WEBHOOK_COL)
-    .getValue() as string;
+      return text.length > 0 ? text.replace('{0}', String(phase)) : defaultVal;
+    }
 
-  return value;
+    /** Get the Description for the phase */
+    export function webhookDescription(phase: number): string {
+
+      const columnOffset = isLight_(config.currentEvent()) ? 0 : 1;
+      const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
+        .getValue() as string;
+
+      return `\n\n${text}`;
+    }
+
+    /** See if the platoons should be cleared */
+    export function resetPlatoons(): boolean {
+
+      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_CLEAR_ROW, DISCORD_WEBHOOK_COL)
+        .getValue() as string;
+
+      return value === 'Yes';
+    }
+
+    /** See if the slot number should be displayed */
+    export function displaySlots(): string {
+
+      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_DISPLAY_SLOT_ROW, DISCORD_WEBHOOK_COL)
+        .getValue() as string;
+
+      return value;
+    }
+
+  }
+
 }

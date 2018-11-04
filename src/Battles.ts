@@ -21,7 +21,7 @@ function populateEventTable_(
   unitsIndex: UnitDefinition[],
 ): (string|number)[][] {
 
-  const memberNames = getMemberNames_();
+  const memberNames = Members.getNames();
   const nameToBaseId: KeyedStrings = {};
   for (const e of unitsIndex) {
     nameToBaseId[e.name] = e.baseId;
@@ -77,7 +77,7 @@ function populateEventTable_(
       let baseId = nameToBaseId[curHero[0]];
       if (!baseId) {
         // refresh from data source
-        const definitions = getUnitsDefinitionsFromDataSource_();
+        const definitions = Units.getDefinitionsFromDataSource();
         // replace content of unitsIndex with definitions
         unitsIndex.splice(0, unitsIndex.length, ...definitions.heroes.concat(definitions.ships));
         // refresh nameToBaseId with updated unitsIndex
@@ -118,7 +118,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
 
-  const sortFunction = getSortRoster_()
+  const sortFunction = config.sortRoster()
     // sort roster by player name
     ? (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())
     // sort roster by GP
@@ -132,7 +132,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   }
 
   // get the filter & tag
-  // var POWER_TARGET = getMinimumCharacterGp_()
+  // var POWER_TARGET = requiredHeroGp()
 
   // cleanup the header
   const header = [['Name', 'Hyper Link', 'GP', 'GP Heroes', 'GP Ships']];
@@ -204,7 +204,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
     .getValues() as number[][];
 
-  const definitions = getUnitsDefinitions_();
+  const definitions = Units.getDefinitions();
   const unitsIndex = definitions.heroes.concat(definitions.ships);
 
   // add & rename
@@ -215,7 +215,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
       const index = members.findIndex(m => m.allyCode === allyCode);
       if (index === -1) {
         // get PlayerData and update members
-        const member = (getPlayerDataFromDataSource_(allyCode, undefined, unitsIndex));
+        const member = (Player.getFromDataSource(allyCode, undefined, unitsIndex));
         if (member) {
           members.push(member);
         }
@@ -281,13 +281,13 @@ function getMembers_(): PlayerData[] {
   const cachedHash = cache.get(cacheId);
 
   if (cachedHash && cachedHash === settingsHash) {
-    return getMembersFromSheet_();
+    return Members.getFromSheet();
   }
   // Figure out which data source to use
-  if (isDataSourceSwgohHelp_()) {
+  if (config.dataSource.isSwgohHelp()) {
     members = getGuildDataFromSwgohHelp_();
-  } else if (isDataSourceSwgohGg_()) {
-    members = getGuildDataFromSwgohGg_(getSwgohGgGuildId_());
+  } else if (config.dataSource.isSwgohGg()) {
+    members = SwgohGg.getGuildData(config.SwgohGg.guild());
   }
   const seconds = 3600;  // 1 hour
   cache.put(cacheId, settingsHash, seconds);
@@ -299,8 +299,7 @@ function getMembers_(): PlayerData[] {
 function setupEvent(): void {
 
   // // make sure the roster is up-to-date
-  // const { heroes, ships } = getUnitsDefinitions_();
-  const definitions = getUnitsDefinitions_();
+  const definitions = Units.getDefinitions();
   const unitsIndex = definitions.heroes.concat(definitions.ships);
 
   // Figure out which data source to use
@@ -319,8 +318,8 @@ function setupEvent(): void {
   // will also return a new members array with added/deleted from sheet
   members = updateGuildRoster_(members);
 
-  const heroesTable = new HeroesTable();
-  const shipsTable = new ShipsTable();
+  const heroesTable = new Units.Heroes();
+  const shipsTable = new Units.Ships();
   heroesTable.setInstances(members);
   shipsTable.setInstances(members);
 
@@ -342,7 +341,7 @@ function setupEvent(): void {
 
   // collect the meta data for the heroes
   const row = 2;
-  const col = isLight_(getEventFilter_()) ? META_HEROES_COL : META_HEROES_DS_COL;
+  const col = isLight_(config.currentEvent()) ? META_HEROES_COL : META_HEROES_DS_COL;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row, 8)
     .getValues() as eventData[];
