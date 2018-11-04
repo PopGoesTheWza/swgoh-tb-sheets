@@ -139,7 +139,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   // var POWER_TARGET = requiredHeroGp()
 
   // cleanup the header
-  const header = [['Name', 'Hyper Link', 'GP', 'GP Heroes', 'GP Ships']];
+  const header = [['Name', 'Ally Code', 'GP', 'GP Heroes', 'GP Ships']];
 
   const result = members.map(e => [
     [e.name],
