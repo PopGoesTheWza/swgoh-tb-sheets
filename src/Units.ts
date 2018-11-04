@@ -1,3 +1,10 @@
+/** workaround to tslint issue of namespace scope after importing type definitions */
+declare namespace SwgohHelp {
+
+  function getUnitList(): UnitsDefinitions;
+
+}
+
 type UnitsDefinitions = {
   heroes: UnitDefinition[];
   ships: UnitDefinition[];
@@ -13,8 +20,7 @@ namespace Units {
     const seconds = 21600;  // 6 hours (maximum value)
 
     if (config.dataSource.isSwgohHelp()) {
-      // TODO: read from SwgohHelp
-      definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
+      definitions = SwgohHelp.getUnitList();
     } else {
       definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
     }

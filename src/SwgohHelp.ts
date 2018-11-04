@@ -2,11 +2,43 @@ import { swgohhelpapi } from '../lib';
 
 namespace SwgohHelp {
 
-  interface SwgohHelpUnitListResponse {
-    nameKey: string;
-    forceAlignment: number;
-    combatType: number;
-    baseId: string;
+  enum categoryId {
+    alignment_dark = 'dark side',
+    alignment_light = 'light side',
+
+    role_attacker = 'attacker',
+    role_capital = 'capital ship',
+    role_healer = 'healer',
+    role_support = 'support',
+    role_tank = 'tank',
+
+    affiliation_empire = 'empire',
+    affiliation_firstorder = 'first order',
+    affiliation_imperialtrooper = 'imperial trooper',
+    affiliation_nightsisters = 'nightsister',
+    affiliation_oldrepublic = 'old republic',
+    affiliation_phoenix = 'phoenix',
+    affiliation_rebels = 'rebel',
+    affiliation_republic = 'galactic republic',
+    affiliation_resistance = 'resistance',
+    affiliation_rogue_one = 'rogue one',
+    affiliation_separatist = 'separatist',
+    character_fleetcommander = 'fleet commander',
+    profession_bountyhunter = 'bounty hunters',
+    profession_clonetrooper = 'clone trooper',
+    profession_jedi = 'jedi',
+    profession_scoundrel = 'scoundrel',
+    profession_sith = 'sith',
+    profession_smuggler = 'smuggler',
+    // shipclass_capitalship = 'capital ship',
+    shipclass_cargoship = 'cargo ship',
+    species_droid = 'droid',
+    species_ewok = 'ewok',
+    species_geonosian = 'geonosian',
+    // species_human = 'human',
+    species_jawa = 'jawa',
+    species_tusken = 'tusken',
+    // species_wookiee = 'wookiee',
   }
 
   function checkLibrary(): boolean {
@@ -21,7 +53,14 @@ namespace SwgohHelp {
     return result;
   }
 
-  function getUnitList(): UnitDefinition[] {
+  type UnitsList = {
+    nameKey: string,
+    combatType: number,
+    baseId: string,
+    categoryIdList: [string],
+  };
+
+  export function getUnitList(): UnitsDefinitions {
 
     if (!checkLibrary()) {
       return undefined;
@@ -33,7 +72,7 @@ namespace SwgohHelp {
     };
     const client = new swgohhelpapi.exports.Client(settings);
 
-    const units = client.fetchData({
+    const units: [UnitsList] = client.fetchData({
       collection: 'unitsList',
       language: swgohhelpapi.Languages.eng_us,
       match: {
@@ -43,16 +82,37 @@ namespace SwgohHelp {
       },
       project: {
         nameKey: true,
-        forceAlignment: true,
+        // forceAlignment: true,
         combatType: true,
         categoryIdList: true,
         baseId: true,
       },
     });
 
-    if (units && units.length && units.length > 1 && !units[0].hasOwnProperty('error')) {
+    if (units && units.length && units.length > 0) {
+      return units.reduce(
+        (acc: UnitsDefinitions, e) => {
+          const bucket = e.combatType === 0 ? acc.heroes : acc.ships;
+          const tags = e.categoryIdList.reduce(
+            (a: [string], c) => {
+              const tag = categoryId[c];
+              if (tag) {
+                a.push(tag);
+              }
+              return a;
+            },
+            [],
+          );
+          const definition: UnitDefinition = {
+            baseId: e.baseId,
+            name: e.nameKey,
+            tags: tags.join(' '),
+          };
+          bucket.push(definition);
+          return acc;
+        },
+        { heroes: [], ships: [] });
 
-      return units;
     }
 
     return undefined;
@@ -90,7 +150,7 @@ namespace SwgohHelp {
       },
     });
 
-    if (guild && guild.length && guild.length === 1 && !guild[0].hasOwnProperty('error')) {
+    if (guild && guild.length && guild.length === 1) {
 
       const roster = guild[0].roster as swgohhelpapi.exports.PlayerResponse[];
 
@@ -131,7 +191,7 @@ namespace SwgohHelp {
         },
       });
 
-      if (units && typeof units === 'object' && !units.hasOwnProperty('error')) {
+      if (units && typeof units === 'object') {
         const playersData = red.playersData;
         for (const baseId in units) {
           const u = units[baseId];
