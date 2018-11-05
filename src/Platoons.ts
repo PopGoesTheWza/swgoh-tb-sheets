@@ -22,7 +22,7 @@ class PlatoonDetails {
     this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
-    this.exist = zone === 0 && phase < 3;
+    this.exist = zone !== 0 || phase > 2;
   }
   getOffset() {
     return this.platoon * 4;
@@ -246,12 +246,15 @@ function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBoolean
   return result;
 }
 
-function filterUnits_(data: KeyedType<UnitInstances>, filter: (u: UnitInstance) => boolean) {
+function filterUnits_(
+  data: KeyedType<UnitInstances>,
+  filter: (player: string, u: UnitInstance) => boolean,
+) {
   const units = Object.assign({}, data);
   for (const unit in units) {
     const members = Object.assign({}, data[unit]);
     for (const player in members) {
-      if (!filter(members[player])) {
+      if (!filter(player, members[player])) {
         delete data[unit][player];
       }
     }
@@ -261,21 +264,14 @@ function filterUnits_(data: KeyedType<UnitInstances>, filter: (u: UnitInstance) 
   }
 }
 
-// function processUnavailable_(data: KeyedType<UnitInstances>, list: [string][]) {
-//   for (const unit in data) {
-//     const members = Object.assign({}, data[unit]);
-//     for (const player in members) {
-//       if (list.findIndex(e => e[0] === player) !== -1) {
-//         delete data[unit][player];
-//       }
-//     }
-//   }
-// }
-
 // function loop1_(
 //   cur: PlatoonDetails,
 //   platoonMatrix: PlatoonUnit[],
 //   sheet: Sheet,
+//   phase: number,
+//   allHeroes: KeyedType<UnitInstances>,
+//   allShips: KeyedType<UnitInstances>,
+//   allDropdowns: [Range, [DataValidation][]][],
 // ) {
 //   const baseCol = 4;  // TODO: should it be a setting
 
@@ -354,7 +350,19 @@ function filterUnits_(data: KeyedType<UnitInstances>, filter: (u: UnitInstance) 
 //   }
 // }
 
-// function loop3_(cur: PlatoonDetails, sheet: Sheet) {
+// function loop3_(
+//   cur: PlatoonDetails,
+//   sheet: Sheet,
+//   matrixIdx: number,
+//   placementCount: number[][],
+//   platoonMatrix: PlatoonUnit[],
+//   maxPlayerDonations: number,
+//   usedHeroes: KeyedType<KeyedBooleans>,
+//   usedShips: KeyedType<KeyedBooleans>,
+//   baseCol: number,
+//   allDonors:[Range, [string][]][],
+//   allColors: [Range, [COLOR, COLOR][]][],
+// ) {
 //   if (cur.exist) {
 //     if (!cur.possible) {
 //       // skip this platoon
@@ -423,9 +431,11 @@ function filterUnits_(data: KeyedType<UnitInstances>, filter: (u: UnitInstance) 
 
 //         matrixIdx += 1;
 //       }
-//       const donorsRange = sheet.getRange(cur.row, baseCol + plattonOffset + 1, MAX_PLATOON_UNITS, 1);
+//       const donorsRange =
+//         sheet.getRange(cur.row, baseCol + plattonOffset + 1, MAX_PLATOON_UNITS, 1);
 //       allDonors.push([donorsRange, donors]);
-//       const colorsRange = sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2);
+//       const colorsRange =
+//         sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2);
 //       allColors.push([colorsRange, colors]);
 //     }
 //   }
@@ -448,21 +458,19 @@ function recommendPlatoons() {
 
   filterUnits_(
     allHeroes,
-    (u: UnitInstance) => {
+    (player: string, u: UnitInstance) => {
       return u.rarity > phase
         && u.tags.indexOf(alignment) !== -1
-        && unavailable.findIndex(e => e[0] === u.name) !== -1;
+        && unavailable.findIndex(e => e[0] === player) === -1;
     },
   );
   filterUnits_(
     allShips,
-    (u: UnitInstance) => {
+    (player: string, u: UnitInstance) => {
       return u.rarity > phase
-        && unavailable.findIndex(e => e[0] === u.name) !== -1;
+        && unavailable.findIndex(e => e[0] === player) === -1;
     },
   );
-  // processUnavailable_(allHeroes, unavailable);
-  // processUnavailable_(allShips, unavailable);
 
   // remove heroes listed on Exclusions sheet
   const exclusionsId = config.exclusionId();
@@ -623,7 +631,7 @@ function recommendPlatoons() {
   }
 
   // initialize the placement counts
-  const placementCount = [];
+  const placementCount: number[][] = [];
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
     placementCount[z] = [];
   }
