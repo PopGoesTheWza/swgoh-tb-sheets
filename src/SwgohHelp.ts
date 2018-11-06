@@ -92,7 +92,7 @@ namespace SwgohHelp {
     if (units && units.length && units.length > 0) {
       return units.reduce(
         (acc: UnitsDefinitions, e) => {
-          const bucket = e.combatType === 0 ? acc.heroes : acc.ships;
+          const bucket = e.combatType === 1 ? acc.heroes : acc.ships;
           const tags = e.categoryIdList.reduce(
             (a: [string], c) => {
               const tag = categoryId[c];
