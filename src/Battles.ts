@@ -366,7 +366,7 @@ function setupEvent(): void {
   const row = 2;
   const col = isLight_(config.currentEvent()) ? META_HEROES_COL : META_HEROES_DS_COL;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
-  const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row, 8)
+  const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8)
     .getValues() as eventData[];
 
   type eventUnit = {
