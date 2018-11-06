@@ -12,6 +12,10 @@ type UnitsDefinitions = {
 
 namespace Units {
 
+  const sortUnits = (a: UnitDefinition, b: UnitDefinition) => {
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  };
+
   /** request units definitions from data source (and cache them for 6 hours) */
   export function getDefinitionsFromDataSource(): UnitsDefinitions {
 
@@ -24,6 +28,8 @@ namespace Units {
     } else {
       definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
     }
+    definitions.heroes = definitions.heroes.sort(sortUnits);
+    definitions.ships = definitions.ships.sort(sortUnits);
 
     const heroesTable = new Heroes();
     const shipsTable = new Ships();
@@ -91,7 +97,7 @@ namespace Units {
     /** column which holds units for the first member */
     private columnOffset: number;
     /** name of the sheet on which the units are stored */
-    private sheet: Sheet;
+    protected sheet: Sheet;
 
     constructor(offset: number, sheet: Sheet) {
 
@@ -303,21 +309,21 @@ namespace Units {
     }
 
     /** set the unit instances for all members */
-    protected setInstances(members: PlayerData[], toString: (u: UnitInstance) => string): void {
-
-      // Build a Hero Index by BaseID
-      const baseIDs = this.sheet.getRange(2, 2, this.getCount(), 1)
-        .getValues() as string[][];
+    protected setInstances(
+      members: PlayerData[],
+      definitions: UnitDefinition[],
+      toString: (u: UnitInstance) => string,
+    ): void {
 
       // Build a Member index by Name
       const memberList = Members.getNames();
 
       // This will hold all our data
-      const data = baseIDs.map(e => Array(memberList.length).fill(null));  // Initialize our data
+      const data = definitions.map(e => Array(memberList.length).fill(null));
 
       const headers: string[] = [];
       const nameIndex: KeyedNumbers = {};
-      baseIDs.forEach((e, i) => nameIndex[e[0]] = i);
+      definitions.forEach((e, i) => nameIndex[e.baseId] = i);
 
       const memberIndex: KeyedNumbers = {};
       memberList.forEach((e, i) => memberIndex[e[0]] = i);
@@ -325,19 +331,19 @@ namespace Units {
       for (const m of members) {
         headers.push(m.name);
         const units = m.units;
-        for (const e of baseIDs) {
-          const baseId = e[0];
+        for (const e of definitions) {
+          const baseId = e.baseId;
           const u = units[baseId];
           data[nameIndex[baseId]][memberIndex[m.name]] = toString(u);
         }
       }
 
       // Clear out our old data, if any, including names as order may have changed
-      this.sheet.getRange(1, this.columnOffset, baseIDs.length, MAX_PLAYERS)
+      this.sheet.getRange(1, this.columnOffset, definitions.length, MAX_PLAYERS)
         .clearContent();
 
       // Write our data
-      this.sheet.getRange(1, this.columnOffset, baseIDs.length + 1, memberList.length)
+      this.sheet.getRange(1, this.columnOffset, definitions.length + 1, memberList.length)
         .setValues([headers].concat(data));
     }
 
@@ -354,8 +360,8 @@ namespace Units {
 
         {
           [2, 3, 4, 5, 6, 7].forEach((stars) => {
-            cells.push(`
-=COUNT(ARRAYFORMULA(IFERROR(VALUE(REGEXEXTRACT(${rangeText},"([${stars}-7]+)\\*")))))`);
+            // tslint:disable-next-line:max-line-length
+            cells.push(`=COUNT(ARRAYFORMULA(IFERROR(VALUE(REGEXEXTRACT(${rangeText},"([${stars}-7]+)\\*")))))`);
           });
         }
 
@@ -431,19 +437,24 @@ namespace Units {
       const toString = (u: UnitInstance) =>
         (u && `${u.rarity}*L${u.level}G${u.gearLevel}P${u.power}`) || '';
 
-      super.setInstances(members, toString);
+      const definitions = Units.getDefinitions().heroes;
+
+      const baseIDs = this.sheet.getRange(2, 2, this.getCount(), 1)
+        .getValues() as string[][];
+      const missingUnit = definitions.some(e => baseIDs.findIndex(b => b[0] === e.baseId) === -1);
+
+      if (missingUnit) {
+        this.setDefinitions(definitions);
+      }
+
+      super.setInstances(members, definitions, toString);
     }
 
     /** set the hero definitions and phase count formulas */
     setDefinitions(units: UnitDefinition[]): void {
 
-      const formula = row => `
-=COUNTIF({${SHEETS.PLATOONS}!$D$20:$D$34,${SHEETS.PLATOONS}!$H$20:$H$34,
-${SHEETS.PLATOONS}!$L$20:$L$34,${SHEETS.PLATOONS}!$P$20:$P$34,
-${SHEETS.PLATOONS}!$T$20:$T$34,${SHEETS.PLATOONS}!$X$20:$X$34,
-${SHEETS.PLATOONS}!$D$38:$D$52,${SHEETS.PLATOONS}!$H$38:$H$52,
-${SHEETS.PLATOONS}!$L$38:$L$52,${SHEETS.PLATOONS}!$P$38:$P$52,
-${SHEETS.PLATOONS}!$T$38:$T$52,${SHEETS.PLATOONS}!$X$38:$X$52},A${row})`;
+      // tslint:disable-next-line:max-line-length
+      const formula = row => `=COUNTIF({${SHEETS.PLATOONS}!$D$20:$D$34,${SHEETS.PLATOONS}!$H$20:$H$34,${SHEETS.PLATOONS}!$L$20:$L$34,${SHEETS.PLATOONS}!$P$20:$P$34,${SHEETS.PLATOONS}!$T$20:$T$34,${SHEETS.PLATOONS}!$X$20:$X$34,${SHEETS.PLATOONS}!$D$38:$D$52,${SHEETS.PLATOONS}!$H$38:$H$52,${SHEETS.PLATOONS}!$L$38:$L$52,${SHEETS.PLATOONS}!$P$38:$P$52,${SHEETS.PLATOONS}!$T$38:$T$52,${SHEETS.PLATOONS}!$X$38:$X$52},A${row})`;
 
       return super.setDefinitions(units, formula);
     }
@@ -493,16 +504,24 @@ ${SHEETS.PLATOONS}!$T$38:$T$52,${SHEETS.PLATOONS}!$X$38:$X$52},A${row})`;
 
       const toString = (u: UnitInstance) => (u && `${u.rarity}*L${u.level}P${u.power}`) || '';
 
-      super.setInstances(members, toString);
+      const definitions = Units.getDefinitions().ships;
+
+      const baseIDs = this.sheet.getRange(2, 2, this.getCount(), 1)
+        .getValues() as string[][];
+      const missingUnit = definitions.some(e => baseIDs.findIndex(b => b[0] === e.baseId) === -1);
+
+      if (missingUnit) {
+        this.setDefinitions(definitions);
+      }
+
+      super.setInstances(members, definitions, toString);
     }
 
     /** set the ship definitions and phase count formulas */
     setDefinitions(units: UnitDefinition[]): void {
 
-      const formula = row => `
-=COUNTIF({${SHEETS.PLATOONS}!$D$2:$D$16,${SHEETS.PLATOONS}!$H$2:$H$16,
-${SHEETS.PLATOONS}!$L$2:$L$16,${SHEETS.PLATOONS}!$P$2:$P$16,
-${SHEETS.PLATOONS}!$T$2:$T$16,${SHEETS.PLATOONS}!$X$2:$X$16},A${row})`;
+      // tslint:disable-next-line:max-line-length
+      const formula = row => `=COUNTIF({${SHEETS.PLATOONS}!$D$2:$D$16,${SHEETS.PLATOONS}!$H$2:$H$16,${SHEETS.PLATOONS}!$L$2:$L$16,${SHEETS.PLATOONS}!$P$2:$P$16,${SHEETS.PLATOONS}!$T$2:$T$16,${SHEETS.PLATOONS}!$X$2:$X$16},A${row})`;
 
       return super.setDefinitions(units, formula);
     }
