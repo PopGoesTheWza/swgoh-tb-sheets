@@ -222,9 +222,11 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
         const member = (Player.getFromDataSource(allyCode, undefined, unitsIndex));
         if (member) {
           members.push(member);
+        } else {
+          // TODO: UI message, AC not found
         }
       }
-      if (name.length > 0 && members[index].name !== name) {
+      if (index !== -1 && name.length > 0 && members[index].name !== name) {
         members[index].name = name;  // rename member
       }
     }
@@ -293,6 +295,23 @@ function getMembers_(): PlayerData[] {
   } else if (config.dataSource.isSwgohGg()) {
     members = SwgohGg.getGuildData(config.SwgohGg.guild());
   }
+
+  const definitions = Units.getDefinitions();
+  const unitsIndex = definitions.heroes.concat(definitions.ships);
+  const missingUnit = members.some((m: PlayerData) => {
+    for (const baseId in m.units) {
+      if (unitsIndex.findIndex(e => e.baseId === baseId) === -1) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  if (missingUnit) {
+    Units.getDefinitionsFromDataSource();
+  }
+
   const seconds = 3600;  // 1 hour
   cache.put(cacheId, settingsHash, seconds);
 
