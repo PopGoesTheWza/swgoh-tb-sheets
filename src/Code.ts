@@ -334,3 +334,437 @@ function onOpen(): void {
     .addItem('Player Snapshot', playerSnapshot.name)
     .addToUi();
 }
+
+namespace utils {
+
+  function clone<T>(mutable: T): T {
+    return JSON.parse(JSON.stringify(mutable));
+  }
+
+  class Queue<T> {
+
+    private store: T[] = [];
+
+    push(value: T) {
+      this.store.push(value);
+    }
+
+    pop(): T | undefined {
+      return this.store.shift();
+    }
+
+    isEmpty() {
+      return this.store.length === 0;
+    }
+
+  }
+
+  type SpooledTask = () => void;
+
+  export class Spooler {
+
+    private queue: Queue<SpooledTask>;
+
+    constructor() {
+      this.queue = new Queue();
+    }
+
+    attach(range: Range): SpooledRange {
+      return new SpooledRange(this, range);
+    }
+
+    add(task: SpooledTask) {
+      this.queue.push(task);
+    }
+
+    commit() {
+      while (!this.queue.isEmpty()) {
+        this.queue.pop()();
+      }
+    }
+
+  }
+
+  class SpooledRange {
+
+    private readonly range: Range;
+    private readonly spooler: Spooler;
+
+    constructor(spooler: Spooler, range: Range) {
+      this.range = range;
+      this.spooler = spooler;
+    }
+
+    protected addTask(task: SpooledTask) {
+      this.spooler.add(task);
+    }
+
+    clear(options: Object|undefined) {
+
+      let immutable = undefined;
+      if (typeof options === 'object') {
+        immutable = Object.assign({}, options);
+      }
+
+      const range = this.range;
+      this.addTask(() => range.clear(immutable));
+
+      return this;
+    }
+
+    clearContent() {
+      const range = this.range;
+      this.addTask(() => range.clearContent());
+
+      return this;
+    }
+
+    clearDataValidations(options: Object|undefined) {
+      const range = this.range;
+      this.addTask(() => range.clearDataValidations());
+
+      return this;
+    }
+
+    clearFormat(options: Object|undefined) {
+      const range = this.range;
+      this.addTask(() => range.clearFormat());
+
+      return this;
+    }
+
+    clearNote(options: Object|undefined) {
+      const range = this.range;
+      this.addTask(() => range.clearNote());
+
+      return this;
+    }
+
+    offset(rowOffset: number, columnOffset: number, numRows?: number, numColumn?: number) {
+
+      const range = this.range;
+      const offset = range.offset(
+        rowOffset,
+        columnOffset,
+        numRows || range.getNumRows(),
+        numColumn || range.getNumColumns(),
+      );
+
+      return new SpooledRange(this.spooler, offset);
+    }
+
+    setBackground(color: string) {
+      const range = this.range;
+      this.addTask(() => range.setBackground(color));
+
+      return this;
+    }
+
+    setBackgroundRGB(red: number, green: number, blue: number) {
+      const range = this.range;
+      this.addTask(() => range.setBackgroundRGB(red, green, blue));
+
+      return this;
+    }
+
+    setBackgrounds(colors: string[][]) {
+      const range = this.range;
+      this.addTask(() => range.setBackgrounds(clone(colors)));
+
+      return this;
+    }
+
+    setBorder(
+      top: boolean,
+      left: boolean,
+      bottom: boolean,
+      right: boolean,
+      vertical: boolean,
+      horizontal: boolean,
+      color?: string,
+      style?: GoogleAppsScript.Spreadsheet.BorderStyle,
+    ) {
+      const range = this.range;
+      this.addTask(() => range.setBorder(
+        top,
+        left,
+        bottom,
+        right,
+        vertical,
+        horizontal,
+        color,
+        style,
+      ));
+
+      return this;
+    }
+
+    setDataValidation(rule: GoogleAppsScript.Spreadsheet.DataValidation) {
+      const range = this.range;
+      this.addTask(() => range.setDataValidation(rule));
+
+      return this;
+    }
+
+    setDataValidations(rules: GoogleAppsScript.Spreadsheet.DataValidation[][]) {
+      const range = this.range;
+      this.addTask(() => range.setDataValidations(rules));
+
+      return this;
+    }
+
+    setFontColor(color: string) {
+      const range = this.range;
+      this.addTask(() => range.setFontColor(color));
+
+      return this;
+    }
+
+    setFontColors(colors: string[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFontColors(clone(colors)));
+
+      return this;
+    }
+
+    setFontFamilies(fontFamilies: string[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFontFamilies(clone(fontFamilies)));
+
+      return this;
+    }
+
+    setFontFamily(fontFamily: string) {
+      const range = this.range;
+      this.addTask(() => range.setFontFamily(fontFamily));
+
+      return this;
+    }
+
+    setFontLine(fontLine: 'underline'|'line-through'|'none') {
+      const range = this.range;
+      this.addTask(() => range.setFontLine(fontLine));
+
+      return this;
+    }
+
+    setFontLines(fontLines: ('underline'|'line-through'|'none')[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFontLines(clone(fontLines)));
+
+      return this;
+    }
+
+    setFontSize(fontSize: number) {
+      const range = this.range;
+      this.addTask(() => range.setFontSize(fontSize));
+
+      return this;
+    }
+
+    setFontSizes(fontSizes: number[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFontSizes(clone(fontSizes)));
+
+      return this;
+    }
+
+    setFontStyle(fontStyle: 'italic'|'normal') {
+      const range = this.range;
+      this.addTask(() => range.setFontStyle(fontStyle));
+
+      return this;
+    }
+
+    setFontStyles(fontStyles: ('italic'|'normal')[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFontStyles(clone(fontStyles)));
+
+      return this;
+    }
+
+    setFontWeight(fontWeight: 'bold'|'normal') {
+      const range = this.range;
+      this.addTask(() => range.setFontWeight(fontWeight));
+
+      return this;
+    }
+
+    setFontWeights(fontWeights: ('bold'|'normal')[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFontWeights(clone(fontWeights)));
+
+      return this;
+    }
+
+    setFormula(formula: string) {
+      const range = this.range;
+      this.addTask(() => range.setFormula(formula));
+
+      return this;
+    }
+
+    setFormulaR1C1(formula: string) {
+      const range = this.range;
+      this.addTask(() => range.setFormulaR1C1(formula));
+
+      return this;
+    }
+
+    setFormulas(formulas: string[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFormulas(clone(formulas)));
+
+      return this;
+    }
+
+    setFormulasR1C1(formulas: string[][]) {
+      const range = this.range;
+      this.addTask(() => range.setFormulasR1C1(clone(formulas)));
+
+      return this;
+    }
+
+    setHorizontalAlignment(alignment: 'left'|'center'|'right') {
+      const range = this.range;
+      this.addTask(() => range.setHorizontalAlignment(alignment));
+
+      return this;
+    }
+
+    setHorizontalAlignments(alignments: ('left'|'center'|'right')[][]) {
+      const range = this.range;
+      this.addTask(() => range.setHorizontalAlignments(clone(alignments)));
+
+      return this;
+    }
+
+    setNote(note: string) {
+      const range = this.range;
+      this.addTask(() => range.setNote(note));
+
+      return this;
+    }
+
+    setNotes(notes: string[][]) {
+      const range = this.range;
+      this.addTask(() => range.setNotes(clone(notes)));
+
+      return this;
+    }
+
+    setNumberFormat(numberFormat: string) {
+      const range = this.range;
+      this.addTask(() => range.setNumberFormat(numberFormat));
+
+      return this;
+    }
+
+    setNumberFormats(numberFormats: string[][]) {
+      const range = this.range;
+      this.addTask(() => range.setNumberFormats(clone(numberFormats)));
+
+      return this;
+    }
+
+    setShowHyperlink(showHyperlink: boolean) {
+      const range = this.range;
+      this.addTask(() => range.setShowHyperlink(showHyperlink));
+
+      return this;
+    }
+
+    setTextDirection(textDirection: GoogleAppsScript.Spreadsheet.TextDirection) {
+      const range = this.range;
+      this.addTask(() => range.setTextDirection(textDirection));
+
+      return this;
+    }
+
+    setTextDirections(textDirections: GoogleAppsScript.Spreadsheet.TextDirection[][]) {
+      const range = this.range;
+      this.addTask(() => range.setTextDirections(clone(textDirections)));
+
+      return this;
+    }
+
+    setTextRotation(rotation: GoogleAppsScript.Spreadsheet.TextRotation) {
+      const range = this.range;
+      this.addTask(() => range.setTextRotation(rotation));
+
+      return this;
+    }
+
+    setTextRotations(rotations: GoogleAppsScript.Spreadsheet.TextRotation[][]) {
+      const range = this.range;
+      this.addTask(() => range.setTextRotations(clone(rotations)));
+
+      return this;
+    }
+
+    setValue(value: any) {
+      const range = this.range;
+      this.addTask(() => range.setValue(value));
+
+      return this;
+    }
+
+    setValues(values: any[][]) {
+      const range = this.range;
+      this.addTask(() => range.setValues(clone(values)));
+
+      return this;
+    }
+
+    setVerticalAlignment(alignment: 'top'|'middle'|'bottom') {
+      const range = this.range;
+      this.addTask(() => range.setVerticalAlignment(alignment));
+
+      return this;
+    }
+
+    setVerticalAlignments(alignments: ('top'|'middle'|'bottom')[][]) {
+      const range = this.range;
+      this.addTask(() => range.setVerticalAlignments(clone(alignments)));
+
+      return this;
+    }
+
+    setVerticalText(isVertical: boolean) {
+      const range = this.range;
+      this.addTask(() => range.setVerticalText(isVertical));
+
+      return this;
+    }
+
+    setWrap(isWrapEnabled: boolean) {
+      const range = this.range;
+      this.addTask(() => range.setWrap(isWrapEnabled));
+
+      return this;
+    }
+
+    setWrapStrategies(strategies: GoogleAppsScript.Spreadsheet.WrapStrategy[][]) {
+      const range = this.range;
+      this.addTask(() => range.setWrapStrategies(clone(strategies)));
+
+      return this;
+    }
+
+    setWrapStrategy(strategy: GoogleAppsScript.Spreadsheet.WrapStrategy) {
+      const range = this.range;
+      this.addTask(() => range.setWrapStrategy(strategy));
+
+      return this;
+    }
+
+    setWraps(isWrapEnabled: boolean[][]) {
+      const range = this.range;
+      this.addTask(() => range.setWraps(clone(isWrapEnabled)));
+
+      return this;
+    }
+
+  }
+
+}
