@@ -385,7 +385,7 @@ namespace utils {
 
   }
 
-  class SpooledRange {
+  export class SpooledRange {
 
     private readonly range: Range;
     private readonly spooler: Spooler;
