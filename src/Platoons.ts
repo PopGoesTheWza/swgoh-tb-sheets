@@ -24,6 +24,7 @@ class PlatoonDetails {
     this.isGround = zone > 0;
     this.exist = zone !== 0 || phase > 2;
   }
+
   getOffset() {
     return this.platoon * 4;
   }
@@ -98,11 +99,18 @@ function initPlatoonPhases_(): void {
 }
 
 /** Get the zone name and update the cell */
-function setZoneName_(phase: number, zone: number, sheet: Sheet, platoonRow: number): string {
+function setZoneName_(
+  spooler: utils.Spooler,
+  phase: number,
+  zone: number,
+  sheet: Sheet,
+  platoonRow: number,
+): string {
 
   // set the zone name
   const zoneName = PLATOON_PHASES[phase - 1][zone];
-  sheet.getRange(platoonRow + 2, 1).setValue(zoneName);
+  spooler.attach(sheet.getRange(platoonRow + 2, 1))
+    .setValue(zoneName);
 
   return zoneName;
 }
@@ -129,13 +137,25 @@ function readSlice_(phase: number, zone: number): string[][] {
 }
 
 /** Populate platoon with slices if available */
-function writeSlice_(data: string[][], platoon: number, range: Range): void {
+function writeSlice_(
+  spooler: utils.Spooler,
+  data: string[][],
+  platoon: number,
+  range: Range,
+): void {
+
   const slice = data.map(e => [e[platoon]]);
-  range.setValues(slice);
+  spooler.attach(range)
+    .setValues(slice);
 }
 
 /** Clear out a platoon */
-function resetPlatoon_(phase: number, zone: number, platoonRow: number): void {
+function resetPlatoon_(
+  spooler: utils.Spooler,
+  phase: number,
+  zone: number,
+  platoonRow: number,
+): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const slice = readSlice_(phase, zone);
@@ -144,30 +164,34 @@ function resetPlatoon_(phase: number, zone: number, platoonRow: number): void {
     // clear the contents
     const col = (platoon * 4) + 4;
     const range = sheet.getRange(platoonRow, col, MAX_PLATOON_UNITS, 2);
-    range.clearContent()
-        .setFontColor(COLOR.BLACK);
+    spooler.attach(range)
+      .clearContent()
+      .setFontColor(COLOR.BLACK);
 
     if (slice) {
-      writeSlice_(slice, platoon, range.offset(0, 0, MAX_PLATOON_UNITS, 1));
+      writeSlice_(spooler, slice, platoon, range.offset(0, 0, MAX_PLATOON_UNITS, 1));
     }
 
-    range.offset(0, 1, MAX_PLATOON_UNITS, 1)
+    spooler.attach(range.offset(0, 1, MAX_PLATOON_UNITS, 1))
       .clearDataValidations();
     // clear 'Skip this' checkbox
-    range.offset(15, 1, 1, 1).clearContent();
+    spooler.attach(range.offset(15, 1, 1, 1))
+      .clearContent();
   }
 }
 
 /** Clear the full chart */
 function resetPlatoons(): void {
 
+  const spooler = new utils.Spooler();
+
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
   initPlatoonPhases_();
 
   [2, 20, 38].forEach((platoonRow, zone) => {
-    resetPlatoon_(phase, zone, platoonRow);
-    const zoneName = setZoneName_(phase, zone, sheet, platoonRow);
+    resetPlatoon_(spooler, phase, zone, platoonRow);
+    const zoneName = setZoneName_(spooler, phase, zone, sheet, platoonRow);
     if (zone !== 1) {
       if (zoneName.length === 0) {
         const hideOffset = zone === 0 ? 1 : 0;
@@ -177,6 +201,8 @@ function resetPlatoons(): void {
       }
     }
   });
+
+  spooler.commit();
 }
 
 function getNeededCount_(unitName: string, isHero: boolean) {
@@ -263,6 +289,178 @@ function filterUnits_(
     }
   }
 }
+
+// namespace TerritoryBattles {
+
+//   type event = ALIGNMENT.LIGHTSIDE|ALIGNMENT.LIGHTSIDE;
+//   type phaseIdx = 1|2|3|4|5|6;
+//   type territoryIdx = 0|1|2;
+//   type platoonIdx = 0|1|2|3|4|5;
+
+//   class Phase {
+
+//     public readonly event: event;
+//     public readonly index: phaseIdx;
+//     public readonly territories: [Territory];
+
+//     constructor(event: event, index: phaseIdx) {
+
+//       this.event = event;
+//       this.index = index;
+
+//       type tDef = ((p: Phase, i: territoryIdx) => Territory)[];
+//       const territories: tDef = definitions[event][index];
+//       territories.forEach((e, i: territoryIdx) => this.territories.push(e(this, i)));
+//     }
+//   }
+
+//   abstract class Territory {
+
+//     public readonly phase: Phase;
+//     public readonly index: territoryIdx;
+//     public readonly name: string;
+//     public readonly platoons: [Platoon];
+
+//     constructor(phase: Phase, index: territoryIdx, name: string) {
+//       this.index = index;
+//       this.phase = phase;
+//       this.name = name;
+//       // this.platoons.push(new Platoon(this, 0));
+//       // this.platoons.push(new Platoon(this, 1));
+//       // this.platoons.push(new Platoon(this, 2));
+//       // this.platoons.push(new Platoon(this, 3));
+//       // this.platoons.push(new Platoon(this, 4));
+//       // this.platoons.push(new Platoon(this, 5));
+//     }
+//   }
+
+//   class ClosedTerritory extends Territory {
+
+//     public readonly isOpen = false;
+//     public readonly isGround = false;
+
+//     constructor(phase: Phase, index: territoryIdx) {
+//       super(phase, index, '');
+//     }
+
+//   }
+
+//   class AirspaceTerritory extends Territory {
+
+//     public readonly isOpen = true;
+//     public readonly isGround = false;
+
+//     constructor(phase: Phase, index: territoryIdx, name: string) {
+//       super(phase, index, name);
+//     }
+
+//   }
+
+//   class GroundTerritory extends Territory {
+
+//     public readonly isOpen = true;
+//     public readonly isGround = true;
+
+//     constructor(phase: Phase, index: territoryIdx, name: string) {
+//       super(phase, index, name);
+//     }
+
+//   }
+
+//   abstract class Platoon {
+
+//     public readonly territory: Territory;
+//     public readonly index: platoonIdx;
+//     // public readonly isGround: boolean;
+//     // public readonly isOpen: boolean;
+//     // public possible: boolean;
+//     public readonly row: number;
+//     public readonly offset: number;
+
+//     constructor(territory: Territory, index: platoonIdx) {
+//       this.index = index;
+//       this.territory = territory;
+//       this.row = 2 + territory.index * PLATOON_ZONE_ROW_OFFSET;
+//       this.offset = this.index * 4;
+//     }
+//   }
+
+//   class AirspacePlatoon extends Platoon {}
+
+//   class GroundPlatoon extends Platoon {}
+
+//   const closed = (p: Phase, i: territoryIdx) => new ClosedTerritory(p, i);
+//   const airspace = (n: string) => (p: Phase, i: territoryIdx) => new AirspaceTerritory(p, i, n);
+//   const ground = (n: string) => (p: Phase, i: territoryIdx) => new GroundTerritory(p, i, n);
+
+//   const definitions = {
+//     'Light Side': {
+//       1: [
+//         closed,
+//         ground('Rebel Base'),
+//         closed,
+//       ],
+//       2: [
+//         closed,
+//         ground('Ion Cannon'),
+//         ground('Overlook'),
+//       ],
+//       3: [
+//         airspace('Rear Airspace'),
+//         ground('Rear Trenches'),
+//         ground('Power Generator'),
+//       ],
+//       4: [
+//         airspace('Forward Airspace'),
+//         ground('Forward Trenches'),
+//         ground('Outer Pass'),
+//       ],
+//       5: [
+//         airspace('Contested Airspace'),
+//         ground('Snowfields'),
+//         ground('Forward Stronghold'),
+//       ],
+//       6: [
+//         airspace('Imperial Fleet Staging Area'),
+//         ground('Imperial Flank'),
+//         ground('Imperial Landing'),
+//       ],
+//     },
+//     'Dark Side': {
+//       1: [
+//         [ClosedTerritory, ''],
+//         ground('Imperial Flank'),
+//         ground('Imperial Landing'),
+//       ],
+//       2: [
+//         [ClosedTerritory, ''],
+//         ground('Snowfields'),
+//         ground('Forward Stronghold'),
+//       ],
+//       3: [
+//         airspace('Imperial Fleet Staging Area'),
+//         ground('Ion Cannon'),
+//         ground('Outer Pass'),
+//       ],
+//       4: [
+//         airspace('Contested Airspace'),
+//         ground('Power Generator'),
+//         ground('Rear Trenches'),
+//       ],
+//       5: [
+//         airspace('Forward Airspace'),
+//         ground('Forward Trenches'),
+//         ground('Overlook'),
+//       ],
+//       6: [
+//         airspace('Rear Airspace'),
+//         ground('Rebel Base Main Entrance'),
+//         ground('Rebel Base South Entrance'),
+//       ],
+//     },
+//   };
+
+// }
 
 // function loop1_(
 //   cur: PlatoonDetails,
@@ -444,6 +642,8 @@ function filterUnits_(
 /** Recommend players for each Platoon */
 function recommendPlatoons() {
 
+  const spooler = new utils.Spooler();
+
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = sheet.getRange(2, 1).getValue() as number;
@@ -507,7 +707,7 @@ function recommendPlatoons() {
     const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
 
     // set the zone name
-    const zoneName = setZoneName_(phase, z, sheet, platoonRow);
+    const zoneName = setZoneName_(spooler, phase, z, sheet, platoonRow);
 
     // see if we should skip the zone
     if (z !== 1) {
@@ -524,14 +724,12 @@ function recommendPlatoons() {
   const platoonMatrix: PlatoonUnit[] = [];
   const baseCol = 4;
 
-  const allDropdowns: [Range, [DataValidation][]][] = [];
-
   for (const cur of platoonOrder) {
 
     const platoonOffset = cur.getOffset();
 
     // clear previous contents
-    sheet.getRange(cur.row, baseCol + platoonOffset + 1, MAX_PLATOON_UNITS, 1)
+    spooler.attach(sheet.getRange(cur.row, baseCol + platoonOffset + 1, MAX_PLATOON_UNITS, 1))
       .clearContent()
       .clearDataValidations()
       .offset(0, -1, MAX_PLATOON_UNITS, 2)
@@ -591,14 +789,12 @@ function recommendPlatoons() {
         dropdowns.push([null]);
         // impossible to fill the platoon if no one can donate
         cur.possible = false;
-        sheet.getRange(cur.row + h, baseCol + platoonOffset).setFontColor(COLOR.RED);
+        spooler.attach(sheet.getRange(cur.row + h, baseCol + platoonOffset))
+          .setFontColor(COLOR.RED);
       }
     }
-    allDropdowns.push([dropdownsRange, dropdowns]);
-  }
-
-  for (const dropdown of allDropdowns) {
-    dropdown[0].setDataValidations(dropdown[1]);
+    spooler.attach(dropdownsRange)
+      .setDataValidations(dropdowns);
   }
 
   // update the unit counts
@@ -623,7 +819,8 @@ function recommendPlatoons() {
 
     if (!cur.possible) {
       const plattonOffset = cur.getOffset();
-      sheet.getRange(cur.row, baseCol + 1 + plattonOffset, MAX_PLATOON_UNITS, 1)
+
+      spooler.attach(sheet.getRange(cur.row, baseCol + 1 + plattonOffset, MAX_PLATOON_UNITS, 1))
         .setValue('Skip')
         .clearDataValidations()
         .setFontColor(COLOR.RED);
@@ -635,13 +832,12 @@ function recommendPlatoons() {
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
     placementCount[z] = [];
   }
+
   const maxPlayerDonations = config.maxDonationsPerTerritory();
 
   // try to find an unused player to default to
   let matrixIdx = 0;
 
-  const allDonors:[Range, [string][]][] = [];
-  const allColors: [Range, [COLOR, COLOR][]][] = [];
   for (const cur of platoonOrder) {
 
     if (!cur.exist) {  // skip this zone
@@ -717,16 +913,11 @@ function recommendPlatoons() {
 
       matrixIdx += 1;
     }
-    const donorsRange = sheet.getRange(cur.row, baseCol + plattonOffset + 1, MAX_PLATOON_UNITS, 1);
-    allDonors.push([donorsRange, donors]);
-    const colorsRange = sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2);
-    allColors.push([colorsRange, colors]);
+    spooler.attach(sheet.getRange(cur.row, baseCol + plattonOffset + 1, MAX_PLATOON_UNITS, 1))
+      .setValues(donors);
+    spooler.attach(sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2))
+      .setFontColors(colors);
   }
 
-  for (const donors of allDonors) {
-    donors[0].setValues(donors[1]);
-  }
-  for (const colors of allColors) {
-    colors[0].setFontColors(colors[1]);
-  }
+  spooler.commit();
 }
