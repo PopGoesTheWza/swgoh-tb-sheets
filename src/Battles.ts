@@ -6,14 +6,15 @@ declare namespace SwgohHelp {
 }
 
 /** set the value and style in a cell */
-function setCellValue_(
-  cell: Range,
+function spooledSetCellValue_(
+  spooler: utils.Spooler,
+  range: Range,
   value: boolean|number|string|Date,
   bold: boolean,
   align?: 'left' | 'center' | 'right',
 ): void {
 
-  cell.setFontWeight(bold ? 'bold' : 'normal')
+  spooler.attach(range).setFontWeight(bold ? 'bold' : 'normal')
     .setHorizontalAlignment(align)
     .setValue(value);
 }
@@ -333,7 +334,8 @@ function setupEvent(): void {
       'Parsing Error',
       'Unable to parse guild data. Check source links in Meta Tab',
       UI.ButtonSet.OK,
-      );
+    );
+
     return;
   }
 
@@ -346,10 +348,12 @@ function setupEvent(): void {
   heroesTable.setInstances(members);
   shipsTable.setInstances(members);
 
+  const spooler = new utils.Spooler();
+
   // clear the hero data
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
-  tbSheet.getRange(1, 10, 1, MAX_PLAYERS).clearContent();
-  tbSheet.getRange(2, 1, 150, 9 + MAX_PLAYERS).clearContent();
+  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_PLAYERS)).clearContent();
+  spooler.attach(tbSheet.getRange(2, 1, 150, 9 + MAX_PLAYERS)).clearContent();
 
   type eventData = [
     string,  // eventType
@@ -454,9 +458,9 @@ function setupEvent(): void {
         u.required,
         `=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`,
       ];
-      curTb.setValues([data]);
+      spooler.attach(curTb).setValues([data]);
       curTb = tbSheet.getRange(tbRow, 1);
-      setCellValue_(curTb.offset(0, 2), u.name, false, 'left');
+      spooledSetCellValue_(spooler, curTb.offset(0, 2), u.name, false, 'left');
       tbRow += 1;
       squadCount += 1;
 
@@ -466,9 +470,11 @@ function setupEvent(): void {
     }
 
     const curTb = tbSheet.getRange(tbRow, 3);
-    setCellValue_(curTb, 'Phase Count:', true, 'right');
-    curTb.offset(0, 1).setValue(Math.min(phaseCount, 5));
-    curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+    spooledSetCellValue_(spooler, curTb, 'Phase Count:', true, 'right');
+    spooler.attach(curTb.offset(0, 1)).setValue(Math.min(phaseCount, 5));
+    spooler.attach(curTb.offset(0, 6))
+      .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+
     phaseList.push([e.phase, tbRow]);
     tbRow += 2;
 
@@ -481,12 +487,14 @@ function setupEvent(): void {
 
   // add the total
   let curTb = tbSheet.getRange(tbRow, 3);
-  setCellValue_(curTb, 'Total:', true, 'right');
-  curTb.offset(0, 1).setValue(total);
-  curTb.offset(0, 6).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+  spooledSetCellValue_(spooler, curTb, 'Total:', true, 'right');
+  spooler.attach(curTb.offset(0, 1)).setValue(total);
+  spooler.attach(curTb.offset(0, 6))
+    .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
   // add the readiness chart
-  setCellValue_(
+  spooledSetCellValue_(
+    spooler,
     tbSheet.getRange(tbRow + 2, 3),
     `=CONCATENATE("Guild Readiness ",FIXED(100*AVERAGE(J${tbRow}:BI${tbRow})/D${tbRow},1),"%")`,
     true,
@@ -497,19 +505,21 @@ function setupEvent(): void {
   // list the phases
   phaseList.forEach((e, i) => {
     curTb = tbSheet.getRange(tbRow + i, 2);
-    curTb.setValue(e[0]);
-    setCellValue_(curTb.offset(0, 1), `=I${e[1]}`, true, 'center');
+    spooler.attach(curTb).setValue(e[0]);
+    spooledSetCellValue_(spooler, curTb.offset(0, 1), `=I${e[1]}`, true, 'center');
   });
 
   // show the legend
   tbRow += phaseList.length + 1;
   curTb = tbSheet.getRange(tbRow, 3);
-  setCellValue_(curTb, 'Legend', true, 'center');
-  setCellValue_(curTb.offset(1, 0), 'Meets Requirements', false, 'center');
-  setCellValue_(curTb.offset(2, 0), 'Missing 1 Gear (<= G8)', false, 'center');
-  setCellValue_(curTb.offset(3, 0), 'Missing Levels', false, 'center');
-  setCellValue_(curTb.offset(4, 0), 'Missing 1 Gear (> G8)', false, 'center');
-  setCellValue_(curTb.offset(5, 0), 'Missing 1 Star', false, 'center');
+  spooledSetCellValue_(spooler, curTb, 'Legend', true, 'center');
+  spooledSetCellValue_(spooler, curTb.offset(1, 0), 'Meets Requirements', false, 'center');
+  spooledSetCellValue_(spooler, curTb.offset(2, 0), 'Missing 1 Gear (<= G8)', false, 'center');
+  spooledSetCellValue_(spooler, curTb.offset(3, 0), 'Missing Levels', false, 'center');
+  spooledSetCellValue_(spooler, curTb.offset(4, 0), 'Missing 1 Gear (> G8)', false, 'center');
+  spooledSetCellValue_(spooler, curTb.offset(5, 0), 'Missing 1 Star', false, 'center');
+
+  spooler.commit();
 
   // setup player columns
   let table = populateEventTable_(
