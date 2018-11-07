@@ -8,15 +8,18 @@ declare namespace SwgohHelp {
 /** set the value and style in a cell */
 function spooledSetCellValue_(
   spooler: utils.Spooler,
-  range: Range,
+  range: Range | utils.SpooledRange,
   value: boolean|number|string|Date,
   bold: boolean,
   align?: 'left' | 'center' | 'right',
-): void {
+): utils.SpooledRange {
 
-  spooler.attach(range).setFontWeight(bold ? 'bold' : 'normal')
+  const spooled = range instanceof utils.SpooledRange ? range : spooler.attach(range);
+  spooled.setFontWeight(bold ? 'bold' : 'normal')
     .setHorizontalAlignment(align)
     .setValue(value);
+
+  return spooled;
 }
 
 /** process and output members data for current event */
@@ -352,8 +355,10 @@ function setupEvent(): void {
 
   // clear the hero data
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
-  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_PLAYERS)).clearContent();
-  spooler.attach(tbSheet.getRange(2, 1, 150, 9 + MAX_PLAYERS)).clearContent();
+  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_PLAYERS))
+    .clearContent();
+  spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_PLAYERS))
+    .clearContent();
 
   type eventData = [
     string,  // eventType
@@ -446,7 +451,6 @@ function setupEvent(): void {
 
     for (const u of e.units) {
       // store the meta data
-      let curTb = tbSheet.getRange(tbRow, 1, 1, 9);
       const data = [
         e.eventType,
         e.phase,
@@ -458,9 +462,9 @@ function setupEvent(): void {
         u.required,
         `=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`,
       ];
-      spooler.attach(curTb).setValues([data]);
-      curTb = tbSheet.getRange(tbRow, 1);
-      spooledSetCellValue_(spooler, curTb.offset(0, 2), u.name, false, 'left');
+      spooler.attach(tbSheet.getRange(tbRow, 1, 1, 9))
+        .setValues([data]);
+      spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), u.name, false, 'left');
       tbRow += 1;
       squadCount += 1;
 
@@ -470,8 +474,9 @@ function setupEvent(): void {
     }
 
     const curTb = tbSheet.getRange(tbRow, 3);
-    spooledSetCellValue_(spooler, curTb, 'Phase Count:', true, 'right');
-    spooler.attach(curTb.offset(0, 1)).setValue(Math.min(phaseCount, 5));
+    spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), 'Phase Count:', true, 'right');
+    spooler.attach(curTb.offset(0, 1))
+      .setValue(Math.min(phaseCount, 5));
     spooler.attach(curTb.offset(0, 6))
       .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
@@ -488,7 +493,8 @@ function setupEvent(): void {
   // add the total
   let curTb = tbSheet.getRange(tbRow, 3);
   spooledSetCellValue_(spooler, curTb, 'Total:', true, 'right');
-  spooler.attach(curTb.offset(0, 1)).setValue(total);
+  spooler.attach(curTb.offset(0, 1))
+    .setValue(total);
   spooler.attach(curTb.offset(0, 6))
     .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
@@ -505,7 +511,8 @@ function setupEvent(): void {
   // list the phases
   phaseList.forEach((e, i) => {
     curTb = tbSheet.getRange(tbRow + i, 2);
-    spooler.attach(curTb).setValue(e[0]);
+    spooler.attach(curTb)
+      .setValue(e[0]);
     spooledSetCellValue_(spooler, curTb.offset(0, 1), `=I${e[1]}`, true, 'center');
   });
 
