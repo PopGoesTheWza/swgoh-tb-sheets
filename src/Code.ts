@@ -419,7 +419,7 @@ namespace utils {
       return this;
     }
 
-    clearDataValidations(options: Object|undefined) {
+    clearDataValidations() {
       const range = this.range;
       this.addTask(() => range.clearDataValidations());
 
@@ -469,7 +469,8 @@ namespace utils {
 
     setBackgrounds(colors: string[][]) {
       const range = this.range;
-      this.addTask(() => range.setBackgrounds(clone(colors)));
+      const immutable = clone(colors);
+      this.addTask(() => range.setBackgrounds(immutable));
 
       return this;
     }
@@ -522,14 +523,16 @@ namespace utils {
 
     setFontColors(colors: string[][]) {
       const range = this.range;
-      this.addTask(() => range.setFontColors(clone(colors)));
+      const immutable = clone(colors);
+      this.addTask(() => range.setFontColors(immutable));
 
       return this;
     }
 
     setFontFamilies(fontFamilies: string[][]) {
       const range = this.range;
-      this.addTask(() => range.setFontFamilies(clone(fontFamilies)));
+      const immutable = clone(fontFamilies);
+      this.addTask(() => range.setFontFamilies(immutable));
 
       return this;
     }
@@ -550,7 +553,8 @@ namespace utils {
 
     setFontLines(fontLines: ('underline'|'line-through'|'none')[][]) {
       const range = this.range;
-      this.addTask(() => range.setFontLines(clone(fontLines)));
+      const immutable = clone(fontLines);
+      this.addTask(() => range.setFontLines(immutable));
 
       return this;
     }
@@ -564,7 +568,8 @@ namespace utils {
 
     setFontSizes(fontSizes: number[][]) {
       const range = this.range;
-      this.addTask(() => range.setFontSizes(clone(fontSizes)));
+      const immutable = clone(fontSizes);
+      this.addTask(() => range.setFontSizes(immutable));
 
       return this;
     }
@@ -578,7 +583,8 @@ namespace utils {
 
     setFontStyles(fontStyles: ('italic'|'normal')[][]) {
       const range = this.range;
-      this.addTask(() => range.setFontStyles(clone(fontStyles)));
+      const immutable = clone(fontStyles);
+      this.addTask(() => range.setFontStyles(immutable));
 
       return this;
     }
@@ -592,7 +598,8 @@ namespace utils {
 
     setFontWeights(fontWeights: ('bold'|'normal')[][]) {
       const range = this.range;
-      this.addTask(() => range.setFontWeights(clone(fontWeights)));
+      const immutable = clone(fontWeights);
+      this.addTask(() => range.setFontWeights(immutable));
 
       return this;
     }
@@ -613,14 +620,16 @@ namespace utils {
 
     setFormulas(formulas: string[][]) {
       const range = this.range;
-      this.addTask(() => range.setFormulas(clone(formulas)));
+      const immutable = clone(formulas);
+      this.addTask(() => range.setFormulas(immutable));
 
       return this;
     }
 
     setFormulasR1C1(formulas: string[][]) {
       const range = this.range;
-      this.addTask(() => range.setFormulasR1C1(clone(formulas)));
+      const immutable = clone(formulas);
+      this.addTask(() => range.setFormulasR1C1(immutable));
 
       return this;
     }
@@ -634,7 +643,8 @@ namespace utils {
 
     setHorizontalAlignments(alignments: ('left'|'center'|'right')[][]) {
       const range = this.range;
-      this.addTask(() => range.setHorizontalAlignments(clone(alignments)));
+      const immutable = clone(alignments);
+      this.addTask(() => range.setHorizontalAlignments(immutable));
 
       return this;
     }
@@ -648,7 +658,8 @@ namespace utils {
 
     setNotes(notes: string[][]) {
       const range = this.range;
-      this.addTask(() => range.setNotes(clone(notes)));
+      const immutable = clone(notes);
+      this.addTask(() => range.setNotes(immutable));
 
       return this;
     }
@@ -662,7 +673,8 @@ namespace utils {
 
     setNumberFormats(numberFormats: string[][]) {
       const range = this.range;
-      this.addTask(() => range.setNumberFormats(clone(numberFormats)));
+      const immutable = clone(numberFormats);
+      this.addTask(() => range.setNumberFormats(immutable));
 
       return this;
     }
@@ -683,7 +695,8 @@ namespace utils {
 
     setTextDirections(textDirections: GoogleAppsScript.Spreadsheet.TextDirection[][]) {
       const range = this.range;
-      this.addTask(() => range.setTextDirections(clone(textDirections)));
+      const immutable = clone(textDirections);
+      this.addTask(() => range.setTextDirections(immutable));
 
       return this;
     }
@@ -697,7 +710,8 @@ namespace utils {
 
     setTextRotations(rotations: GoogleAppsScript.Spreadsheet.TextRotation[][]) {
       const range = this.range;
-      this.addTask(() => range.setTextRotations(clone(rotations)));
+      const immutable = clone(rotations);
+      this.addTask(() => range.setTextRotations(immutable));
 
       return this;
     }
@@ -711,7 +725,8 @@ namespace utils {
 
     setValues(values: any[][]) {
       const range = this.range;
-      this.addTask(() => range.setValues(clone(values)));
+      const immutable = clone(values);
+      this.addTask(() => range.setValues(immutable));
 
       return this;
     }
@@ -725,7 +740,8 @@ namespace utils {
 
     setVerticalAlignments(alignments: ('top'|'middle'|'bottom')[][]) {
       const range = this.range;
-      this.addTask(() => range.setVerticalAlignments(clone(alignments)));
+      const immutable = clone(alignments);
+      this.addTask(() => range.setVerticalAlignments(immutable));
 
       return this;
     }
@@ -746,7 +762,8 @@ namespace utils {
 
     setWrapStrategies(strategies: GoogleAppsScript.Spreadsheet.WrapStrategy[][]) {
       const range = this.range;
-      this.addTask(() => range.setWrapStrategies(clone(strategies)));
+      const immutable = clone(strategies);
+      this.addTask(() => range.setWrapStrategies(immutable));
 
       return this;
     }
@@ -760,7 +777,8 @@ namespace utils {
 
     setWraps(isWrapEnabled: boolean[][]) {
       const range = this.range;
-      this.addTask(() => range.setWraps(clone(isWrapEnabled)));
+      const immutable = clone(isWrapEnabled);
+      this.addTask(() => range.setWraps(immutable));
 
       return this;
     }
