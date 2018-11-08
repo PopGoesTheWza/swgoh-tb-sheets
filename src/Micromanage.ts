@@ -43,6 +43,21 @@ function unitLabel_(unit: string, slot: string, force: boolean = undefined): str
   return unit;
 }
 
+type DiscordEmbeddedField = {
+  name?: string;
+  value?: string;
+};
+
+type DiscordEmbed = {
+  color?: number;
+  fields?: DiscordEmbeddedField[];
+};
+
+type DiscordPayload = {
+  content?: string;
+  embeds?: DiscordEmbed[];
+};
+
 /** Send a Webhook to Discord */
 function sendMicroByPlayerWebhook(): void {
 
@@ -125,13 +140,13 @@ function sendMicroByPlayerWebhook(): void {
     const bucket = entries.filter(e => e.player === player);
 
     entries = entries.slice(bucket.length);
-    const embeds = [];
+    const embeds: DiscordEmbed[] = [];
     let currentZone = bucket[0].zone;
     let currentPlatoon = bucket[0].platoon;
-    let currentEmbed: any = {};
+    let currentEmbed: DiscordEmbed = {};
     embeds.push(currentEmbed);
     currentEmbed.fields = [];
-    let currentField: any = {};
+    let currentField: DiscordEmbeddedField = {};
     currentEmbed.fields.push(currentField);
     currentField.name = platoonAsIcon_(
       currentZone.label,
@@ -184,7 +199,7 @@ function sendMicroByPlayerWebhook(): void {
 
     const mention = playerMentions[player];
     const content = playerLabel_(player, mention);
-    const jsonObject: any = {};
+    const jsonObject: DiscordPayload = {};
     jsonObject.content = content;
     jsonObject.embeds = embeds;
     const options: URLFetchRequestOptions = urlFetchMakeParam_(jsonObject);
