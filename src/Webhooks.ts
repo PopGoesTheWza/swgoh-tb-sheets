@@ -211,7 +211,12 @@ namespace discord {
     // get the webhook
     const webhookURL = config.discord.webhookUrl();
     if (webhookURL.length === 0) {  // we need a url to proceed
-      UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
+      const UI = SpreadsheetApp.getUi();
+      UI.alert(
+        'Configuration Error',
+        'Discord webhook not found (Discord!E1)',
+        UI.ButtonSet.OK,
+      );
 
       return;
     }
@@ -369,7 +374,12 @@ function sendPlatoonDepthWebhook(): void {
   const webhookURL = config.discord.webhookUrl();
   if (webhookURL.length === 0) {
     // we need a url to proceed
-    UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
+    const UI = SpreadsheetApp.getUi();
+    UI.alert(
+      'Configuration Error',
+      'Discord webhook not found (Discord!E1)',
+      UI.ButtonSet.OK,
+    );
 
     return;
   }
@@ -433,7 +443,12 @@ function allRareUnitsWebhook(): void {
   const webhookURL = config.discord.webhookUrl(); // get the webhook
   if (webhookURL.length === 0) {
     // we need a url to proceed
-    UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
+    const UI = SpreadsheetApp.getUi();
+    UI.alert(
+      'Configuration Error',
+      'Discord webhook not found (Discord!E1)',
+      UI.ButtonSet.OK,
+    );
 
     return;
   }

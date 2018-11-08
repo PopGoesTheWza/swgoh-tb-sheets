@@ -56,7 +56,13 @@ function sendMicroByPlayerWebhook(): void {
   const webhookURL = config.discord.webhookUrl();
   if (webhookURL.length === 0) {
     // we need a url to proceed
-    UI.alert('Discord Webhook not found (Discord!E1)', UI.ButtonSet.OK);
+    const UI = SpreadsheetApp.getUi();
+    UI.alert(
+      'Configuration Error',
+      'Discord webhook not found (Discord!E1)',
+      UI.ButtonSet.OK,
+    );
+
     return;
   }
 
@@ -214,9 +220,10 @@ function urlFetchExecute_(webhookURL, params) {
     Logger.log(e);
 
     // error sending to Discord
+    const UI = SpreadsheetApp.getUi();
     UI.alert(
-      `Error sending webhook to Discord.
-Make sure Platoons are populated and can be filled by the guild.`,
+      'Connection Error',
+      'Error sending webhook to Discord.',
       UI.ButtonSet.OK,
     );
   }

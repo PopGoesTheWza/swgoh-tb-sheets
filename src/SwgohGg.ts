@@ -89,6 +89,7 @@ namespace SwgohGg {
       json = JSON.parse(response.getContentText());
     } catch (e) {
       // TODO: centralize alerts
+      const UI = SpreadsheetApp.getUi();
       UI.alert(errorMsg, e, UI.ButtonSet.OK);
     }
 

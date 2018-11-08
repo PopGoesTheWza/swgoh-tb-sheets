@@ -1,6 +1,6 @@
 /** Shortcuts for Google Apps Script classes */
 const SPREADSHEET = SpreadsheetApp.getActive();
-const UI = SpreadsheetApp.getUi();
+// const UI = SpreadsheetApp.getUi();
 
 type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation;
 type Range = GoogleAppsScript.Spreadsheet.Range;

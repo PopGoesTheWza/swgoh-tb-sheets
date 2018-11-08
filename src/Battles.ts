@@ -136,7 +136,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   if (members.length > MAX_PLAYERS) {
     members.splice(MAX_PLAYERS);
-    UI.alert(`Guild roster was truncated to the first ${MAX_PLAYERS} members.`);
+    SpreadsheetApp.getUi().alert(`Guild roster was truncated to the first ${MAX_PLAYERS} members.`);
   }
 
   // get the filter & tag
@@ -333,6 +333,7 @@ function setupEvent(): void {
   let members = getMembers_();
 
   if (!members) {
+    const UI = SpreadsheetApp.getUi();
     UI.alert(
       'Parsing Error',
       'Unable to parse guild data. Check source links in Meta Tab',

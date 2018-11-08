@@ -307,13 +307,14 @@ function playerSnapshot(): void {
     // output the results
     Snapshot.output(sheet, rowGp, baseData, rowHeroes, meta);
   } else {
-    UI.alert('ERROR: Failed to retrieve player\'s data.');
+    SpreadsheetApp.getUi().alert('ERROR: Failed to retrieve player\'s data.');
   }
 }
 
 /** Setup new menu items when the spreadsheet opens */
 function onOpen(): void {
 
+  const UI = SpreadsheetApp.getUi();
   UI.createMenu('SWGoH')
     .addItem('Refresh TB', setupEvent.name)
     .addSubMenu(

@@ -45,9 +45,13 @@ namespace SwgohHelp {
 
     const result = Boolean(swgohhelpapi);
     if (!result) {
-      UI.alert(`Library swgohhelpapi not found
-  Please visit the link below to reinstall it.
-  https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`);
+      const UI = SpreadsheetApp.getUi();
+      UI.alert(
+        'Library swgohhelpapi not found',
+        `Please visit the link below to reinstall it.
+https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
+        UI.ButtonSet.OK,
+);
     }
 
     return result;
