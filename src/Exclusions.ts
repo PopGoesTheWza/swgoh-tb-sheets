@@ -47,9 +47,8 @@ namespace Exclusions {
     event: string = undefined,  // used to validate ship alignment
   ) {
     const filter = event ? event.trim().toLowerCase() : undefined;
-    const members = Object.assign({}, data);
-    for (const player in members) {
-      const units = Object.assign({}, exclusions[player]);
+    for (const player in exclusions) {
+      const units = exclusions[player];
       for (const unit in units) {
         if (units[unit] && data[unit] && data[unit][player]) {
           if (!filter || data[unit][player].tags.indexOf(filter) !== -1) {
@@ -57,7 +56,7 @@ namespace Exclusions {
           }
         }
       }
-      if (Object.keys(data[player]).length === 0) {
+      if (data[player] && Object.keys(data[player]).length === 0) {
         delete data[player];
       }
     }

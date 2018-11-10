@@ -284,7 +284,7 @@ function filterUnits_(
         delete data[unit][player];
       }
     }
-    if (Object.keys(data[unit]).length === 0) {
+    if (data[unit] && Object.keys(data[unit]).length === 0) {
       delete data[unit];
     }
   }
@@ -312,6 +312,7 @@ function filterUnits_(
 //       const territories: tDef = definitions[event][index];
 //       territories.forEach((e, i: territoryIdx) => this.territories.push(e(this, i)));
 //     }
+
 //   }
 
 //   abstract class Territory {
@@ -322,6 +323,7 @@ function filterUnits_(
 //     public readonly platoons: [Platoon];
 
 //     constructor(phase: Phase, index: territoryIdx, name: string) {
+
 //       this.index = index;
 //       this.phase = phase;
 //       this.name = name;
@@ -332,6 +334,7 @@ function filterUnits_(
 //       // this.platoons.push(new Platoon(this, 4));
 //       // this.platoons.push(new Platoon(this, 5));
 //     }
+
 //   }
 
 //   class ClosedTerritory extends Territory {
