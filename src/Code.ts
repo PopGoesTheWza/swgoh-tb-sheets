@@ -360,7 +360,7 @@ namespace utils {
 
   }
 
-  type SpooledTask = () => void;
+  export type SpooledTask = () => void;
 
   export class Spooler {
 
