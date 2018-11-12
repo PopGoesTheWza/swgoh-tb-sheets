@@ -147,7 +147,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const result = members.map(e => [
     [e.name],
-    // [e.link],
     [e.allyCode],
     [e.gp],
     [e.heroesGp],
@@ -163,7 +162,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 }
 
 function getSettingsHash_() {
-  // const roster = xxxxxx
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   const meta = SPREADSHEET.getSheetByName(SHEETS.META);
 
