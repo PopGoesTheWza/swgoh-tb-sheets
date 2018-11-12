@@ -65,7 +65,7 @@ function sendMicroByPlayerWebhook(): void {
   const displaySlot = displaySetting !== DISPLAYSLOT.NEVER;
   const forceDisplay = displaySetting === DISPLAYSLOT.ALWAYS;
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const phase = sheet.getRange(2, 1).getValue() as number;
+  const phase = config.currentPhase();
 
   // get the webhook
   const webhookURL = config.discord.webhookUrl();

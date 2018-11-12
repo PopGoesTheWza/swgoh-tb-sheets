@@ -206,7 +206,7 @@ namespace discord {
   export function sendPlatoonSimplified(byType: 'Player' | 'Unit'): void {
 
     const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-    const phase = sheet.getRange(2, 1).getValue() as number;
+    const phase = config.currentPhase();
 
     // get the webhook
     const webhookURL = config.discord.webhookUrl();
@@ -368,7 +368,7 @@ namespace discord {
 function sendPlatoonDepthWebhook(): void {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const phase = sheet.getRange(2, 1).getValue() as number;
+  const phase = config.currentPhase();
 
   // get the webhook
   const webhookURL = config.discord.webhookUrl();
@@ -436,9 +436,7 @@ function sendPlatoonSimplifiedByPlayerWebhook(): void {
 /** Send a message to Discord that lists all units to watch out for in the current phase */
 function allRareUnitsWebhook(): void {
 
-  const phase = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
-    .getRange(2, 1)
-    .getValue() as number;
+  const phase = config.currentPhase();
 
   const webhookURL = config.discord.webhookUrl(); // get the webhook
   if (webhookURL.length === 0) {
