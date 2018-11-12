@@ -59,7 +59,10 @@ const WAIT_TIME = 2000;
 const MAX_PLATOON_UNITS = 15;
 const MAX_PLATOONS = 6;
 const MAX_PLATOON_ZONES = 3;
-const PLATOON_ZONE_ROW_OFFSET = 18;
+const PLATOON_SLICE_ROW_OFFSET = 17;  // MAX_PLATOON_UNITS + 2;
+const PLATOON_SLICE_COLUMN_OFFSET = 7;  // MAX_PLATOONS + 1;
+const PLATOON_ZONE_ROW_OFFSET = 18;  // MAX_PLATOON_UNITS + 3;
+const PLATOON_ZONE_COLUMN_OFFSET = 4;
 
 const RARE_MAX = 15;
 const HIGH_MIN = 10;
@@ -167,6 +170,15 @@ enum SHEETS {
 }
 
 namespace config {
+
+  export function currentPhase(): number {
+
+    const value = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+      .getRange(2, 1)
+      .getValue() as number;
+
+    return value;
+  }
 
   export function currentEvent(): string {
 
