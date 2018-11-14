@@ -10,6 +10,12 @@ type UnitsDefinitions = {
   ships: UnitDefinition[];
 };
 
+/** forces reloading units definitions and guild roster from selected data source */
+function reloadUnitDefinitions() {
+  Units.getDefinitionsFromDataSource();
+  setupEvent();
+}
+
 namespace Units {
 
   const sortUnits = (a: UnitDefinition, b: UnitDefinition) => {
