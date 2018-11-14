@@ -1,6 +1,9 @@
 namespace Exclusions {
 
-  /** get the list of units to exclude */
+  /**
+   * get the list of units to exclude
+   * exclusions[player][unit] = boolean
+   */
   export function getList(): KeyedType<KeyedBooleans> {
 
     const data = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS).getDataRange()
