@@ -59,6 +59,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
 
   type UnitsList = {
     nameKey: string,
+    forceAlignment: number,
     combatType: number,
     baseId: string,
     categoryIdList: [string],
@@ -86,7 +87,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
       },
       project: {
         nameKey: true,
-        // forceAlignment: true,
+        forceAlignment: true,
         combatType: true,
         categoryIdList: true,
         baseId: true,
@@ -107,10 +108,16 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
             },
             [],
           );
+          const alignment = e.forceAlignment === 2
+            ? categoryId.alignment_light
+            : (e.forceAlignment === 3 ? categoryId.alignment_dark : undefined);
+          if (alignment) {
+            tags.unshift(alignment);
+          }
           const definition: UnitDefinition = {
             baseId: e.baseId,
             name: e.nameKey,
-            tags: tags.join(' '),
+            tags: tags.unique().join(' '),
           };
           bucket.push(definition);
           return acc;
