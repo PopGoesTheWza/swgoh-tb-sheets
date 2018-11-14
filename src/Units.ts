@@ -241,7 +241,10 @@ namespace Units {
       return units;
     }
 
-    /** get the unit instances for all members */
+    /**
+     * get all the unit instances for all members
+     * keyed objects units[name][member] = UnitInstances
+     */
     getAllInstancesByUnits(): KeyedType<UnitInstances> {
 
       const units: KeyedType<UnitInstances> = {};

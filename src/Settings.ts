@@ -109,6 +109,10 @@ interface UnitDefinition {
   type?: number;
 }
 
+/**
+ * A unit instance attributes
+ * (baseId, gearLevel, level, name, power, rarity, stats, tags)
+ */
 interface UnitInstance {
   baseId?: string;
   gearLevel?: number;
