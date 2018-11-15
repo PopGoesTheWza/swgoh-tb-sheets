@@ -1,10 +1,3 @@
-/** workaround to tslint issue of namespace scope after importing type definitions */
-declare namespace SwgohHelp {
-
-  function getGuildData(): PlayerData[];
-
-}
-
 /** set the value and style in a cell */
 function spooledSetCellValue_(
   spooler: utils.Spooler,
@@ -128,7 +121,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const sortFunction = config.sortRoster()
     // sort roster by player name
-    ? (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    ? (a, b) => caseInsensitive_(a.name, b.name)
     // sort roster by GP
     : (a, b) => b.gp - a.gp;
 
@@ -221,7 +214,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
       const index = members.findIndex(m => m.allyCode === allyCode);
       if (index === -1) {
         // get PlayerData and update members
-        const member = (Player.getFromDataSource(allyCode, undefined, unitsIndex));
+        const member = (Player.getFromDataSource(allyCode, unitsIndex));
         if (member) {
           members.push(member);
         } else {

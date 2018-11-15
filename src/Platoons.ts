@@ -115,94 +115,12 @@ function setZoneName_(
   return zoneName;
 }
 
-/** retrieve current slices */
-function readSlice_(phase: number, zone: number): string[][] {
-
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.SLICES);
-  const namedRanges = sheet.getNamedRanges();
-  const filter = config.currentEvent();
-
-  // format the cell name
-  let cellName = filter === ALIGNMENT.DARKSIDE ? 'Dark' : 'Light';
-  cellName += `Slice${phase}Z${zone + 1}`;
-
-  if (phase > 2 || zone !== 0) {
-    const namedRange = namedRanges.find(e => e.getName() === cellName);
-    if (namedRange) {
-      return namedRange.getRange().getValues() as string[][];
-    }
-  }
-
-  return undefined;
-}
-
-/** Populate platoon with slices if available */
-function writeSlice_(
-  spooler: utils.Spooler,
-  data: string[][],
-  platoon: number,
-  range: Range,
-): void {
-
-  const slice = data.map(e => [e[platoon]]);
-  spooler.attach(range)
-    .setValues(slice);
-}
-
-/** Clear out a platoon */
-function resetPlatoon_(
-  spooler: utils.Spooler,
-  phase: number,
-  zone: number,
-  platoonRow: number,
-): void {
-
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const slice = readSlice_(phase, zone);
-
-  for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
-    // clear the contents
-    const col = (platoon * 4) + 4;
-    const range = sheet.getRange(platoonRow, col, MAX_PLATOON_UNITS, 2);
-    spooler.attach(range)
-      .clearContent()
-      .setFontColor(COLOR.BLACK);
-
-    if (slice) {
-      writeSlice_(spooler, slice, platoon, range.offset(0, 0, MAX_PLATOON_UNITS, 1));
-    }
-
-    spooler.attach(range.offset(0, 1, MAX_PLATOON_UNITS, 1))
-      .clearDataValidations();
-    // clear 'Skip this' checkbox
-    spooler.attach(range.offset(15, 1, 1, 1))
-      .clearContent();
-  }
-}
-
 /** Clear the full chart */
 function resetPlatoons(): void {
 
-  const spooler = new utils.Spooler();
-
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const phase = sheet.getRange(2, 1).getValue() as number;
-  initPlatoonPhases_();
-
-  [2, 20, 38].forEach((platoonRow, zone) => {
-    resetPlatoon_(spooler, phase, zone, platoonRow);
-    const zoneName = setZoneName_(spooler, phase, zone, sheet, platoonRow);
-    if (zone !== 1) {
-      if (zoneName.length === 0) {
-        const hideOffset = zone === 0 ? 1 : 0;
-        sheet.hideRows(platoonRow + hideOffset, MAX_PLATOON_UNITS - hideOffset);
-      } else {
-        sheet.showRows(platoonRow, MAX_PLATOON_UNITS);
-      }
-    }
-  });
-
-  spooler.commit();
+  const event = config.currentEvent() as TerritoryBattles.event;
+  const phase = config.currentPhase() as TerritoryBattles.phaseIdx;
+  new TerritoryBattles.Phase(event, phase).reset();
 }
 
 function getNeededCount_(unitName: string, isHero: boolean) {
@@ -290,180 +208,530 @@ function filterUnits_(
   }
 }
 
-// namespace TerritoryBattles {
+namespace TerritoryBattles {
 
-//   type event = ALIGNMENT.LIGHTSIDE|ALIGNMENT.LIGHTSIDE;
-//   type phaseIdx = 1|2|3|4|5|6;
-//   type territoryIdx = 0|1|2;
-//   type platoonIdx = 0|1|2|3|4|5;
+  export type event = ALIGNMENT.LIGHTSIDE|ALIGNMENT.LIGHTSIDE;
+  export type phaseIdx = 1|2|3|4|5|6;
+  type territoryIdx = 0|1|2;
+  type platoonIdx = 0|1|2|3|4|5;
 
-//   class Phase {
+  export class Phase {
 
-//     public readonly event: event;
-//     public readonly index: phaseIdx;
-//     public readonly territories: [Territory];
+    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+    public readonly event: event;
+    public readonly index: phaseIdx;
+    public readonly useExclusions: boolean = true;
+    public readonly useUnavailableq: boolean = true;
+    protected readonly territories: Territory[] = [];
+    public allHeroes: KeyedType<UnitInstances>;  // units[name][member]
+    public allShips: KeyedType<UnitInstances>;  // units[name][member]
+    public availableHeroes: KeyedType<UnitInstances>;  // units[name][member]
+    public availableShips: KeyedType<UnitInstances>;  // units[name][member]
+    public exclusions: KeyedType<KeyedBooleans> = {};  // exclusions[player][unit] = boolean
+    public unavailable: string[] = [];
 
-//     constructor(event: event, index: phaseIdx) {
+    constructor(event: event, index: phaseIdx) {
 
-//       this.event = event;
-//       this.index = index;
+      this.event = event;
+      this.index = index;
 
-//       type tDef = ((p: Phase, i: territoryIdx) => Territory)[];
-//       const territories: tDef = definitions[event][index];
-//       territories.forEach((e, i: territoryIdx) => this.territories.push(e(this, i)));
-//     }
+      type tDef = ((p: Phase, i: territoryIdx) => Territory)[];
+      const territories: tDef = definitions[event][index];
+      territories.forEach((e, i: territoryIdx) => this.territories[i] = e(this, i));
+    }
 
-//   }
+    protected readUnits(): void {
+      // cache the matrix of hero data
+      const heroesTable = new Units.Heroes();
+      this.allHeroes = heroesTable.getAllInstancesByUnits();
+      const shipsTable = new Units.Ships();
+      this.allShips = shipsTable.getAllInstancesByUnits();
+    }
 
-//   abstract class Territory {
+    protected readExclusions(): void {
+      const exclusionsId = config.exclusionId();
+      if (exclusionsId.length > 0) {
+        this.exclusions = Exclusions.getList();
+      }
+    }
 
-//     public readonly phase: Phase;
-//     public readonly index: territoryIdx;
-//     public readonly name: string;
-//     public readonly platoons: [Platoon];
+    protected readUnavailable(): void {
+      const unavailable = this.sheet
+        .getRange(56, 4, MAX_PLAYERS, 1)
+        .getValues() as [string][];
+      for (const e of unavailable) {
+        const name = e[0];
+        if (name.length > 0) {
+          this.unavailable.push(name);
+        }
+      }
+    }
 
-//     constructor(phase: Phase, index: territoryIdx, name: string) {
+    recommend(): void {
 
-//       this.index = index;
-//       this.phase = phase;
-//       this.name = name;
-//       // this.platoons.push(new Platoon(this, 0));
-//       // this.platoons.push(new Platoon(this, 1));
-//       // this.platoons.push(new Platoon(this, 2));
-//       // this.platoons.push(new Platoon(this, 3));
-//       // this.platoons.push(new Platoon(this, 4));
-//       // this.platoons.push(new Platoon(this, 5));
-//     }
+      const spooler = new utils.Spooler();
 
-//   }
+      this.readUnits();
+      this.readExclusions();
+      this.readUnavailable();
 
-//   class ClosedTerritory extends Territory {
+      spooler.commit();
+    }
 
-//     public readonly isOpen = false;
-//     public readonly isGround = false;
+    reset(): void {
 
-//     constructor(phase: Phase, index: territoryIdx) {
-//       super(phase, index, '');
-//     }
+      const spooler = new utils.Spooler();
 
-//   }
+      const territories = this.territories;
+      for (const territory of territories) {
+        territory.readSlices();
+        spooler.add(territory.writerName());
+        territory.writerSlices().forEach(e => spooler.add(e));
+        territory.writerResetDonors().forEach(e => spooler.add(e));
+        territory.writerResetButtons().forEach(e => spooler.add(e));
+        territory.showHide();
+      }
 
-//   class AirspaceTerritory extends Territory {
+      spooler.commit();
+    }
 
-//     public readonly isOpen = true;
-//     public readonly isGround = false;
+  }
 
-//     constructor(phase: Phase, index: territoryIdx, name: string) {
-//       super(phase, index, name);
-//     }
+  type slice = string[];
+  type slices = [slice, slice, slice, slice, slice, slice];
 
-//   }
+  abstract class Territory {
 
-//   class GroundTerritory extends Territory {
+    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+    protected readonly phase: Phase;
+    public readonly index: territoryIdx;
+    protected readonly name: string;
+    protected readonly platoons: Platoon[] = [];
 
-//     public readonly isOpen = true;
-//     public readonly isGround = true;
+    constructor(phase: Phase, index: territoryIdx, name: string) {
 
-//     constructor(phase: Phase, index: territoryIdx, name: string) {
-//       super(phase, index, name);
-//     }
+      this.index = index;
+      this.phase = phase;
+      this.name = name;
+    }
 
-//   }
+    showHide(): void {
+      const index = this.index;
+      const name = this.name;
+      const row = this.index * PLATOON_ZONE_ROW_OFFSET + 2;
+      const sheet = this.sheet;
+      if (index !== 1) {
+        if (name.length === 0) {
+          const hideOffset = index === 0 ? 1 : 0;
+          sheet.hideRows(row + hideOffset, MAX_PLATOON_UNITS - hideOffset);
+        } else {
+          sheet.showRows(row, MAX_PLATOON_UNITS);
+        }
+      }
+    }
 
-//   abstract class Platoon {
+    readSlices(): void {
+      const rowOffset = this.phase.event === ALIGNMENT.LIGHTSIDE ? 56 : 2;
+      const row = this.index * PLATOON_SLICE_ROW_OFFSET + rowOffset;
+      const column = (this.phase.index - 1) * PLATOON_SLICE_COLUMN_OFFSET + 2;
+      const data = SPREADSHEET.getSheetByName(SHEETS.SLICES)
+        .getRange(row, column, MAX_PLATOON_UNITS, MAX_PLATOONS)
+        .getValues() as string[][];
+      const result: slices = [[], [], [], [], [], []];
+      for (const row of data) {
+        row.forEach((e, i) => { result[i].push(e); });
+      }
+      result.forEach((e, i) => { this.platoons[i].setSlice(e); });
+    }
 
-//     public readonly territory: Territory;
-//     public readonly index: platoonIdx;
-//     // public readonly isGround: boolean;
-//     // public readonly isOpen: boolean;
-//     // public possible: boolean;
-//     public readonly row: number;
-//     public readonly offset: number;
+    writerName(): utils.SpooledTask {
+      const name = this.name;
+      const row = this.index * PLATOON_ZONE_ROW_OFFSET + 4;
+      const range = this.sheet.getRange(row, 1);
+      const writer = () => { range.setValue(name); };
 
-//     constructor(territory: Territory, index: platoonIdx) {
-//       this.index = index;
-//       this.territory = territory;
-//       this.row = 2 + territory.index * PLATOON_ZONE_ROW_OFFSET;
-//       this.offset = this.index * 4;
-//     }
-//   }
+      return writer;
+    }
 
-//   class AirspacePlatoon extends Platoon {}
+    writerResetDonors(): utils.SpooledTask[] {
+      const platoons = this.platoons;
+      const result = platoons.map(p => p.writerResetDonors());
 
-//   class GroundPlatoon extends Platoon {}
+      return result;
+    }
 
-//   const closed = (p: Phase, i: territoryIdx) => new ClosedTerritory(p, i);
-//   const airspace = (n: string) => (p: Phase, i: territoryIdx) => new AirspaceTerritory(p, i, n);
-//   const ground = (n: string) => (p: Phase, i: territoryIdx) => new GroundTerritory(p, i, n);
+    writerResetButtons(): utils.SpooledTask[] {
+      const platoons = this.platoons;
+      const result = platoons.map(p => p.writerResetButton());
 
-//   const definitions = {
-//     'Light Side': {
-//       1: [
-//         closed,
-//         ground('Rebel Base'),
-//         closed,
-//       ],
-//       2: [
-//         closed,
-//         ground('Ion Cannon'),
-//         ground('Overlook'),
-//       ],
-//       3: [
-//         airspace('Rear Airspace'),
-//         ground('Rear Trenches'),
-//         ground('Power Generator'),
-//       ],
-//       4: [
-//         airspace('Forward Airspace'),
-//         ground('Forward Trenches'),
-//         ground('Outer Pass'),
-//       ],
-//       5: [
-//         airspace('Contested Airspace'),
-//         ground('Snowfields'),
-//         ground('Forward Stronghold'),
-//       ],
-//       6: [
-//         airspace('Imperial Fleet Staging Area'),
-//         ground('Imperial Flank'),
-//         ground('Imperial Landing'),
-//       ],
-//     },
-//     'Dark Side': {
-//       1: [
-//         [ClosedTerritory, ''],
-//         ground('Imperial Flank'),
-//         ground('Imperial Landing'),
-//       ],
-//       2: [
-//         [ClosedTerritory, ''],
-//         ground('Snowfields'),
-//         ground('Forward Stronghold'),
-//       ],
-//       3: [
-//         airspace('Imperial Fleet Staging Area'),
-//         ground('Ion Cannon'),
-//         ground('Outer Pass'),
-//       ],
-//       4: [
-//         airspace('Contested Airspace'),
-//         ground('Power Generator'),
-//         ground('Rear Trenches'),
-//       ],
-//       5: [
-//         airspace('Forward Airspace'),
-//         ground('Forward Trenches'),
-//         ground('Overlook'),
-//       ],
-//       6: [
-//         airspace('Rear Airspace'),
-//         ground('Rebel Base Main Entrance'),
-//         ground('Rebel Base South Entrance'),
-//       ],
-//     },
-//   };
+      return result;
+    }
 
-// }
+    writerSlices(): utils.SpooledTask[] {
+      const platoons = this.platoons;
+      const result = platoons.map(p => p.writerSlice());
+
+      return result;
+    }
+
+  }
+
+  class ClosedTerritory extends Territory {
+
+    public readonly isOpen = false;
+    public readonly isGround = false;
+
+    constructor(phase: Phase, index: territoryIdx) {
+      super(phase, index, '');
+      for (let i = 0; i < MAX_PLATOONS; i += 1) {
+        this.platoons[i] = new ClosedPlatoon(this, i as platoonIdx);
+      }
+    }
+
+    readSlices(): void {}
+
+  }
+
+  class AirspaceTerritory extends Territory {
+
+    public readonly isOpen = true;
+    public readonly isGround = false;
+
+    constructor(phase: Phase, index: territoryIdx, name: string, tp: number[]) {
+      super(phase, index, name);
+      for (let i = 0; i < MAX_PLATOONS; i += 1) {
+        this.platoons[i] = new AirspacePlatoon(this, i as platoonIdx);
+      }
+    }
+
+  }
+
+  class GroundTerritory extends Territory {
+
+    public readonly isOpen = true;
+    public readonly isGround = true;
+
+    constructor(phase: Phase, index: territoryIdx, name: string, tp: number[]) {
+      super(phase, index, name);
+      for (let i = 0; i < MAX_PLATOONS; i += 1) {
+        this.platoons[i] = new GroundPlatoon(this, i as platoonIdx);
+      }
+    }
+
+  }
+
+  abstract class Platoon {
+
+    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+    protected slice: slice;
+    protected readonly territory: Territory;
+    protected readonly index: platoonIdx;
+    // public readonly isGround: boolean;
+    // public readonly isOpen: boolean;
+    // public possible: boolean;
+    protected readonly row: number;
+    protected readonly offset: number;
+    protected readonly column: number;
+
+    constructor(territory: Territory, index: platoonIdx) {
+      this.index = index;
+      this.territory = territory;
+      this.row = this.territory.index * PLATOON_ZONE_ROW_OFFSET + 2;
+      this.offset = this.index * PLATOON_ZONE_COLUMN_OFFSET;
+      this.column = this.offset + 4;
+    }
+
+    getResetButton(): boolean {
+      const range = this.sheet
+        .getRange(this.row + MAX_PLATOON_UNITS, this.column + 1, MAX_PLATOON_UNITS);
+
+      return range.getValue() as string === 'SKIP';
+    }
+
+    setSlice(slice: slice): void {
+      this.slice = slice;
+    }
+
+    writerResetButton(): utils.SpooledTask {
+      const range = this.sheet
+        .getRange(this.row + MAX_PLATOON_UNITS, this.column + 1, MAX_PLATOON_UNITS);
+      const writer = () => { range.clearContent(); };
+
+      return writer;
+    }
+
+    writerResetDonors(): utils.SpooledTask {
+      const range = this.sheet
+        .getRange(this.row, this.column + 1, MAX_PLATOON_UNITS);
+      const writer = () =>
+        { range.clearContent().clearDataValidations().setFontColor(COLOR.BLACK); };
+
+      return writer;
+    }
+
+    writerSlice(): utils.SpooledTask {
+      const data = this.slice.map(e => [e]);
+      const range = this.sheet
+        .getRange(this.row, this.column, MAX_PLATOON_UNITS);
+      const writer = () => { range.setValues(data); };
+
+      return writer;
+    }
+
+  }
+
+  class ClosedPlatoon extends Platoon {
+
+    constructor(territory: Territory, index: platoonIdx) {
+      super(territory, index);
+    }
+
+    writerSlice(): utils.SpooledTask {
+      const range = this.sheet
+        .getRange(this.row, this.column, MAX_PLATOON_UNITS);
+      const writer = () => { range.clearContent().setFontColor(COLOR.BLACK); };
+
+      return writer;
+    }
+
+  }
+
+  class AirspacePlatoon extends Platoon {
+
+    constructor(territory: Territory, index: platoonIdx) {
+      super(territory, index);
+    }
+
+  }
+
+  class GroundPlatoon extends Platoon {
+
+    constructor(territory: Territory, index: platoonIdx) {
+      super(territory, index);
+    }
+
+  }
+
+  const closed = (p: Phase, i: territoryIdx) => new ClosedTerritory(p, i);
+  const airspace = (n: string, tp: number[]) =>
+    (p: Phase, i: territoryIdx) => new AirspaceTerritory(p, i, n, tp);
+  const ground = (n: string, tp: number[]) =>
+    (p: Phase, i: territoryIdx) => new GroundTerritory(p, i, n, tp);
+
+  const definitions = {
+    'Light Side': {
+      1: [
+        closed,
+        ground('Rebel Base', [100, 100, 100, 100, 150, 150]),
+        closed,
+      ],
+      2: [
+        closed,
+        ground('Ion Cannon', [120, 120, 120, 120, 180, 180]),
+        ground('Overlook', [120, 120, 120, 120, 180, 180]),
+      ],
+      3: [
+        airspace('Rear Airspace', [140, 140, 140, 140, 140, 140]),
+        ground('Rear Trenches', [140, 140, 140, 140, 210, 210]),
+        ground('Power Generator', [140, 140, 140, 140, 210, 210]),
+      ],
+      4: [
+        airspace('Forward Airspace', [160, 160, 160, 160, 160, 160]),
+        ground('Forward Trenches', [160, 160, 160, 160, 240, 240]),
+        ground('Outer Pass', [160, 160, 160, 160, 240, 240]),
+      ],
+      5: [
+        airspace('Contested Airspace', [180, 180, 180, 180, 180, 180]),
+        ground('Snowfields', [180, 180, 180, 180, 270, 270]),
+        ground('Forward Stronghold', [180, 180, 180, 180, 270, 270]),
+      ],
+      6: [
+        airspace('Imperial Fleet Staging Area', [200, 200, 200, 200, 200, 200]),
+        ground('Imperial Flank', [200, 200, 200, 200, 300, 300]),
+        ground('Imperial Landing', [200, 200, 200, 200, 300, 300]),
+      ],
+    },
+    'Dark Side': {
+      1: [
+        [ClosedTerritory, ''],
+        ground('Imperial Flank', [102, 102, 102, 102, 153, 153]),
+        ground('Imperial Landing', [102, 102, 102, 102, 153, 153]),
+      ],
+      2: [
+        [ClosedTerritory, ''],
+        ground('Snowfields', [126, 126, 126, 126, 189, 189]),
+        ground('Forward Stronghold', [126, 126, 126, 126, 189, 189]),
+      ],
+      3: [
+        airspace('Imperial Fleet Staging Area', [151, 151, 151, 151, 151, 151]),
+        ground('Ion Cannon', [151, 151, 151, 151, 151, 151]),
+        ground('Outer Pass', [151, 151, 151, 151, 151, 151]),
+      ],
+      4: [
+        airspace('Contested Airspace', [176, 176, 176, 176, 264, 264]),
+        ground('Power Generator', [176, 176, 176, 176, 176, 176]),
+        ground('Rear Trenches', [176, 176, 176, 176, 176, 176]),
+      ],
+      5: [
+        airspace('Forward Airspace', [207, 207, 207, 207, 301.5, 301.5]),
+        ground('Forward Trenches', [207, 207, 207, 207, 207, 207]),
+        ground('Overlook', [207, 207, 207, 207, 207, 207]),
+      ],
+      6: [
+        airspace('Rear Airspace', [260, 260, 260, 260, 390, 390]),
+        ground('Rebel Base Main Entrance', [260, 260, 260, 260, 260, 260]),
+        ground('Rebel Base South Entrance', [260, 260, 260, 260, 260, 260]),
+      ],
+    },
+  };
+
+  // abstract class UnitPool {
+
+  //   protected readonly phase: Phase;
+  //   protected readonly allUnits: KeyedType<UnitInstances>;  // units[name][member]
+  //   protected units: KeyedType<UnitInstances>;  // units[name][member]
+  //   protected readonly exclusions: KeyedType<KeyedBooleans>;  // excluded[player][unit] = boolean
+  //   protected readonly unavailable: string[];
+
+  //   constructor(
+  //     phase: Phase,
+  //     allUnits: KeyedType<UnitInstances>,
+  //     exclusions: KeyedType<KeyedBooleans>,
+  //     unavailable: string[],
+  //   ) {
+  //     this.phase = phase;
+  //     this.allUnits = utils.clone(allUnits);
+  //     this.exclusions = utils.clone(exclusions);
+  //     this.unavailable = utils.clone(unavailable);
+  //   }
+
+  //   protected filter(filter: (player: string, u: UnitInstance) => boolean): void {
+  //     const data = utils.clone(this.allUnits);
+  //     const exclusions = this.exclusions;
+  //     const units = Object.assign({}, data);
+  //     for (const unit in units) {
+  //       const members = Object.assign({}, data[unit]);
+  //       for (const player in members) {
+  //         if (
+  //           (exclusions[player] && exclusions[player][unit])
+  //           || !filter(player, members[player])
+  //         ) {
+  //           delete data[unit][player];
+  //         }
+  //       }
+  //       if (data[unit] && Object.keys(data[unit]).length === 0) {
+  //         delete data[unit];
+  //       }
+  //     }
+  //     this.units = data;  // BAD
+  //   }
+
+  //   protected zScore() {
+  //     const zScored: KeyedType<{
+  //       // average: number;
+  //       // count: number;
+  //       // sum: number;
+  //       units: {
+  //         // difference: number;
+  //         squaredDifference: number;
+  //         power: number;
+  //         unit: UnitInstance;
+  //       }[];
+  //     }> = {};
+  //     const units = this.units;
+  //     for (const unitName in units) {
+  //       const perPlayer = units[unitName];
+  //       for (const playerName in perPlayer) {
+  //         const unit = perPlayer[playerName];
+  //         if (!zScored[playerName]) {
+  //           zScored[playerName] = {
+  //             // average: 0,
+  //             // count: 0,
+  //             // sum: 0,
+  //             units: [],
+  //           };
+  //         }
+  //         zScored[playerName].units.push({
+  //           unit,
+  //           // difference: 0,
+  //           squaredDifference: 0,
+  //           power: unit.power,
+  //         });
+  //       }
+  //     }
+  //     // const accessor = (u: UnitInstance) => u.power;
+  //     for (const playerName in zScored) {
+  //       const o = zScored[playerName];
+  //       const units = o.units;
+  //       const average = statistics.average(units, u => u.power);
+  //       // const count = units.length;
+  //       // o.count = count;
+  //       // const sum = units.reduce((acc, u) => acc + u.power, 0);
+  //       // o.sum = sum;
+  //       // const average = sum / count;
+  //       // o.average = average;
+  //       o.units = units.map((e) => {
+  //         const difference = e.power - average;
+  //         // e.difference = difference;
+  //         e.squaredDifference = Math.pow(difference, 2);
+  //         return e;
+  //       });
+  //       const averageSquaredDifference = statistics.average(units, u => u.squaredDifference);
+  //     }
+  //     const avg = { count: 0, sum: 0 };
+  //   }
+
+  // }
+
+  // class HeroesPool extends UnitPool {
+
+  //   constructor(
+  //     phase: Phase,
+  //     exclusions: KeyedType<KeyedBooleans> = {},
+  //     unavailable: string[] = [],
+  //   ) {
+  //     const heroesTable = new Units.Heroes();
+  //     const allUnits = heroesTable.getAllInstancesByUnits();
+  //     super(phase, allUnits, exclusions, unavailable);
+  //   }
+
+  //   protected filter() {
+  //     const phase = this.phase.index;
+  //     const alignment = config.currentEvent().toLowerCase();
+  //     const filter = (player: string, u: UnitInstance) => {
+  //       return u.rarity > phase
+  //         && u.tags.indexOf(alignment) !== -1
+  //         && this.unavailable.findIndex(e => e[0] === player) === -1;
+  //     };
+  //     super.filter(filter);
+  //   }
+
+  // }
+
+  // class ShipsPool extends UnitPool {
+
+  //   constructor(
+  //     phase: Phase,
+  //     exclusions: KeyedType<KeyedBooleans> = {},
+  //     unavailable: string[] = [],
+  //   ) {
+  //     const shipsTable = new Units.Ships();
+  //     const allUnits = shipsTable.getAllInstancesByUnits();
+  //     super(phase, allUnits, exclusions, unavailable);
+  //   }
+
+  //   protected filter() {
+  //     const phase = this.phase.index;
+  //     const filter = (player: string, u: UnitInstance) => {
+  //       return u.rarity > phase
+  //         && this.unavailable.findIndex(e => e[0] === player) === -1;
+  //     };
+  //     super.filter(filter);
+  //   }
+
+  // }
+
+}
 
 // function loop1_(
 //   cur: PlatoonDetails,
@@ -649,9 +917,9 @@ function recommendPlatoons() {
 
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const phase = sheet.getRange(2, 1).getValue() as number;
+  const phase = config.currentPhase();
   const alignment = config.currentEvent().toLowerCase();
-  const unavailable = sheet.getRange(56, 4, config.memberCount(), 1).getValues() as [string][];
+  const unavailable = sheet.getRange(56, 4, MAX_PLAYERS, 1).getValues() as [string][];
 
   // cache the matrix of hero data
   const heroesTable = new Units.Heroes();

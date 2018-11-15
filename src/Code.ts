@@ -1,10 +1,3 @@
-/** workaround to tslint issue of namespace scope after importingtype definitions */
-declare namespace SwgohHelp {
-
-  function getPlayerData(allyCode: number): PlayerData;
-
-}
-
 /**
  * @OnlyCurrentDoc
  */
@@ -14,43 +7,40 @@ function caseInsensitive_(a: string, b: string): number {
   return a.toLowerCase().localeCompare(b.toLowerCase());
 }
 
-/** [string, *][] callback for case insensitive alphabetical sort */
-function firstElementCaseInsensitive_(a: [string, undefined], b: [string, undefined]): number {
-  return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
-}
-
+/** guild member related functions */
 namespace Members {
 
+  /** get a row/cell array of members name */
   export function getNames(): [string][] {
-
     return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
       .getRange(2, 2, config.memberCount(), 1)
       .getValues() as [string][];
   }
 
+  /** get a row/cell array of members name and ally code */
   export function getAllycodes(): [string, number][] {
-
     return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
       .getRange(2, 2, config.memberCount(), 2)
       .getValues() as [string, number][];
   }
 
+  /**
+   * get a row/cell array of members base attributes
+   * [name, ally code, gp, heroes gp, ships gp]
+   */
   export function getBaseAttributes(): [string, number, number, number, number][] {
-
     return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
     .getRange(2, 2, config.memberCount(), 5)
     .getValues() as [string, number, number, number, number][];
   }
 
+  /** get an array of members PlayerData object */
   export function getFromSheet(): PlayerData[] {
 
-    const roster = Members.getBaseAttributes();
-    const heroesTable = new Units.Heroes();
-    const shipsTable = new Units.Ships();
-    const heroes = heroesTable.getAllInstancesByMember();
-    const ships = shipsTable.getAllInstancesByMember();
+    const heroes = new Units.Heroes().getAllInstancesByMember();
+    const ships = new Units.Ships().getAllInstancesByMember();
 
-    const members = roster.map((e) => {
+    const members = Members.getBaseAttributes().map((e) => {
       const memberName = e[0];
       const playerData: PlayerData = {
         allyCode: e[1],
@@ -61,23 +51,18 @@ namespace Members {
         units: {},
       };
 
-      const h = heroes[memberName];
-      if (h) {
-        for (const baseId in h) {
-          const u = h[baseId];
-          playerData.units[baseId] = u;
-          playerData.level = Math.max(playerData.level, u.level);
+      const addToPlayerData = (e: KeyedType<UnitInstance>) => {
+        if (e) {
+          for (const baseId in e) {
+            const u = e[baseId];
+            playerData.units[baseId] = u;
+            playerData.level = Math.max(playerData.level, u.level);
+          }
         }
-      }
+      };
 
-      const s = ships[memberName];
-      if (s) {
-        for (const baseId in s) {
-          const u = s[baseId];
-          playerData.units[baseId] = u;
-          playerData.level = Math.max(playerData.level, u.level);
-        }
-      }
+      addToPlayerData(heroes[memberName]);
+      addToPlayerData(ships[memberName]);
 
       return playerData;
     });
@@ -87,13 +72,14 @@ namespace Members {
 
 }
 
+/** player related functions */
 namespace Player {
 
   /** read player's data from a data source */
   export function getFromDataSource(
     allyCode: number,
+    unitsIndex: UnitDefinition[],
     tag: string = '',
-    unitsIndex: UnitDefinition[] = undefined,
   ): PlayerData {
 
     const playerData = config.dataSource.isSwgohHelp()
@@ -134,8 +120,9 @@ namespace Player {
   /** read player's data from unit tabs */
   export function getFromSheet(memberName: string, tag: string): PlayerData {
 
-    const roster = Members.getBaseAttributes();
-    const p = roster.find(e => e[0] === memberName);
+    const p = Members.getBaseAttributes()
+      .find(e => e[0] === memberName);
+
     if (p) {
       const playerData: PlayerData = {
         allyCode: p[1],
@@ -146,26 +133,20 @@ namespace Player {
         units: {},
       };
       const filter = tag.toLowerCase();
-
-      const heroesTable = new Units.Heroes();
-      const heroes = heroesTable.getMemberInstances(memberName);
-      for (const baseId in heroes) {
-        const u = heroes[baseId];
-        if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
-          playerData.units[baseId] = u;
-          playerData.level = Math.max(playerData.level, u.level);
+      const addToPlayerData = (e: KeyedType<UnitInstance>) => {
+        for (const baseId in e) {
+          const u = e[baseId];
+          if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
+            playerData.units[baseId] = u;
+            playerData.level = Math.max(playerData.level, u.level);
+          }
         }
-      }
+      };
 
-      const shipsTable = new Units.Ships();
-      const ships = shipsTable.getMemberInstances(memberName);
-      for (const baseId in ships) {
-        const u = ships[baseId];
-        if (filter.length === 0 || u.tags.indexOf(filter) > -1) {
-          playerData.units[baseId] = u;
-          playerData.level = Math.max(playerData.level, u.level);
-        }
-      }
+      const heroes = new Units.Heroes().getMemberInstances(memberName);
+      addToPlayerData(heroes);
+      const ships = new Units.Ships().getMemberInstances(memberName);
+      addToPlayerData(ships);
 
       return playerData;
     }
@@ -185,10 +166,10 @@ function getEventDefinition_(filter: string): [string, string][] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
-  const numRows = sheet.getLastRow() - row + 1;
-
   const col = (isLight_(filter) ? META_HEROES_COL : META_HEROES_DS_COL) + 2;
+  const numRows = sheet.getLastRow() - row + 1;
   const values = sheet.getRange(row, col, numRows).getValues() as [string][];
+
   const meta: [string, string][] = values.reduce(
     (acc, e) => {
       if (typeof e[0] === 'string' && e[0].trim().length > 0) {  // not empty
@@ -204,9 +185,10 @@ function getEventDefinition_(filter: string): [string, string][] {
   return meta;
 }
 
+/** Snapshot related functions */
 namespace Snapshot {
 
-  /** retrieve player's data from unit tabs or a data source */
+  /** retrieve player's data from tabs if avaialble or from a data source */
   export function getData(
     sheet: Sheet,
     filter: string,
@@ -214,7 +196,6 @@ namespace Snapshot {
   ): PlayerData {
 
     const members = Members.getAllycodes();
-
     const memberName = (sheet.getRange(5, 1).getValue() as string).trim();
 
     // get the player's link from the Roster
@@ -233,7 +214,7 @@ namespace Snapshot {
         return Player.getFromSheet(member[0], filter.toLowerCase());
       }
 
-      return Player.getFromDataSource(allyCode, filter, unitsIndex);
+      return Player.getFromDataSource(allyCode, unitsIndex, filter);
     }
 
     return undefined;
@@ -336,9 +317,26 @@ function onOpen(): void {
     .addToUi();
 }
 
+namespace statistics {
+
+  export function average(inputs: any[], accessor = (e => e as number)) {
+    let count = 0;
+    const sum: number = inputs.reduce(
+      (acc: number, e) => {
+        count += 1;
+        return acc + accessor(e);
+      },
+      0,
+    );
+
+    return sum / count;
+  }
+
+}
+
 namespace utils {
 
-  function clone<T>(mutable: T): T {
+  export function clone<T>(mutable: T): T {
     return JSON.parse(JSON.stringify(mutable));
   }
 
