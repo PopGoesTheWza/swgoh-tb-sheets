@@ -291,7 +291,7 @@ namespace config {
         .getValue() as string;
       const parts = guildLink.split('/');
       // TODO: input check
-      const guildId = Number(parts[4]);
+      const guildId = +parts[4];
 
       return guildId;
     }

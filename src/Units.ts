@@ -420,10 +420,10 @@ namespace Units {
       let result: UnitInstance;
       const m = stats.match(/(\d+)\*L(\d+)G(\d+)P(\d+)/);
       if (m) {
-        const rarity = Number(m[1]);
-        const level = Number(m[2]);
-        const gearLevel = Number(m[3]);
-        const power = Number(m[4]);
+        const rarity = +m[1];
+        const level = +m[2];
+        const gearLevel = +m[3];
+        const power = +m[4];
         result = { gearLevel, level, power, rarity, stats };
       }
 
@@ -491,9 +491,9 @@ namespace Units {
       let result: UnitInstance;
       const m = stats.match(/(\d+)\*L(\d+)P(\d+)/);
       if (m) {
-        const rarity = Number(m[1]);
-        const level = Number(m[2]);
-        const power = Number(m[3]);
+        const rarity = +m[1];
+        const level = +m[2];
+        const power = +m[3];
         result = { level, power, rarity, stats };
       }
 

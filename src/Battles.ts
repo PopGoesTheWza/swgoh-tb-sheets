@@ -75,7 +75,7 @@ function populateEventTable_(
       } else {
         table[r + 1][c] = '';
       }
-      const squad = Number(curHero[4]);
+      const squad = +curHero[4];
       if (squad !== lastSquad) {
         squadCount = 0;
       }
@@ -100,9 +100,9 @@ function populateEventTable_(
         continue;
       }
       const requirementsMet =
-        o.rarity >= Number(curHero[1]) &&
-        o.gearLevel >= Number(curHero[2]) &&
-        o.level >= Number(curHero[3]);
+        o.rarity >= +curHero[1] &&
+        o.gearLevel >= +curHero[2] &&
+        o.level >= +curHero[3];
       if (requirementsMet) {
         if (curHero[5] === 'R' && !lastRequired) {
           squadCount = 0;
@@ -236,7 +236,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
 
   // remove
   for (const e of remove) {
-    const allyCode = e && Number(e[0]) || 0;
+    const allyCode = e && +e[0] || 0;
     if (allyCode > 0) {
       const index = members.findIndex(m => m.allyCode === allyCode);
       if (index > -1) {
