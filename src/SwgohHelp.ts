@@ -1,7 +1,9 @@
 import { swgohhelpapi } from '../lib';
 
+/** API Functions to pull data from swgoh.help */
 namespace SwgohHelp {
 
+  /** Constants to translate categoryId into SwgohGg tags */
   enum categoryId {
     alignment_dark = 'dark side',
     alignment_light = 'light side',
@@ -41,6 +43,7 @@ namespace SwgohHelp {
     // species_wookiee = 'wookiee',
   }
 
+  /** check if swgohhelpapi api is installed */
   function checkLibrary(): boolean {
 
     const result = Boolean(swgohhelpapi);
@@ -65,6 +68,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
     categoryIdList: [string],
   };
 
+  /** Pull Units definitions from SwgohHelp */
   export function getUnitList(): UnitsDefinitions {
 
     if (!checkLibrary()) {
@@ -129,6 +133,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
     return undefined;
   }
 
+  /** Pull Guild data from SwgohHelp */
   export function getGuildData(): PlayerData[] {
 
     if (!checkLibrary()) {

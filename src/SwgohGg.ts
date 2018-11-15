@@ -1,5 +1,4 @@
 /** API Functions to pull data from swgoh.gg */
-
 namespace SwgohGg {
 
   interface SwgohGgUnit {

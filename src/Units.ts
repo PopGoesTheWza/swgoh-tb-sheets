@@ -9,6 +9,7 @@ function reloadUnitDefinitions() {
   setupEvent();
 }
 
+/** units related classes and functions */
 namespace Units {
 
   const sortUnits = (a: UnitDefinition, b: UnitDefinition) => {
@@ -128,23 +129,6 @@ namespace Units {
 
     /** return the UnitInstance object for the cell value */
     protected abstract toUnitInstance(stats: string): UnitInstance;
-
-    /** return an array of all units definition (name, baseId, tags) */
-    // getDefinitions(): UnitDefinition[] {
-
-    //   const data = this.sheet.getRange(2, 1, this.getCount(), 3)
-    //     .getValues() as string[][];
-
-    //   const definitions: UnitDefinition[] = data.map((e) => {
-    //     const name = e[0];
-    //     const baseId = e[1];
-    //     const tags = e[2];
-
-    //     return { name, baseId, tags };
-    //   });
-
-    //   return definitions;
-    // }
 
     /** return a list of units that are required a high number of times (HIGH_MIN) */
     getHighNeedList(): string[] {

@@ -154,6 +154,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   return members;
 }
 
+/** compute a hash of current settings */
 function getSettingsHash_() {
   const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
   const meta = SPREADSHEET.getSheetByName(SHEETS.META);
@@ -195,6 +196,7 @@ function getSettingsHash_() {
   return hash;
 }
 
+/** process the Rename, Add and Remove columns */
 function renameAddRemove_(members: PlayerData[]): PlayerData[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
@@ -241,6 +243,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   return members;
 }
 
+/** fix players name */
 function normalizeRoster_(members: PlayerData[]): PlayerData[] {
 
   // fix name starting with single quote
@@ -271,6 +274,7 @@ function normalizeRoster_(members: PlayerData[]): PlayerData[] {
   return members;
 }
 
+/** get a PlayerData array of members, from sheet if possible, else from data source */
 function getMembers_(): PlayerData[] {
 
   let members: PlayerData[];

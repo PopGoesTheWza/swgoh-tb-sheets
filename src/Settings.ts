@@ -135,18 +135,20 @@ interface UnitInstance {
 
 type UnitInstances = KeyedType<UnitInstance>;
 
+/** Constants for alignment */
 enum ALIGNMENT {
   DARKSIDE = 'Dark Side',
   LIGHTSIDE = 'Light Side',
 }
 
+/** Constants for background colors */
 enum COLOR {
   BLACK = 'Black',
   BLUE = 'Blue',
   RED = 'Red',
 }
 
-/** Select data source */
+/** Constants for data source */
 enum DATASOURCES {
   /** Use swgoh.help API as data source */
   SWGOH_HELP = 'SWGoH.help',
@@ -154,6 +156,7 @@ enum DATASOURCES {
   SWGOH_GG = 'SWGoH.gg',
 }
 
+/** Constants for display options */
 enum DISPLAYSLOT {
   ALWAYS = 'Always',
   DEFAULT = 'Default',
@@ -182,8 +185,10 @@ enum SHEETS {
   INSTRUCTIONS = 'Instructions',
 }
 
+/** settings related functions */
 namespace config {
 
+  /** get current Territory Battles phase */
   export function currentPhase(): number {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
@@ -193,6 +198,7 @@ namespace config {
     return value;
   }
 
+  /** get current event */
   export function currentEvent(): string {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -202,6 +208,7 @@ namespace config {
     return value;
   }
 
+  /** get the tag/faction of current event */
   export function tagFilter(): string {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -211,6 +218,7 @@ namespace config {
     return value;
   }
 
+  /** get required minimal player level */
   export function requiredHeroGp(): number {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -220,6 +228,7 @@ namespace config {
     return value;
   }
 
+  /** get required minimal player level */
   export function requiredPlayerLevel(): number {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -229,6 +238,7 @@ namespace config {
     return value;
   }
 
+  /** get maximum allowed donation per territory */
   export function maxDonationsPerTerritory(): number {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -238,6 +248,7 @@ namespace config {
     return value;
   }
 
+  /** get roster sorting setting */
   export function sortRoster(): boolean {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -247,6 +258,7 @@ namespace config {
     return value === 'Yes';
   }
 
+  /** get Id of exclusions */
   export function exclusionId(): string {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -256,6 +268,7 @@ namespace config {
     return value;
   }
 
+  /** get count of members in the roster */
   export function memberCount(): number {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
@@ -265,6 +278,7 @@ namespace config {
     return value;
   }
 
+  /** data source related settings */
   export namespace dataSource {
 
     /** should we use the SWGoH.help API? */
@@ -277,6 +291,7 @@ namespace config {
       return getDataSource() === DATASOURCES.SWGOH_GG;
     }
 
+    /** get selected data source */
     export function getDataSource(): string {
 
       const value = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -288,6 +303,7 @@ namespace config {
 
   }
 
+  /** SwgohGg related settings */
   export namespace SwgohGg {
 
     /** Get the guild id */
@@ -307,6 +323,7 @@ namespace config {
 
   }
 
+  /** SwgohHelp related settings */
   export namespace SwgohHelp {
 
     /** Get the SwgohHelp API username */
@@ -347,6 +364,7 @@ namespace config {
 
   }
 
+  /** discord related settings */
   export namespace discord {
 
     /** Get the webhook address */
