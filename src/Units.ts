@@ -1,10 +1,3 @@
-/** workaround to tslint issue of namespace scope after importing type definitions */
-declare namespace SwgohHelp {
-
-  function getUnitList(): UnitsDefinitions;
-
-}
-
 type UnitsDefinitions = {
   heroes: UnitDefinition[];
   ships: UnitDefinition[];
@@ -19,7 +12,7 @@ function reloadUnitDefinitions() {
 namespace Units {
 
   const sortUnits = (a: UnitDefinition, b: UnitDefinition) => {
-    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    return caseInsensitive_(a.name, b.name);
   };
 
   /** request units definitions from data source (and cache them for 6 hours) */

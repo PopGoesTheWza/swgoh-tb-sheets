@@ -131,7 +131,7 @@ function sendMicroByPlayerWebhook(): void {
   }
 
   entries = entries.sort((a, b) => {
-    return a.player.toLowerCase().localeCompare(b.player.toLowerCase());
+    return caseInsensitive_(a.player, b.player);
   });
 
   const playerMentions = discord.getPlayerMentions();

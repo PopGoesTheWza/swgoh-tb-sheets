@@ -328,7 +328,7 @@ namespace discord {
         [],
       );
       // sort by player
-      donations = acc.sort(firstElementCaseInsensitive_);
+      donations = acc.sort((a, b) => caseInsensitive_(a[0], b[0]));
     }
 
     // format the needed donations

@@ -1,3 +1,12 @@
+/** workaround to tslint issue of namespace scope after importingtype definitions */
+declare namespace SwgohHelp {
+
+  function getGuildData(): PlayerData[];
+  function getPlayerData(allyCode: number): PlayerData;
+  function getUnitList(): UnitsDefinitions;
+
+}
+
 /** Shortcuts for Google Apps Script classes */
 const SPREADSHEET = SpreadsheetApp.getActive();
 // const UI = SpreadsheetApp.getUi();
