@@ -128,6 +128,8 @@ interface UnitInstance {
   level: number;
   name?: string;
   power: number;
+  /** calculated and used in platoons recommendation */
+  zScore?: number;
   rarity: number;
   stats?: string;
   tags?: string;
@@ -191,9 +193,9 @@ namespace config {
   /** get current Territory Battles phase */
   export function currentPhase(): number {
 
-    const value = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+    const value = +SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
       .getRange(2, 1)
-      .getValue() as number;
+      .getValue();
 
     return value;
   }
@@ -221,9 +223,9 @@ namespace config {
   /** get required minimal player level */
   export function requiredHeroGp(): number {
 
-    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+    const value = +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_MIN_GP_ROW, META_MIN_GP_COL)
-      .getValue() as number;
+      .getValue();
 
     return value;
   }
@@ -231,9 +233,9 @@ namespace config {
   /** get required minimal player level */
   export function requiredPlayerLevel(): number {
 
-    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+    const value = +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
-      .getValue() as number;
+      .getValue();
 
     return value;
   }
@@ -241,9 +243,9 @@ namespace config {
   /** get maximum allowed donation per territory */
   export function maxDonationsPerTerritory(): number {
 
-    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+    const value = +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_UNIT_PER_PLAYER_ROW, META_UNIT_PER_PLAYER_COL)
-      .getValue() as number;
+      .getValue();
 
     return value;
   }
@@ -271,9 +273,9 @@ namespace config {
   /** get count of members in the roster */
   export function memberCount(): number {
 
-    const value = SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    const value = +SPREADSHEET.getSheetByName(SHEETS.ROSTER)
       .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
-      .getValue() as number;
+      .getValue();
 
     return value;
   }
@@ -355,9 +357,9 @@ namespace config {
 
       const metaSWGOHLinkCol = 1;
       const metaSWGOHLinkRow = 20;
-      const result = SPREADSHEET.getSheetByName(SHEETS.META)
+      const result = +SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-        .getValue() as number;
+        .getValue();
 
       return result;
     }
@@ -400,9 +402,9 @@ namespace config {
     /** Get the number of hours in each phase */
     export function phaseDuration(): number {
 
-      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+      const value = +SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
-        .getValue() as number;
+        .getValue();
 
       return value;
     }

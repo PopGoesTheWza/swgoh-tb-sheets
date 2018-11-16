@@ -385,9 +385,9 @@ namespace Units {
     /** return the number of heroes defined */
     getCount(): number {
 
-      const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      const value = +SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_HEROES_COUNT_ROW, META_HEROES_COUNT_COL)
-        .getValue() as number;
+        .getValue();
 
       return value;
     }
@@ -456,9 +456,9 @@ namespace Units {
     /** return the number of ships defined */
     getCount(): number {
 
-      const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      const value = +SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
-        .getValue() as number;
+        .getValue();
 
       return value;
     }
