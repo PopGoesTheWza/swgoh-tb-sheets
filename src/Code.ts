@@ -204,7 +204,7 @@ namespace Snapshot {
     }
 
     // check if ally code
-    const allyCode = (sheet.getRange(2, 1).getValue() as number);
+    const allyCode = +sheet.getRange(2, 1).getValue();
 
     if (allyCode > 0) {
 
@@ -317,11 +317,13 @@ function onOpen(): void {
     .addToUi();
 }
 
+/** statistical functions */
 namespace statistics {
 
-  export function average(inputs: any[], accessor = (e => e as number)) {
+  /** sum of values of a population */
+  export function sum(population: any[], accessor = (e => +e)) {
     let count = 0;
-    const sum: number = inputs.reduce(
+    const sum: number = population.reduce(
       (acc: number, e) => {
         count += 1;
         return acc + accessor(e);
@@ -329,7 +331,64 @@ namespace statistics {
       0,
     );
 
-    return sum / count;
+    return count > 0 ? sum : undefined;
+  }
+
+  export function mean(population: any[], accessor = (e => +e)) {
+    let count = 0;
+    const sum: number = population.reduce(
+      (acc: number, e) => {
+        count += 1;
+        return acc + accessor(e);
+      },
+      0,
+    );
+
+    return count > 0 ? (sum / count) : undefined;
+  }
+
+  export function standardDeviation(population: any[], accessor = (e => +e)) {
+    let count = 0;
+    const sums: { sum: number; squares: number } = population.reduce(
+      (acc: { sum: number; squares: number }, e) => {
+        const value = accessor(e);
+        count += 1;
+        acc.sum += value;
+        acc.squares += Math.pow(value, 2);
+        return acc;
+      },
+      { sum: 0, squares: 0 },
+    );
+    if (count > 1) {
+      return Math.sqrt((sums.squares - Math.pow(sums.sum, 2) / count) / (count - 1));
+    }
+
+    return undefined;
+  }
+
+  export function zScore(population: any[], accessor = (e => +e)) {
+    let count = 0;
+    const sums: { sum: number; squares: number; values: [number] } = population.reduce(
+      (acc: { sum: number; squares: number; values: [number] }, e) => {
+        const value = accessor(e);
+        count += 1;
+        acc.sum += value;
+        acc.squares += Math.pow(value, 2);
+        acc.values.push(value);
+        return acc;
+      },
+      { sum: 0, squares: 0, values: [] },
+    );
+    if (count > 1) {
+      const mean = sums.sum / count;
+      const stdDev = Math.sqrt((sums.squares - Math.pow(sums.sum, 2) / count) / (count - 1));
+
+      return sums.values.map((e: number) => {
+        return (e - mean) / (stdDev / Math.sqrt(count));
+      });
+    }
+
+    return undefined;
   }
 
 }
