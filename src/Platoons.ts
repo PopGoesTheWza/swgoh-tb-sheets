@@ -1,6 +1,3 @@
-// ****************************************
-// Platoon Functions
-// ****************************************
 
 let PLATOON_PHASES: [string, string, string][] = [];
 let PLATOON_HERO_NEEDED_COUNT: KeyedNumbers = {};
@@ -32,20 +29,20 @@ class PlatoonDetails {
 
 /**
  * Custom object for platoon units
- * hero, count, player count, player list (player, gear...)
+ * hero, count, member count, member list (member, gear...)
  */
 class PlatoonUnit {
 
   public readonly name: string;
   public count: number;
   private readonly pCount: number;
-  public players: string[];
+  public members: string[];
 
   constructor(name: string, count: number, pCount:number) {
     this.name = name;
     this.count = count;
     this.pCount = pCount;
-    this.players = [];
+    this.members = [];
   }
 
   public isMissing(): boolean {
@@ -132,8 +129,8 @@ function getNeededCount_(unitName: string, isHero: boolean) {
   }
 }
 
-/** Get a sorted list of recommended players */
-function getRecommendedPlayers_(
+/** Get a sorted list of recommended members */
+function getRecommendedMembers_(
   unitName: string,
   phase: number,
   data: KeyedType<UnitInstances>,
@@ -146,26 +143,26 @@ function getRecommendedPlayers_(
 
   const members = data[unitName];
   if (members) {
-    for (const player in members) {
+    for (const member in members) {
 
-      const playerUnit = members[player];
+      const memberUnit = members[member];
 
-      if (playerUnit.rarity >= minRarity) {
-        rec.push([player, playerUnit.power]);
+      if (memberUnit.rarity >= minRarity) {
+        rec.push([member, memberUnit.power]);
       }
     }
   }
 
   // sort list by power
-  const playerList = rec.sort((a, b) => a[1] - b[1]);  // sorts by 2nd element ascending
+  const memberList = rec.sort((a, b) => a[1] - b[1]);  // sorts by 2nd element ascending
 
-  return playerList;
+  return memberList;
 }
 
 /** create the dropdown list */
-function buildDropdown_(playerList: [string, number][]): DataValidation {
+function buildDropdown_(memberList: [string, number][]): DataValidation {
 
-  const formatList = playerList.map(e => e[0]);
+  const formatList = memberList.map(e => e[0]);
 
   return SpreadsheetApp.newDataValidation()
     .requireValueInList(formatList)
@@ -179,11 +176,11 @@ function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBoolean
 
   for (const unit in data) {
     const members = data[unit];
-    for (const player in members) {
+    for (const member in members) {
       if (!result[unit]) {
         result[unit] = {};
       }
-      result[unit][player] = false;
+      result[unit][member] = false;
     }
   }
 
@@ -192,14 +189,14 @@ function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBoolean
 
 function filterUnits_(
   data: KeyedType<UnitInstances>,
-  filter: (player: string, u: UnitInstance) => boolean,
+  filter: (member: string, u: UnitInstance) => boolean,
 ) {
   const units = Object.assign({}, data);
   for (const unit in units) {
     const members = Object.assign({}, data[unit]);
-    for (const player in members) {
-      if (!filter(player, members[player])) {
-        delete data[unit][player];
+    for (const member in members) {
+      if (!filter(member, members[member])) {
+        delete data[unit][member];
       }
     }
     if (data[unit] && Object.keys(data[unit]).length === 0) {
@@ -208,26 +205,44 @@ function filterUnits_(
   }
 }
 
+/** Territory Battles related classes and functions */
 namespace TerritoryBattles {
 
+  /** supported events for TB */
   export type event = ALIGNMENT.LIGHTSIDE|ALIGNMENT.LIGHTSIDE;
+  /** TB phases */
   export type phaseIdx = 1|2|3|4|5|6;
+  /** TB territories (zero-based) */
   type territoryIdx = 0|1|2;
+  /** TB platoons/squadrons (zero-based) */
   type platoonIdx = 0|1|2|3|4|5;
 
+  /**
+   * primary class to instanciated current TB phase
+   * it instantiates the relevant Territory and Platoon subclasses
+   */
   export class Phase {
 
     protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+    /** event type (LS/DS) */
     public readonly event: event;
+    /** phase number */
     public readonly index: phaseIdx;
+    /** use the Exclusions add-on spreadsheet to filter available units */
     public readonly useExclusions: boolean = true;
+    /** use the Not Available list to filter available units */
     public readonly useUnavailableq: boolean = true;
+    /** array of Territory objects for this phase */
     protected readonly territories: Territory[] = [];
+    /** all heroes (object[name][member] = UnitInstances) */
     public allHeroes: KeyedType<UnitInstances>;  // units[name][member]
+    /** all ships (object[name][member] = UnitInstances) */
     public allShips: KeyedType<UnitInstances>;  // units[name][member]
-    public availableHeroes: KeyedType<UnitInstances>;  // units[name][member]
-    public availableShips: KeyedType<UnitInstances>;  // units[name][member]
-    public exclusions: KeyedType<KeyedBooleans> = {};  // exclusions[player][unit] = boolean
+    // public availableHeroes: KeyedType<UnitInstances>;  // units[name][member]
+    // public availableShips: KeyedType<UnitInstances>;  // units[name][member]
+    /** all exclusions (object[member][unit] = boolean) */
+    public exclusions: KeyedType<KeyedBooleans> = {};  // exclusions[member][unit] = boolean
+    /** list of member name listed as Not Available */
     public unavailable: string[] = [];
 
     constructor(event: event, index: phaseIdx) {
@@ -257,7 +272,7 @@ namespace TerritoryBattles {
 
     protected readUnavailable(): void {
       const unavailable = this.sheet
-        .getRange(56, 4, MAX_PLAYERS, 1)
+        .getRange(56, 4, MAX_MEMBERS, 1)
         .getValues() as [string][];
       for (const e of unavailable) {
         const name = e[0];
@@ -553,12 +568,12 @@ namespace TerritoryBattles {
     },
     'Dark Side': {
       1: [
-        [ClosedTerritory, ''],
+        closed,
         ground('Imperial Flank', [102, 102, 102, 102, 153, 153]),
         ground('Imperial Landing', [102, 102, 102, 102, 153, 153]),
       ],
       2: [
-        [ClosedTerritory, ''],
+        closed,
         ground('Snowfields', [126, 126, 126, 126, 189, 189]),
         ground('Forward Stronghold', [126, 126, 126, 126, 189, 189]),
       ],
@@ -585,153 +600,137 @@ namespace TerritoryBattles {
     },
   };
 
-  // abstract class UnitPool {
+//   abstract class UnitPool {
 
-  //   protected readonly phase: Phase;
-  //   protected readonly allUnits: KeyedType<UnitInstances>;  // units[name][member]
-  //   protected units: KeyedType<UnitInstances>;  // units[name][member]
-  //   protected readonly exclusions: KeyedType<KeyedBooleans>;  // excluded[player][unit] = boolean
-  //   protected readonly unavailable: string[];
+//     protected readonly phase: Phase;
+//     protected readonly allUnits: KeyedType<UnitInstances>;  // units[name][member]
+//     protected units: KeyedType<UnitInstances>;  // units[name][member]
+//     protected readonly exclusions: KeyedType<KeyedBooleans>;  // excluded[member][unit] = boolean
+//     protected readonly unavailable: string[];
 
-  //   constructor(
-  //     phase: Phase,
-  //     allUnits: KeyedType<UnitInstances>,
-  //     exclusions: KeyedType<KeyedBooleans>,
-  //     unavailable: string[],
-  //   ) {
-  //     this.phase = phase;
-  //     this.allUnits = utils.clone(allUnits);
-  //     this.exclusions = utils.clone(exclusions);
-  //     this.unavailable = utils.clone(unavailable);
-  //   }
+//     constructor(
+//       phase: Phase,
+//       allUnits: KeyedType<UnitInstances>,
+//       exclusions: KeyedType<KeyedBooleans>,
+//       unavailable: string[],
+//     ) {
+//       this.phase = phase;
+//       this.allUnits = utils.clone(allUnits);
+//       this.exclusions = utils.clone(exclusions);
+//       this.unavailable = utils.clone(unavailable);
+//     }
 
-  //   protected filter(filter: (player: string, u: UnitInstance) => boolean): void {
-  //     const data = utils.clone(this.allUnits);
-  //     const exclusions = this.exclusions;
-  //     const units = Object.assign({}, data);
-  //     for (const unit in units) {
-  //       const members = Object.assign({}, data[unit]);
-  //       for (const player in members) {
-  //         if (
-  //           (exclusions[player] && exclusions[player][unit])
-  //           || !filter(player, members[player])
-  //         ) {
-  //           delete data[unit][player];
-  //         }
-  //       }
-  //       if (data[unit] && Object.keys(data[unit]).length === 0) {
-  //         delete data[unit];
-  //       }
-  //     }
-  //     this.units = data;  // BAD
-  //   }
+//     protected filter(filter: (member: string, u: UnitInstance) => boolean): void {
+//       const data = utils.clone(this.allUnits);
+//       const exclusions = this.exclusions;
+//       const units = Object.assign({}, data);
+//       for (const unit in units) {
+//         const members = Object.assign({}, data[unit]);
+//         for (const member in members) {
+//           if (
+//             (exclusions[member] && exclusions[member][unit])
+//             || !filter(member, members[member])
+//           ) {
+//             delete data[unit][member];
+//           }
+//         }
+//         if (data[unit] && Object.keys(data[unit]).length === 0) {
+//           delete data[unit];
+//         }
+//       }
+//       this.units = data;  // BAD
+//     }
 
-  //   protected zScore() {
-  //     const zScored: KeyedType<{
-  //       // average: number;
-  //       // count: number;
-  //       // sum: number;
-  //       units: {
-  //         // difference: number;
-  //         squaredDifference: number;
-  //         power: number;
-  //         unit: UnitInstance;
-  //       }[];
-  //     }> = {};
-  //     const units = this.units;
-  //     for (const unitName in units) {
-  //       const perPlayer = units[unitName];
-  //       for (const playerName in perPlayer) {
-  //         const unit = perPlayer[playerName];
-  //         if (!zScored[playerName]) {
-  //           zScored[playerName] = {
-  //             // average: 0,
-  //             // count: 0,
-  //             // sum: 0,
-  //             units: [],
-  //           };
-  //         }
-  //         zScored[playerName].units.push({
-  //           unit,
-  //           // difference: 0,
-  //           squaredDifference: 0,
-  //           power: unit.power,
-  //         });
-  //       }
-  //     }
-  //     // const accessor = (u: UnitInstance) => u.power;
-  //     for (const playerName in zScored) {
-  //       const o = zScored[playerName];
-  //       const units = o.units;
-  //       const average = statistics.average(units, u => u.power);
-  //       // const count = units.length;
-  //       // o.count = count;
-  //       // const sum = units.reduce((acc, u) => acc + u.power, 0);
-  //       // o.sum = sum;
-  //       // const average = sum / count;
-  //       // o.average = average;
-  //       o.units = units.map((e) => {
-  //         const difference = e.power - average;
-  //         // e.difference = difference;
-  //         e.squaredDifference = Math.pow(difference, 2);
-  //         return e;
-  //       });
-  //       const averageSquaredDifference = statistics.average(units, u => u.squaredDifference);
-  //     }
-  //     const avg = { count: 0, sum: 0 };
-  //   }
+//     protected zScore() {
+//       const zScored: KeyedType<{
+//         units: {
+//           squaredDifference: number;
+//           power: number;
+//           unit: UnitInstance;
+//         }[];
+//       }> = {};
 
-  // }
+//       const units = this.units;
+//       for (const unitName in units) {
+//         const perMember = units[unitName];
+//         for (const memberName in perMember) {
+//           const unit = perMember[memberName];
+//           if (!zScored[memberName]) {
+//             zScored[memberName] = {
+//               // average: 0,
+//               // count: 0,
+//               // sum: 0,
+//               units: [],
+//             };
+//           }
+//           zScored[memberName].units.push({
+//             unit,
+//             // difference: 0,
+//             squaredDifference: 0,
+//             power: unit.power,
+//           });
+//         }
+//       }
+//       for (const memberName in zScored) {
+//         const o = zScored[memberName];
+//         const units = o.units;
+//         o.units = units.map((e) => {
+//           return e;
+//         });
+//       }
+//     }
 
-  // class HeroesPool extends UnitPool {
+//   }
 
-  //   constructor(
-  //     phase: Phase,
-  //     exclusions: KeyedType<KeyedBooleans> = {},
-  //     unavailable: string[] = [],
-  //   ) {
-  //     const heroesTable = new Units.Heroes();
-  //     const allUnits = heroesTable.getAllInstancesByUnits();
-  //     super(phase, allUnits, exclusions, unavailable);
-  //   }
+//   class HeroesPool extends UnitPool {
 
-  //   protected filter() {
-  //     const phase = this.phase.index;
-  //     const alignment = config.currentEvent().toLowerCase();
-  //     const filter = (player: string, u: UnitInstance) => {
-  //       return u.rarity > phase
-  //         && u.tags.indexOf(alignment) !== -1
-  //         && this.unavailable.findIndex(e => e[0] === player) === -1;
-  //     };
-  //     super.filter(filter);
-  //   }
+//     constructor(
+//       phase: Phase,
+//       exclusions: KeyedType<KeyedBooleans> = {},
+//       unavailable: string[] = [],
+//     ) {
+//       const heroesTable = new Units.Heroes();
+//       const allUnits = heroesTable.getAllInstancesByUnits();
+//       super(phase, allUnits, exclusions, unavailable);
+//     }
 
-  // }
+//     protected filter() {
+//       const phase = this.phase.index;
+//       const alignment = config.currentEvent().toLowerCase();
+//       const filter = (member: string, u: UnitInstance) => {
+//         return u.rarity > phase
+//           && u.tags.indexOf(alignment) !== -1
+//           && this.unavailable.findIndex(e => e[0] === member) === -1;
+//       };
+//       super.filter(filter);
+//     }
 
-  // class ShipsPool extends UnitPool {
+//   }
 
-  //   constructor(
-  //     phase: Phase,
-  //     exclusions: KeyedType<KeyedBooleans> = {},
-  //     unavailable: string[] = [],
-  //   ) {
-  //     const shipsTable = new Units.Ships();
-  //     const allUnits = shipsTable.getAllInstancesByUnits();
-  //     super(phase, allUnits, exclusions, unavailable);
-  //   }
+//   class ShipsPool extends UnitPool {
 
-  //   protected filter() {
-  //     const phase = this.phase.index;
-  //     const filter = (player: string, u: UnitInstance) => {
-  //       return u.rarity > phase
-  //         && this.unavailable.findIndex(e => e[0] === player) === -1;
-  //     };
-  //     super.filter(filter);
-  //   }
+//     constructor(
+//       phase: Phase,
+//       exclusions: KeyedType<KeyedBooleans> = {},
+//       unavailable: string[] = [],
+//     ) {
+//       const shipsTable = new Units.Ships();
+//       const allUnits = shipsTable.getAllInstancesByUnits();
+//       super(phase, allUnits, exclusions, unavailable);
+//     }
 
-  // }
+//     protected filter() {
+//       const phase = this.phase.index;
+//       const filter = (member: string, u: UnitInstance) => {
+//         return u.rarity > phase
+//           && this.unavailable.findIndex(e => e[0] === member) === -1;
+//       };
+//       super.filter(filter);
+//     }
 
-}
+//   }
+
+// }
 
 // function loop1_(
 //   cur: PlatoonDetails,
@@ -778,7 +777,7 @@ namespace TerritoryBattles {
 //         } else {
 //           getNeededCount_(unitName, cur.isGround);
 
-//           const rec = getRecommendedPlayers_(
+//           const rec = getRecommendedMembers_(
 //             unitName,
 //             phase,
 //             cur.isGround ? allHeroes : allShips,
@@ -789,8 +788,8 @@ namespace TerritoryBattles {
 //           if (rec.length > 0) {
 //             dropdowns.push([buildDropdown_(rec)]);
 
-//             // add the players to the matrix
-//             platoonMatrix[idx].players = rec.map(r => r[0]); // player name
+//             // add the members to the matrix
+//             platoonMatrix[idx].members = rec.map(r => r[0]); // member name
 //           } else {
 //             dropdowns.push([null]);
 //             // impossible to fill the platoon if no one can donate
@@ -825,7 +824,7 @@ namespace TerritoryBattles {
 //   matrixIdx: number,
 //   placementCount: number[][],
 //   platoonMatrix: PlatoonUnit[],
-//   maxPlayerDonations: number,
+//   maxMemberDonations: number,
 //   usedHeroes: KeyedType<KeyedBooleans>,
 //   usedShips: KeyedType<KeyedBooleans>,
 //   baseCol: number,
@@ -835,6 +834,7 @@ namespace TerritoryBattles {
 //   if (cur.exist) {
 //     if (!cur.possible) {
 //       // skip this platoon
+//       // tslint:disable-next-line:no-parameter-reassignment
 //       matrixIdx += MAX_PLATOON_UNITS;
 //     } else {
 //       // cycle through the heroes
@@ -847,42 +847,42 @@ namespace TerritoryBattles {
 //         const count = placementCount[cur.zone];
 
 //         const unit = platoonMatrix[matrixIdx].name;
-//         for (const player of platoonMatrix[matrixIdx].players) {
+//         for (const member of platoonMatrix[matrixIdx].members) {
 
-//           const available = count[player] == null || count[player] < maxPlayerDonations;
+//           const available = count[member] == null || count[member] < maxMemberDonations;
 //           if (!available) {
 //             continue;
 //           }
 
-//           // see if the recommended player's hero has been used
+//           // see if the recommended member's hero has been used
 //           if (cur.isGround) {
 //             // ground units
 //             if (usedHeroes[unit]
-//               && usedHeroes[unit].hasOwnProperty(player)
-//               && !usedHeroes[unit][player]
+//               && usedHeroes[unit].hasOwnProperty(member)
+//               && !usedHeroes[unit][member]
 //             ) {
-//               usedHeroes[unit][player] = true;
-//               defaultValue = player;
-//               count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+//               usedHeroes[unit][member] = true;
+//               defaultValue = member;
+//               count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
 
 //               break;
 //             }
 //           } else {
 //             // ships
 //             if (usedShips[unit]
-//               && usedShips[unit].hasOwnProperty(player)
-//               && !usedShips[unit][player]
+//               && usedShips[unit].hasOwnProperty(member)
+//               && !usedShips[unit][member]
 //             ) {
-//               usedShips[unit][player] = true;
-//               defaultValue = player;
-//               count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+//               usedShips[unit][member] = true;
+//               defaultValue = member;
+//               count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
 
 //               break;
 //             }
 //           }
 
 //           if (defaultValue.length > 0) {
-//             // we already have a recommended player
+//             // we already have a recommended member
 //             break;
 //           }
 //         }
@@ -898,6 +898,7 @@ namespace TerritoryBattles {
 //           colors.push([COLOR.BLACK, COLOR.BLACK]);
 //         }
 
+//         // tslint:disable-next-line:no-parameter-reassignment
 //         matrixIdx += 1;
 //       }
 //       const donorsRange =
@@ -908,9 +909,9 @@ namespace TerritoryBattles {
 //       allColors.push([colorsRange, colors]);
 //     }
 //   }
-// }
+}
 
-/** Recommend players for each Platoon */
+/** Recommend members for each Platoon */
 function recommendPlatoons() {
 
   const spooler = new utils.Spooler();
@@ -919,7 +920,7 @@ function recommendPlatoons() {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = config.currentPhase();
   const alignment = config.currentEvent().toLowerCase();
-  const unavailable = sheet.getRange(56, 4, MAX_PLAYERS, 1).getValues() as [string][];
+  const unavailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as [string][];
 
   // cache the matrix of hero data
   const heroesTable = new Units.Heroes();
@@ -929,17 +930,17 @@ function recommendPlatoons() {
 
   filterUnits_(
     allHeroes,
-    (player: string, u: UnitInstance) => {
+    (member: string, u: UnitInstance) => {
       return u.rarity > phase
         && u.tags.indexOf(alignment) !== -1
-        && unavailable.findIndex(e => e[0] === player) === -1;
+        && unavailable.findIndex(e => e[0] === member) === -1;
     },
   );
   filterUnits_(
     allShips,
-    (player: string, u: UnitInstance) => {
+    (member: string, u: UnitInstance) => {
       return u.rarity > phase
-        && unavailable.findIndex(e => e[0] === player) === -1;
+        && unavailable.findIndex(e => e[0] === member) === -1;
     },
   );
 
@@ -1043,7 +1044,7 @@ function recommendPlatoons() {
 
       getNeededCount_(unitName, cur.isGround);
 
-      const rec = getRecommendedPlayers_(
+      const rec = getRecommendedMembers_(
         unitName,
         phase,
         cur.isGround ? allHeroes : allShips,
@@ -1054,8 +1055,8 @@ function recommendPlatoons() {
       if (rec.length > 0) {
         dropdowns.push([buildDropdown_(rec)]);
 
-        // add the players to the matrix
-        platoonMatrix[idx].players = rec.map(r => r[0]); // player name
+        // add the members to the matrix
+        platoonMatrix[idx].members = rec.map(r => r[0]); // member name
       } else {
         dropdowns.push([null]);
         // impossible to fill the platoon if no one can donate
@@ -1104,9 +1105,9 @@ function recommendPlatoons() {
     placementCount[z] = [];
   }
 
-  const maxPlayerDonations = config.maxDonationsPerTerritory();
+  const maxMemberDonations = config.maxDonationsPerTerritory();
 
-  // try to find an unused player to default to
+  // try to find an unused member to default to
   let matrixIdx = 0;
 
   for (const cur of platoonOrder) {
@@ -1131,42 +1132,42 @@ function recommendPlatoons() {
       const count = placementCount[cur.zone];
 
       const unit = platoonMatrix[matrixIdx].name;
-      for (const player of platoonMatrix[matrixIdx].players) {
+      for (const member of platoonMatrix[matrixIdx].members) {
 
-        const available = count[player] == null || count[player] < maxPlayerDonations;
+        const available = count[member] == null || count[member] < maxMemberDonations;
         if (!available) {
           continue;
         }
 
-        // see if the recommended player's hero has been used
+        // see if the recommended member's hero has been used
         if (cur.isGround) {
           // ground units
           if (usedHeroes[unit]
-            && usedHeroes[unit].hasOwnProperty(player)
-            && !usedHeroes[unit][player]
+            && usedHeroes[unit].hasOwnProperty(member)
+            && !usedHeroes[unit][member]
           ) {
-            usedHeroes[unit][player] = true;
-            defaultValue = player;
-            count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+            usedHeroes[unit][member] = true;
+            defaultValue = member;
+            count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
 
             break;
           }
         } else {
           // ships
           if (usedShips[unit]
-            && usedShips[unit].hasOwnProperty(player)
-            && !usedShips[unit][player]
+            && usedShips[unit].hasOwnProperty(member)
+            && !usedShips[unit][member]
           ) {
-            usedShips[unit][player] = true;
-            defaultValue = player;
-            count[player] = (typeof count[player] === 'number') ? count[player] + 1 : 0;
+            usedShips[unit][member] = true;
+            defaultValue = member;
+            count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
 
             break;
           }
         }
 
         if (defaultValue.length > 0) {
-          // we already have a recommended player
+          // we already have a recommended member
           break;
         }
       }

@@ -2,12 +2,12 @@
 // Micromanaged Webhook Functions
 // ****************************************
 
-/** add discord mention to the player label */
-function playerLabel_(player: string, mention: string) {
+/** add discord mention to the member label */
+function memberLabel_(member: string, mention: string) {
 
   const value: string = (mention)
-    ? `Assignments for **${player}** (${mention})`
-    : `Assignments for **${player}**`;
+    ? `Assignments for **${member}** (${mention})`
+    : `Assignments for **${member}**`;
 
   return value;
 }
@@ -59,7 +59,7 @@ type DiscordPayload = {
 };
 
 /** Send a Webhook to Discord */
-function sendMicroByPlayerWebhook(): void {
+function sendMicroByMemberWebhook(): void {
 
   const displaySetting = config.discord.displaySlots();
   const displaySlot = displaySetting !== DISPLAYSLOT.NEVER;
@@ -102,19 +102,19 @@ function sendMicroByPlayerWebhook(): void {
 
       // cycle through the heroes
       platoonData.some((e, index) => {
-        let player = e[1];
-        if (player.length === 0 || player === 'Skip') {
+        let member = e[1];
+        if (member.length === 0 || member === 'Skip') {
           return true;
         }
 
         // remove the gear
-        const endIdx = player.indexOf(' (');
+        const endIdx = member.indexOf(' (');
         if (endIdx > 0) {
-          player = player.substring(0, endIdx);
+          member = member.substring(0, endIdx);
         }
         const unit = e[0];
         const entry = {
-          player,
+          member,
           unit,
           zone: {
             label,
@@ -131,13 +131,13 @@ function sendMicroByPlayerWebhook(): void {
   }
 
   entries = entries.sort((a, b) => {
-    return caseInsensitive_(a.player, b.player);
+    return caseInsensitive_(a.member, b.member);
   });
 
-  const playerMentions = discord.getPlayerMentions();
+  const memberMentions = discord.getMemberMentions();
   while (entries.length > 0) {
-    const player = entries[0].player;
-    const bucket = entries.filter(e => e.player === player);
+    const member = entries[0].member;
+    const bucket = entries.filter(e => e.member === member);
 
     entries = entries.slice(bucket.length);
     const embeds: DiscordEmbed[] = [];
@@ -197,8 +197,8 @@ function sendMicroByPlayerWebhook(): void {
         : currentValue.unit;
     }
 
-    const mention = playerMentions[player];
-    const content = playerLabel_(player, mention);
+    const mention = memberMentions[member];
+    const content = memberLabel_(member, mention);
     const jsonObject: DiscordPayload = {};
     jsonObject.content = content;
     jsonObject.embeds = embeds;

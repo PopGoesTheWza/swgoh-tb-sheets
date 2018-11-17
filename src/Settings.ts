@@ -17,7 +17,7 @@ type Sheet = GoogleAppsScript.Spreadsheet.Sheet;
 type URLFetchRequestOptions = GoogleAppsScript.URL_Fetch.URLFetchRequestOptions;
 
 /** Global constants */
-const MAX_PLAYERS = 50;
+const MAX_MEMBERS = 50;
 // const MIN_PLAYER_LEVEL = 65
 // const POWER_TARGET = 14000
 
@@ -36,8 +36,8 @@ const META_MIN_LEVEL_ROW = 5;
 const META_MIN_LEVEL_COL = 4;
 const META_MIN_GP_ROW = 8;
 const META_MIN_GP_COL = 4;
-const META_UNIT_PER_PLAYER_ROW = 11;
-const META_UNIT_PER_PLAYER_COL = 4;
+const META_UNIT_PER_MEMBER_ROW = 11;
+const META_UNIT_PER_MEMBER_COL = 4;
 
 const META_DATASOURCE_ROW = 14;
 const META_DATASOURCE_COL = 4;
@@ -54,8 +54,8 @@ const META_RENAME_ADD_PLAYER_COL = 16;
 const META_REMOVE_PLAYER_COL = 18;
 
 // Hero/Ship tab columns
-const HERO_PLAYER_COL_OFFSET = 11;
-const SHIP_PLAYER_COL_OFFSET = 11;
+const HERO_MEMBER_COL_OFFSET = 11;
+const SHIP_MEMBER_COL_OFFSET = 11;
 
 // Roster Size info
 const META_GUILD_SIZE_ROW = 5;
@@ -220,7 +220,7 @@ namespace config {
     return value;
   }
 
-  /** get required minimal player level */
+  /** get required minimum player level */
   export function requiredHeroGp(): number {
 
     const value = +SPREADSHEET.getSheetByName(SHEETS.META)
@@ -230,8 +230,8 @@ namespace config {
     return value;
   }
 
-  /** get required minimal player level */
-  export function requiredPlayerLevel(): number {
+  /** get required minimum player level */
+  export function requiredMemberLevel(): number {
 
     const value = +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
@@ -244,7 +244,7 @@ namespace config {
   export function maxDonationsPerTerritory(): number {
 
     const value = +SPREADSHEET.getSheetByName(SHEETS.META)
-      .getRange(META_UNIT_PER_PLAYER_ROW, META_UNIT_PER_PLAYER_COL)
+      .getRange(META_UNIT_PER_MEMBER_ROW, META_UNIT_PER_MEMBER_COL)
       .getValue();
 
     return value;

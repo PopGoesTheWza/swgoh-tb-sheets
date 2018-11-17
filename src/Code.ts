@@ -42,7 +42,7 @@ namespace Members {
 
     const members = Members.getBaseAttributes().map((e) => {
       const memberName = e[0];
-      const playerData: PlayerData = {
+      const memberData: PlayerData = {
         allyCode: e[1],
         gp: e[2],
         heroesGp: e[3],
@@ -51,20 +51,20 @@ namespace Members {
         units: {},
       };
 
-      const addToPlayerData = (e: KeyedType<UnitInstance>) => {
+      const addToMemberData = (e: KeyedType<UnitInstance>) => {
         if (e) {
           for (const baseId in e) {
             const u = e[baseId];
-            playerData.units[baseId] = u;
-            playerData.level = Math.max(playerData.level, u.level);
+            memberData.units[baseId] = u;
+            memberData.level = Math.max(memberData.level, u.level);
           }
         }
       };
 
-      addToPlayerData(heroes[memberName]);
-      addToPlayerData(ships[memberName]);
+      addToMemberData(heroes[memberName]);
+      addToMemberData(ships[memberName]);
 
-      return playerData;
+      return memberData;
     });
 
     return members;
@@ -306,10 +306,10 @@ function onOpen(): void {
         .addSeparator()
         .addItem('Send Warning to Discord', allRareUnitsWebhook.name)
         .addItem('Send Rare by Unit', sendPlatoonSimplifiedByUnitWebhook.name)
-        .addItem('Send Rare by Player', sendPlatoonSimplifiedByPlayerWebhook.name)
+        .addItem('Send Rare by Player', sendPlatoonSimplifiedByMemberWebhook.name)
         .addSeparator()
         .addItem('Send Micromanaged by Platoon', sendPlatoonDepthWebhook.name)
-        .addItem('Send Micromanaged by Player', sendMicroByPlayerWebhook.name)
+        .addItem('Send Micromanaged by Player', sendMicroByMemberWebhook.name)
         .addSeparator()
         .addItem('Register Warning Timer', registerWebhookTimer.name),
     )

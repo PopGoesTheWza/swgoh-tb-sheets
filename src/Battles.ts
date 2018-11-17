@@ -120,16 +120,16 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
 
   const sortFunction = config.sortRoster()
-    // sort roster by player name
+    // sort roster by member name
     ? (a, b) => caseInsensitive_(a.name, b.name)
     // sort roster by GP
     : (a, b) => b.gp - a.gp;
 
   members.sort(sortFunction);
 
-  if (members.length > MAX_PLAYERS) {
-    members.splice(MAX_PLAYERS);
-    SpreadsheetApp.getUi().alert(`Guild roster was truncated to the first ${MAX_PLAYERS} members.`);
+  if (members.length > MAX_MEMBERS) {
+    members.splice(MAX_MEMBERS);
+    SpreadsheetApp.getUi().alert(`Guild roster was truncated to the first ${MAX_MEMBERS} members.`);
   }
 
   // get the filter & tag
@@ -243,7 +243,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   return members;
 }
 
-/** fix players name */
+/** fix members name */
 function normalizeRoster_(members: PlayerData[]): PlayerData[] {
 
   // fix name starting with single quote
@@ -351,9 +351,9 @@ function setupEvent(): void {
 
   // clear the hero data
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
-  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_PLAYERS))
+  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS))
     .clearContent();
-  spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_PLAYERS))
+  spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_MEMBERS))
     .clearContent();
 
   type eventData = [
@@ -524,14 +524,14 @@ function setupEvent(): void {
 
   spooler.commit();
 
-  // setup player columns
+  // setup member columns
   let table = populateEventTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
     unitsIndex,
   );
 
-  // store the table of player data
+  // store the table of member data
   const width = table.reduce((a: number, e) => Math.max(a, e.length), 0);
   table = table.map(
     e =>

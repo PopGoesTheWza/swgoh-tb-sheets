@@ -325,7 +325,7 @@ namespace Units {
       }
 
       // Clear out our old data, if any, including names as order may have changed
-      this.sheet.getRange(1, this.columnOffset, definitions.length, MAX_PLAYERS)
+      this.sheet.getRange(1, this.columnOffset, definitions.length, MAX_MEMBERS)
         .clearContent();
 
       // Write our data
@@ -379,7 +379,7 @@ namespace Units {
   export class Heroes extends UnitsTable {
 
     constructor() {
-      super(HERO_PLAYER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.HEROES));
+      super(HERO_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.HEROES));
     }
 
     /** return the number of heroes defined */
@@ -450,7 +450,7 @@ namespace Units {
   export class Ships extends UnitsTable {
 
     constructor() {
-      super(SHIP_PLAYER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.SHIPS));
+      super(SHIP_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.SHIPS));
     }
 
     /** return the number of ships defined */

@@ -3,7 +3,7 @@ namespace Exclusions {
 
   /**
    * get the list of units to exclude
-   * exclusions[player][unit] = boolean
+   * exclusions[member][unit] = boolean
    */
   export function getList(): KeyedType<KeyedBooleans> {
 
@@ -12,7 +12,7 @@ namespace Exclusions {
     const filtered = data.reduce(
       (acc: string[][], e) => {
         if (e[0].length > 0) {
-          acc.push(e.slice(0, MAX_PLAYERS + 1));
+          acc.push(e.slice(0, MAX_MEMBERS + 1));
         }
         return acc;
       },
@@ -21,8 +21,8 @@ namespace Exclusions {
 
     const exclusions: KeyedType<KeyedBooleans> = {};
 
-    const players = filtered.shift();  // First row holds player names
-    players.shift();  // drop first column
+    const members = filtered.shift();  // First row holds members name
+    members.shift();  // drop first column
 
     // For each unit rows
     for (const e of filtered) {
@@ -30,13 +30,13 @@ namespace Exclusions {
 
       // For each exclusion cell
       e.forEach((x, c) => {
-        const player = players[c];
+        const member = members[c];
         const isExcluded = Boolean(x ? x.trim() : '');  // exclude if cell is not empty?
         if (isExcluded) {
-          if (!exclusions[player]) {
-            exclusions[player] = {};
+          if (!exclusions[member]) {
+            exclusions[member] = {};
           }
-          exclusions[player][unit] = isExcluded;
+          exclusions[member][unit] = isExcluded;
         }
       });
     }
@@ -51,17 +51,17 @@ namespace Exclusions {
     event: string = undefined,  // used to validate ship alignment
   ) {
     const filter = event ? event.trim().toLowerCase() : undefined;
-    for (const player in exclusions) {
-      const units = exclusions[player];
+    for (const member in exclusions) {
+      const units = exclusions[member];
       for (const unit in units) {
-        if (units[unit] && data[unit] && data[unit][player]) {
-          if (!filter || data[unit][player].tags.indexOf(filter) !== -1) {
-            delete data[unit][player];
+        if (units[unit] && data[unit] && data[unit][member]) {
+          if (!filter || data[unit][member].tags.indexOf(filter) !== -1) {
+            delete data[unit][member];
           }
         }
       }
-      if (data[player] && Object.keys(data[player]).length === 0) {
-        delete data[player];
+      if (data[member] && Object.keys(data[member]).length === 0) {
+        delete data[member];
       }
     }
 

@@ -180,7 +180,7 @@ namespace SwgohGg {
         members.push({
           gp: member.data.galactic_power,
           heroesGp: member.data.character_galactic_power,
-          level: member.data.level,  // TODO: store and process player level minimun requirement
+          level: member.data.level,  // TODO: store and process member level minimun requirement
           allyCode: +member.data.url.match(/(\d+)/)[1],
           // link: member.data.url,
           name: member.data.name,

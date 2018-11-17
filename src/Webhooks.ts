@@ -66,8 +66,8 @@ namespace discord {
     return results.join('\n');
   }
 
-  /** Get the player Discord IDs for mentions */
-  export function getPlayerMentions(): KeyedStrings {
+  /** Get the member Discord IDs for mentions */
+  export function getMemberMentions(): KeyedStrings {
 
     const sheet = SPREADSHEET.getSheetByName(SHEETS.DISCORD);
     const data = sheet.getRange(2, 1, sheet.getLastRow(), 2)
@@ -78,7 +78,7 @@ namespace discord {
       const name = e[0];
       // only stores unique names, we can't differentiate with duplicates
       if (name && name.length > 0 && !result[name]) {
-        // store the ID if it exists, otherwise store the player's name
+        // store the ID if it exists, otherwise store the member's name
         result[name] = (e[1] && e[1].length > 0) ? e[1] : name;
       }
     }
@@ -91,7 +91,7 @@ namespace discord {
     platoon: string[][],
     donations: string[][],
     rules: DataValidation[][],
-    playerMentions: KeyedStrings,
+    memberMentions: KeyedStrings,
   ): string[][] {
 
     const result: string[][] = [];
@@ -113,7 +113,7 @@ namespace discord {
       if (!heroDonated) {
 
         type RequireValueInListCriteria = [
-          [string],  // Array of player name
+          [string],  // Array of members name
           boolean  // true for dropdown
         ];
 
@@ -124,7 +124,7 @@ namespace discord {
           const sorted = criteria[0].sort(caseInsensitive_);
           const names: string[] = [];
           for (const name of sorted) {
-            const mention = playerMentions[name];
+            const mention = memberMentions[name];
             names.push(mention ? `${name} (${mention})` : `${name}`);
           }
           // add the recommendations
@@ -223,7 +223,7 @@ namespace discord {
 
     // mentions only works if you get the ID
     // on your Discord server, type: \@rolename, copy the value <@#######>
-    const playerMentions = getPlayerMentions();
+    const memberMentions = getMemberMentions();
     const mentions = config.discord.roleId();
 
     const descriptionText = `${discord.getTitle(phase)}${getRareIntro(phase, mentions)}`;
@@ -250,7 +250,7 @@ namespace discord {
             .getValues() as string[][];
           const rules = sheet.getRange(platoonRow, (p * 4) + 5, MAX_PLATOON_UNITS, 1)
             .getDataValidations();
-          const platoon = getPlatoonDonations(platoonData, donations, rules, playerMentions);
+          const platoon = getPlatoonDonations(platoonData, donations, rules, memberMentions);
 
           if (platoon) {
             validPlatoons.push(p);
@@ -291,7 +291,7 @@ namespace discord {
     }
     postMessage(webhookURL, `${descriptionText}\n\n${fields.join('\n\n')}\n`);
 
-    // reformat the output if we need by player istead of by unit
+    // reformat the output if we need by member istead of by unit
     if (byType === 'Player') {
       const heroLabel = 'Heroes: ';
       const shipLabel = 'Ships: ';
@@ -304,10 +304,10 @@ namespace discord {
           for (const name of names) {
             const nameTrim = name.trim();
             // see if the name is already listed
-            const foundName = acc.some((player) => {
-              const found = player[0] === nameTrim;
+            const foundName = acc.some((member) => {
+              const found = member[0] === nameTrim;
               if (found) {
-                player[1] += (i >= groundStart && player[1].indexOf(heroLabel) < 0)
+                member[1] += (i >= groundStart && member[1].indexOf(heroLabel) < 0)
                   ? `\n${heroLabel}${unit}`
                   : `, ${unit}`;
               }
@@ -327,7 +327,7 @@ namespace discord {
         },
         [],
       );
-      // sort by player
+      // sort by member
       donations = acc.sort((a, b) => caseInsensitive_(a[0], b[0]));
     }
 
@@ -429,7 +429,7 @@ function sendPlatoonSimplifiedByUnitWebhook(): void {
 }
 
 /** Send a Webhook to Discord */
-function sendPlatoonSimplifiedByPlayerWebhook(): void {
+function sendPlatoonSimplifiedByMemberWebhook(): void {
   discord.sendPlatoonSimplified('Player');
 }
 

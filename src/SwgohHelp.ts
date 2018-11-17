@@ -159,7 +159,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           gp: true,
           gpChar: true,
           gpShip: true,
-          level: true,  // TODO: store and process player level minimun requirement
+          level: true,  // TODO: store and process member level minimun requirement
           name: true,
           updated: true,
         },
@@ -171,7 +171,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
       const roster = guild[0].roster as swgohhelpapi.exports.PlayerResponse[];
 
       const red = roster.reduce(
-        (acc: {allyCodes: number[]; playersData: PlayerData[]}, r) => {
+        (acc: {allyCodes: number[]; membersData: PlayerData[]}, r) => {
 
           const allyCode = r.allyCode;
           const p: PlayerData = {
@@ -184,14 +184,14 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
             units: {},
           };
           acc.allyCodes.push(allyCode);
-          acc.playersData.push(p);
+          acc.membersData.push(p);
 
           return acc;
         },
         {
-          playersData: [],
+          membersData: [],
           allyCodes: [],
-        } as {allyCodes: number[]; playersData: PlayerData[]},
+        } as {allyCodes: number[]; membersData: PlayerData[]},
       );
 
       const units = client.fetchUnits({
@@ -208,14 +208,14 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
       });
 
       if (units && typeof units === 'object') {
-        const playersData = red.playersData;
+        const membersData = red.membersData;
         for (const baseId in units) {
           const u = units[baseId];
           for (const i of u) {
             const allyCode = i.allyCode;
-            const index = playersData.findIndex(e => e.allyCode === allyCode);
+            const index = membersData.findIndex(e => e.allyCode === allyCode);
             if (index > -1) {
-              playersData[index].units[baseId] = {
+              membersData[index].units[baseId] = {
                 baseId,
                 gearLevel: i.gearLevel,
                 level: i.level,
@@ -230,7 +230,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
         }
       }
 
-      return red.playersData;
+      return red.membersData;
     }
 
     return undefined;
