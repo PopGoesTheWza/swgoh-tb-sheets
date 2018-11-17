@@ -63,3 +63,6 @@ typings/
 .DS_Store
 archive/*.*
 draft/
+
+client_secret_*
+.clasprc.json
