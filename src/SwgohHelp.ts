@@ -174,17 +174,19 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
         (acc: {allyCodes: number[]; membersData: PlayerData[]}, r) => {
 
           const allyCode = r.allyCode;
-          const p: PlayerData = {
-            allyCode,
-            gp: r.gp,
-            heroesGp: r.gpChar,
-            level: r.level,
-            name: r.name,
-            shipsGp: r.gpShip,
-            units: {},
-          };
-          acc.allyCodes.push(allyCode);
-          acc.membersData.push(p);
+          if (allyCode) {
+            const p: PlayerData = {
+              allyCode,
+              gp: r.gp,
+              heroesGp: r.gpChar,
+              level: r.level,
+              name: r.name,
+              shipsGp: r.gpShip,
+              units: {},
+            };
+            acc.allyCodes.push(allyCode);
+            acc.membersData.push(p);
+          }
 
           return acc;
         },
@@ -194,43 +196,45 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
         } as {allyCodes: number[]; membersData: PlayerData[]},
       );
 
-      const units = client.fetchUnits({
-        allycodes: red.allyCodes,
-        language: swgohhelpapi.Languages.eng_us,
-        project: {
-          allyCode: true,
-          type: true,
-          gp: true,
-          starLevel: true,
-          level: true,
-          gearLevel: true,
-        },
-      });
+      if (red.allyCodes.length > 0) {
+        const units = client.fetchUnits({
+          allycodes: red.allyCodes,
+          language: swgohhelpapi.Languages.eng_us,
+          project: {
+            allyCode: true,
+            type: true,
+            gp: true,
+            starLevel: true,
+            level: true,
+            gearLevel: true,
+          },
+        });
 
-      if (units && typeof units === 'object') {
-        const membersData = red.membersData;
-        for (const baseId in units) {
-          const u = units[baseId];
-          for (const i of u) {
-            const allyCode = i.allyCode;
-            const index = membersData.findIndex(e => e.allyCode === allyCode);
-            if (index > -1) {
-              membersData[index].units[baseId] = {
-                baseId,
-                gearLevel: i.gearLevel,
-                level: i.level,
-                // name: i.???,
-                power: i.gp,
-                rarity: i.starLevel,
-                // stats: i.???,
-                // tags: i.???,
-              };
+        if (units && typeof units === 'object') {
+          const membersData = red.membersData;
+          for (const baseId in units) {
+            const u = units[baseId];
+            for (const i of u) {
+              const allyCode = i.allyCode;
+              const index = membersData.findIndex(e => e.allyCode === allyCode);
+              if (index > -1) {
+                membersData[index].units[baseId] = {
+                  baseId,
+                  gearLevel: i.gearLevel,
+                  level: i.level,
+                  // name: i.???,
+                  power: i.gp,
+                  rarity: i.starLevel,
+                  // stats: i.???,
+                  // tags: i.???,
+                };
+              }
             }
           }
         }
-      }
 
-      return red.membersData;
+        return red.membersData;
+      }
     }
 
     return undefined;
