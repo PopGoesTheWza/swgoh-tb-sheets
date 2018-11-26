@@ -91,7 +91,7 @@ function sendMicroByMemberWebhook(): void {
 
     // for each zone
     const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
-    const label = discord.getZoneName(phase, z, false);
+    const label = discord.getZoneName(phase, z as TerritoryBattles.territoryIdx, false);
     const type = z === 0 ? 'squadron' : 'platoon';
 
     // cycle throught the platoons in a zone

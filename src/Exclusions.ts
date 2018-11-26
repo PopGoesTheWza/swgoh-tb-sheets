@@ -5,7 +5,7 @@ namespace Exclusions {
    * get the list of units to exclude
    * exclusions[member][unit] = boolean
    */
-  export function getList(): KeyedType<KeyedBooleans> {
+  export function getList(): MemberUnitBooleans {
 
     const data = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS).getDataRange()
       .getValues() as string[][];
@@ -19,7 +19,7 @@ namespace Exclusions {
       [],
     );
 
-    const exclusions: KeyedType<KeyedBooleans> = {};
+    const exclusions: MemberUnitBooleans = {};
 
     const members = filtered.shift();  // First row holds members name
     members.shift();  // drop first column
@@ -46,8 +46,8 @@ namespace Exclusions {
 
   /** remove excluded units */
   export function process(
-    data: KeyedType<UnitInstances>,
-    exclusions: KeyedType<KeyedBooleans>,
+    data: UnitMemberInstances,
+    exclusions: MemberUnitBooleans,
     event: string = undefined,  // used to validate ship alignment
   ) {
     const filter = event ? event.trim().toLowerCase() : undefined;

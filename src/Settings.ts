@@ -135,7 +135,37 @@ interface UnitInstance {
   tags?: string;
 }
 
-type UnitInstances = KeyedType<UnitInstance>;
+type MemberInstances = {
+  [key: string]: UnitInstance;
+};
+
+type UnitInstances = {
+  [key: string]: UnitInstance;
+};
+
+type MemberUnitBooleans = {
+  [key: string]: {
+    [key: string]: boolean;
+  };
+};
+
+type MemberUnitInstances = {
+  [key: string]: {
+    [key: string]: UnitInstance;
+  };
+};
+
+type UnitMemberBooleans = {
+  [key: string]: {
+    [key: string]: boolean;
+  };
+};
+
+type UnitMemberInstances = {
+  [key: string]: {
+    [key: string]: UnitInstance;
+  };
+};
 
 /** Constants for alignment */
 enum ALIGNMENT {
@@ -191,21 +221,21 @@ enum SHEETS {
 namespace config {
 
   /** get current Territory Battles phase */
-  export function currentPhase(): number {
+  export function currentPhase(): TerritoryBattles.phaseIdx {
 
     const value = +SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
       .getRange(2, 1)
-      .getValue();
+      .getValue() as TerritoryBattles.phaseIdx;
 
     return value;
   }
 
   /** get current event */
-  export function currentEvent(): string {
+  export function currentEvent(): ALIGNMENT {
 
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_FILTER_ROW, META_FILTER_COL)
-      .getValue() as string;
+      .getValue() as ALIGNMENT;
 
     return value;
   }
@@ -410,7 +440,11 @@ namespace config {
     }
 
     /** Get the template for a webhooks */
-    export function webhookTemplate(phase: number, row: number, defaultVal: string): string {
+    export function webhookTemplate(
+      phase: TerritoryBattles.phaseIdx,
+      row: number,
+      defaultVal: string,
+    ): string {
 
       const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(row, DISCORD_WEBHOOK_COL)
@@ -420,7 +454,7 @@ namespace config {
     }
 
     /** Get the Description for the phase */
-    export function webhookDescription(phase: number): string {
+    export function webhookDescription(phase: TerritoryBattles.phaseIdx): string {
 
       const columnOffset = isLight_(config.currentEvent()) ? 0 : 1;
       const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)

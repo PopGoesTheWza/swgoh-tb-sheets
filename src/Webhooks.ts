@@ -7,7 +7,7 @@ namespace discord {
   }
 
   /** Get the title for the webhooks */
-  export function getTitle(phase: number): string {
+  export function getTitle(phase: TerritoryBattles.phaseIdx): string {
 
     const defaultVal = `__**Territory Battle: Phase ${phase}**__`;
 
@@ -15,7 +15,11 @@ namespace discord {
   }
 
   /** Get the formatted zone name with location descriptor */
-  export function getZoneName(phase: number, zoneNum: number, full: boolean): string {
+  export function getZoneName(
+    phase: TerritoryBattles.phaseIdx,
+    zoneNum: number,
+    full: boolean,
+  ): string {
 
     const zone = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
       .getRange((zoneNum * PLATOON_ZONE_ROW_OFFSET) + 4, 1)
@@ -137,7 +141,7 @@ namespace discord {
   }
 
   /** Get the intro for the depth webhook */
-  export function getDepthIntro(phase: number, mention: string): string {
+  export function getDepthIntro(phase: TerritoryBattles.phaseIdx, mention: string): string {
 
     const defaultVal = `Here are the Platoon assignments for __Phase ${phase}__.
   **Do not donate heroes to the other Platoons.**`;
@@ -146,7 +150,7 @@ namespace discord {
   }
 
   /** Get the intro for the rare by webhook */
-  function getRareIntro(phase: number, mention: string): string {
+  function getRareIntro(phase: TerritoryBattles.phaseIdx, mention: string): string {
 
     const defaultVal =
       `Here are the Safe Platoons and the Rare Platoon donations for __Phase ${phase}__.
@@ -156,7 +160,7 @@ namespace discord {
   }
 
   /** Get the intro for the warning webhook */
-  export function getWarnIntro(phase: number, mention: string): string {
+  export function getWarnIntro(phase: TerritoryBattles.phaseIdx, mention: string): string {
 
     const defaultVal = `Here are the __Rare Units__ to watch out for in __Phase ${phase}__.
   **Check with an officer before donating to Platoons/Squadrons that require them.**`;

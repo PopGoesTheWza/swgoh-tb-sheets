@@ -51,7 +51,7 @@ namespace Members {
         units: {},
       };
 
-      const addToMemberData = (e: KeyedType<UnitInstance>) => {
+      const addToMemberData = (e: UnitInstances) => {
         if (e) {
           for (const baseId in e) {
             const u = e[baseId];
@@ -133,7 +133,7 @@ namespace Player {
         units: {},
       };
       const filter = tag.toLowerCase();
-      const addToPlayerData = (e: KeyedType<UnitInstance>) => {
+      const addToPlayerData = (e: UnitInstances) => {
         for (const baseId in e) {
           const u = e[baseId];
           if (filter.length === 0 || u.tags.indexOf(filter) > -1) {

@@ -154,7 +154,7 @@ namespace Units {
     }
 
     /** return a list of Rare units for a phase */
-    protected getRareList(phase: number): string[] {
+    protected getRareList(phase: TerritoryBattles.phaseIdx): string[] {
 
       const data = this.sheet.getRange(2, 1, this.getCount() + 1, this.columnOffset - 2)
         .getValues() as [string, number][];
@@ -178,7 +178,10 @@ namespace Units {
     }
 
     /** return a list of Rare units needed for a phase */
-    protected getNeededRareList(phase: number, platoonUnits: string[]): string[] {
+    protected getNeededRareList(
+      phase: TerritoryBattles.phaseIdx,
+      platoonUnits: string[],
+    ): string[] {
 
       const units = this.getRareList(phase);
 
@@ -189,9 +192,9 @@ namespace Units {
     }
 
     /** get the unit instances for all members */
-    getAllInstancesByMember(): KeyedType<UnitInstances> {
+    getAllInstancesByMember(): MemberUnitInstances {
 
-      const units: KeyedType<UnitInstances> = {};
+      const units: MemberUnitInstances = {};
       const rows = this.getCount() + 1;
       const cols = this.columnOffset + config.memberCount() - 1;
       const data = this.sheet.getRange(1, 1, rows, cols)
@@ -228,9 +231,9 @@ namespace Units {
      * get all the unit instances for all members
      * keyed objects units[name][member] = UnitInstances
      */
-    getAllInstancesByUnits(): KeyedType<UnitInstances> {
+    getAllInstancesByUnits(): UnitMemberInstances {
 
-      const units: KeyedType<UnitInstances> = {};
+      const units: UnitMemberInstances = {};
       const rows = this.getCount() + 1;
       const cols = this.columnOffset + config.memberCount() - 1;
       const data = this.sheet.getRange(1, 1, rows, cols)
@@ -408,7 +411,7 @@ namespace Units {
     }
 
     /** return a list of Rare heroes needed for a phase */
-    getNeededRareList(phase: number): string[] {
+    getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
 
       const platoonUnits: string[] = (!isLight_(config.currentEvent()) || phase > 1)
         ? Heroes.getUniquePlatoonUnits(1).concat(Heroes.getUniquePlatoonUnits(2))
@@ -478,7 +481,7 @@ namespace Units {
     }
 
     /** return a list of Rare ships needed for a phase */
-    getNeededRareList(phase: number): string[] {
+    getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
 
       const platoonUnits: string[] = Ships.getUniquePlatoonUnits(0);
 
