@@ -1,7 +1,6 @@
 
 let PLATOON_PHASES: [string, string, string][] = [];
-let PLATOON_HERO_NEEDED_COUNT: KeyedNumbers = {};
-let PLATOON_SHIP_NEEDED_COUNT: KeyedNumbers = {};
+let PLATOON_NEEDED_COUNT: KeyedNumbers = {};
 
 /** Custom object for creating custom order to walk through platoons */
 class PlatoonDetails {
@@ -98,7 +97,7 @@ function initPlatoonPhases_(): void {
 /** Get the zone name and update the cell */
 function setZoneName_(
   spooler: utils.Spooler,
-  phase: number,
+  phase: TerritoryBattles.phaseIdx,
   zone: number,
   sheet: Sheet,
   platoonRow: number,
@@ -120,20 +119,15 @@ function resetPlatoons(): void {
   new TerritoryBattles.Phase(event, phase).reset();
 }
 
-function getNeededCount_(unitName: string, isHero: boolean) {
-  const count = isHero ? PLATOON_HERO_NEEDED_COUNT : PLATOON_SHIP_NEEDED_COUNT;
-  if (count[unitName]) {
-    count[unitName] += 1;
-  } else {
-    count[unitName] = 1;
-  }
+function getNeededCount_(unitName: string) {
+  PLATOON_NEEDED_COUNT[unitName] = (PLATOON_NEEDED_COUNT[unitName] || 0) + 1;
 }
 
 /** Get a sorted list of recommended members */
 function getRecommendedMembers_(
   unitName: string,
-  phase: number,
-  data: KeyedType<UnitInstances>,
+  phase: TerritoryBattles.phaseIdx,
+  data: UnitMemberInstances,
 ): [string, number][] {
 
   // see how many stars are needed
@@ -170,9 +164,9 @@ function buildDropdown_(memberList: [string, number][]): DataValidation {
 }
 
 /** Reset the units used */
-function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBooleans> {
+function resetUsedUnits_(data: UnitMemberInstances): UnitMemberBooleans {
 
-  const result: KeyedType<KeyedBooleans> = {};
+  const result: UnitMemberBooleans = {};
 
   for (const unit in data) {
     const members = data[unit];
@@ -188,7 +182,7 @@ function resetUsedUnits_(data: KeyedType<UnitInstances>): KeyedType<KeyedBoolean
 }
 
 function filterUnits_(
-  data: KeyedType<UnitInstances>,
+  data: UnitMemberInstances,
   filter: (member: string, u: UnitInstance) => boolean,
 ) {
   const units = Object.assign({}, data);
@@ -209,11 +203,11 @@ function filterUnits_(
 namespace TerritoryBattles {
 
   /** supported events for TB */
-  export type event = ALIGNMENT.LIGHTSIDE|ALIGNMENT.LIGHTSIDE;
+  export type event = ALIGNMENT.DARKSIDE|ALIGNMENT.LIGHTSIDE;
   /** TB phases */
   export type phaseIdx = 1|2|3|4|5|6;
   /** TB territories (zero-based) */
-  type territoryIdx = 0|1|2;
+  export type territoryIdx = 0|1|2;
   /** TB platoons/squadrons (zero-based) */
   type platoonIdx = 0|1|2|3|4|5;
 
@@ -231,19 +225,19 @@ namespace TerritoryBattles {
     /** use the Exclusions add-on spreadsheet to filter available units */
     public readonly useExclusions: boolean = true;
     /** use the Not Available list to filter available units */
-    public readonly useUnavailableq: boolean = true;
+    public readonly useNotAvailableq: boolean = true;
     /** array of Territory objects for this phase */
     protected readonly territories: Territory[] = [];
     /** all heroes (object[name][member] = UnitInstances) */
-    public allHeroes: KeyedType<UnitInstances>;  // units[name][member]
+    public allHeroes: UnitMemberInstances;  // units[name][member]
     /** all ships (object[name][member] = UnitInstances) */
-    public allShips: KeyedType<UnitInstances>;  // units[name][member]
-    // public availableHeroes: KeyedType<UnitInstances>;  // units[name][member]
-    // public availableShips: KeyedType<UnitInstances>;  // units[name][member]
+    public allShips: UnitMemberInstances;  // units[name][member]
+    // public availableHeroes: UnitMemberInstances;  // units[name][member]
+    // public availableShips: UnitMemberInstances;  // units[name][member]
     /** all exclusions (object[member][unit] = boolean) */
-    public exclusions: KeyedType<KeyedBooleans> = {};  // exclusions[member][unit] = boolean
+    public exclusions: MemberUnitBooleans = {};  // exclusions[member][unit] = boolean
     /** list of member name listed as Not Available */
-    public unavailable: string[] = [];
+    public notAvailable: string[] = [];
 
     constructor(event: event, index: phaseIdx) {
 
@@ -270,14 +264,14 @@ namespace TerritoryBattles {
       }
     }
 
-    protected readUnavailable(): void {
-      const unavailable = this.sheet
+    protected readNotAvailable(): void {
+      const notAvailable = this.sheet
         .getRange(56, 4, MAX_MEMBERS, 1)
         .getValues() as [string][];
-      for (const e of unavailable) {
+      for (const e of notAvailable) {
         const name = e[0];
         if (name.length > 0) {
-          this.unavailable.push(name);
+          this.notAvailable.push(name);
         }
       }
     }
@@ -286,9 +280,25 @@ namespace TerritoryBattles {
 
       const spooler = new utils.Spooler();
 
+      // init  UnitPools
+      // init exclusions
+      // init notAvailable
+
+      // init neededUnit (n[unit][territory][platoon])
+
+      // define platoonOrder(?)
+
+      //
+
+      const territories = this.territories;
+      for (const territory of territories) {
+        spooler.add(territory.writerName());
+        territory.showHide();
+      }
+
       this.readUnits();
       this.readExclusions();
-      this.readUnavailable();
+      this.readNotAvailable();
 
       spooler.commit();
     }
@@ -488,7 +498,7 @@ namespace TerritoryBattles {
       const data = this.slice.map(e => [e]);
       const range = this.sheet
         .getRange(this.row, this.column, MAX_PLATOON_UNITS);
-      const writer = () => { range.setValues(data); };
+      const writer = () => { range.setValues(data).setFontColor(COLOR.BLACK); };
 
       return writer;
     }
@@ -600,319 +610,319 @@ namespace TerritoryBattles {
     },
   };
 
-//   abstract class UnitPool {
+  abstract class UnitPool {
 
-//     protected readonly phase: Phase;
-//     protected readonly allUnits: KeyedType<UnitInstances>;  // units[name][member]
-//     protected units: KeyedType<UnitInstances>;  // units[name][member]
-//     protected readonly exclusions: KeyedType<KeyedBooleans>;  // excluded[member][unit] = boolean
-//     protected readonly unavailable: string[];
+    protected readonly phase: Phase;
+    protected readonly allUnits: UnitMemberInstances;  // units[name][member]
+    protected units: UnitMemberInstances;  // units[name][member]
+    protected readonly exclusions: MemberUnitBooleans;  // excluded[member][unit] = boolean
+    protected readonly notAvailable: string[];
 
-//     constructor(
-//       phase: Phase,
-//       allUnits: KeyedType<UnitInstances>,
-//       exclusions: KeyedType<KeyedBooleans>,
-//       unavailable: string[],
-//     ) {
-//       this.phase = phase;
-//       this.allUnits = utils.clone(allUnits);
-//       this.exclusions = utils.clone(exclusions);
-//       this.unavailable = utils.clone(unavailable);
-//     }
+    constructor(
+      phase: Phase,
+      allUnits: UnitMemberInstances,
+      exclusions: MemberUnitBooleans,
+      notAvailable: string[],
+    ) {
+      this.phase = phase;
+      this.allUnits = utils.clone(allUnits);
+      this.exclusions = utils.clone(exclusions);
+      this.notAvailable = utils.clone(notAvailable);
+    }
 
-//     protected filter(filter: (member: string, u: UnitInstance) => boolean): void {
-//       const data = utils.clone(this.allUnits);
-//       const exclusions = this.exclusions;
-//       const units = Object.assign({}, data);
-//       for (const unit in units) {
-//         const members = Object.assign({}, data[unit]);
-//         for (const member in members) {
-//           if (
-//             (exclusions[member] && exclusions[member][unit])
-//             || !filter(member, members[member])
-//           ) {
-//             delete data[unit][member];
-//           }
-//         }
-//         if (data[unit] && Object.keys(data[unit]).length === 0) {
-//           delete data[unit];
-//         }
-//       }
-//       this.units = data;  // BAD
-//     }
+    protected filter(filter: (member: string, u: UnitInstance) => boolean): void {
 
-//     protected zScore() {
-//       const zScored: KeyedType<{
-//         units: {
-//           squaredDifference: number;
-//           power: number;
-//           unit: UnitInstance;
-//         }[];
-//       }> = {};
+      const data = utils.clone(this.allUnits);
+      const exclusions = this.exclusions;
+      const units = Object.assign({}, data);
+      for (const unit in units) {
+        const members = Object.assign({}, data[unit]);
+        for (const member in members) {
+          if (
+            (exclusions[member] && exclusions[member][unit])
+            || !filter(member, members[member])
+          ) {
+            delete data[unit][member];
+          }
+        }
+        if (data[unit] && Object.keys(data[unit]).length === 0) {
+          delete data[unit];
+        }
+      }
+      this.units = data;  // BAD
+    }
 
-//       const units = this.units;
-//       for (const unitName in units) {
-//         const perMember = units[unitName];
-//         for (const memberName in perMember) {
-//           const unit = perMember[memberName];
-//           if (!zScored[memberName]) {
-//             zScored[memberName] = {
-//               // average: 0,
-//               // count: 0,
-//               // sum: 0,
-//               units: [],
-//             };
-//           }
-//           zScored[memberName].units.push({
-//             unit,
-//             // difference: 0,
-//             squaredDifference: 0,
-//             power: unit.power,
-//           });
-//         }
-//       }
-//       for (const memberName in zScored) {
-//         const o = zScored[memberName];
-//         const units = o.units;
-//         o.units = units.map((e) => {
-//           return e;
-//         });
-//       }
-//     }
+    protected zScore() {
+      const zScored: KeyedType<{
+        units: {
+          squaredDifference: number;
+          power: number;
+          unit: UnitInstance;
+        }[];
+      }> = {};
 
-//   }
+      const units = this.units;
+      for (const unitName in units) {
+        const perMember = units[unitName];
+        for (const memberName in perMember) {
+          const unit = perMember[memberName];
+          if (!zScored[memberName]) {
+            zScored[memberName] = {
+              // average: 0,
+              // count: 0,
+              // sum: 0,
+              units: [],
+            };
+          }
+          zScored[memberName].units.push({
+            unit,
+            // difference: 0,
+            squaredDifference: 0,
+            power: unit.power,
+          });
+        }
+      }
+      for (const memberName in zScored) {
+        const o = zScored[memberName];
+        const units = o.units;
+        o.units = units.map((e) => {
+          return e;
+        });
+      }
+    }
 
-//   class HeroesPool extends UnitPool {
+  }
 
-//     constructor(
-//       phase: Phase,
-//       exclusions: KeyedType<KeyedBooleans> = {},
-//       unavailable: string[] = [],
-//     ) {
-//       const heroesTable = new Units.Heroes();
-//       const allUnits = heroesTable.getAllInstancesByUnits();
-//       super(phase, allUnits, exclusions, unavailable);
-//     }
+  class HeroesPool extends UnitPool {
 
-//     protected filter() {
-//       const phase = this.phase.index;
-//       const alignment = config.currentEvent().toLowerCase();
-//       const filter = (member: string, u: UnitInstance) => {
-//         return u.rarity > phase
-//           && u.tags.indexOf(alignment) !== -1
-//           && this.unavailable.findIndex(e => e[0] === member) === -1;
-//       };
-//       super.filter(filter);
-//     }
+    constructor(
+      phase: Phase,
+      exclusions: MemberUnitBooleans = {},
+      notAvailable: string[] = [],
+    ) {
+      const heroesTable = new Units.Heroes();
+      const allUnits = heroesTable.getAllInstancesByUnits();
+      super(phase, allUnits, exclusions, notAvailable);
+    }
 
-//   }
+    protected filter() {
 
-//   class ShipsPool extends UnitPool {
+      const phase = this.phase.index;
+      const alignment = config.currentEvent().toLowerCase();
 
-//     constructor(
-//       phase: Phase,
-//       exclusions: KeyedType<KeyedBooleans> = {},
-//       unavailable: string[] = [],
-//     ) {
-//       const shipsTable = new Units.Ships();
-//       const allUnits = shipsTable.getAllInstancesByUnits();
-//       super(phase, allUnits, exclusions, unavailable);
-//     }
+      // filter Heroes by rarity and alignment
+      const filter = (member: string, u: UnitInstance) =>
+        u.rarity > phase && u.tags.indexOf(alignment) !== -1;
+      // && this.notAvailable.findIndex(e => e[0] === member) === -1
 
-//     protected filter() {
-//       const phase = this.phase.index;
-//       const filter = (member: string, u: UnitInstance) => {
-//         return u.rarity > phase
-//           && this.unavailable.findIndex(e => e[0] === member) === -1;
-//       };
-//       super.filter(filter);
-//     }
+      super.filter(filter);
+    }
 
-//   }
+  }
 
-// }
+  class ShipsPool extends UnitPool {
 
-// function loop1_(
-//   cur: PlatoonDetails,
-//   platoonMatrix: PlatoonUnit[],
-//   sheet: Sheet,
-//   phase: number,
-//   allHeroes: KeyedType<UnitInstances>,
-//   allShips: KeyedType<UnitInstances>,
-//   allDropdowns: [Range, [DataValidation][]][],
-// ) {
-//   const baseCol = 4;  // TODO: should it be a setting
+    constructor(
+      phase: Phase,
+      exclusions: MemberUnitBooleans = {},
+      notAvailable: string[] = [],
+    ) {
+      const shipsTable = new Units.Ships();
+      const allUnits = shipsTable.getAllInstancesByUnits();
+      super(phase, allUnits, exclusions, notAvailable);
+    }
 
-//   const row = cur.row;
-//   const column = cur.getOffset() + baseCol;
-//   const range = sheet.getRange(row, column, MAX_PLATOON_UNITS, 1);
+    protected filter() {
 
-//   // clear previous contents
-//   range.offset(0, 1)
-//     .clearContent()
-//     .clearDataValidations()
-//     .offset(0, -1, MAX_PLATOON_UNITS, 2)
-//     .setFontColor(COLOR.BLACK);
+      const phase = this.phase.index;
 
-//   if (cur.exist) {
+      // filter Ships by rarity
+      const filter = (member: string, u: UnitInstance) => u.rarity > phase;
+        // && this.notAvailable.findIndex(e => e[0] === member) === -1
 
-//     /** 'Skip this' checkbox */
-//     const skip = sheet.getRange(row + 15, column + 1)
-//       .getValue() === 'SKIP';
-//     if (skip) {
-//       cur.possible = false;
-//     } else {
+      super.filter(filter);
+    }
 
-//       // cycle through the units
-//       const units = range.getValues().map((e: string[]) => e[0]);
+  }
 
-//       const dropdowns: [DataValidation][] = [];
-//       const dropdownsRange = range.offset(0, 1);
+}
 
-//       units.forEach((unitName, h) => {
-//         const idx = platoonMatrix.length;
-//         if (unitName.length === 0) {  // no unit was entered, so skip it
-//           platoonMatrix.push(new PlatoonUnit(unitName, 0, 0));
-//           dropdowns.push([null]);
-//         } else {
-//           getNeededCount_(unitName, cur.isGround);
+function loop1_(
+  spooler: utils.Spooler,
+  cur: PlatoonDetails,
+  platoonMatrix: PlatoonUnit[],
+  sheet: Sheet,
+  phase: TerritoryBattles.phaseIdx,
+  allUnits: UnitMemberInstances,
+) {
+  const baseCol = 4;  // TODO: should it be a setting
 
-//           const rec = getRecommendedMembers_(
-//             unitName,
-//             phase,
-//             cur.isGround ? allHeroes : allShips,
-//           );
+  const row = cur.row;
+  const column = cur.getOffset() + baseCol;
+  const range = sheet.getRange(row, column, MAX_PLATOON_UNITS);
 
-//           platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
+  // clear previous contents
+  // sheet.getRange(row, column + 1, MAX_PLATOON_UNITS)
+  spooler.attach(range.offset(0, 1))
+    .clearContent()
+    .clearDataValidations()
+    .offset(0, -1, MAX_PLATOON_UNITS, 2)
+    .setFontColor(COLOR.BLACK);
 
-//           if (rec.length > 0) {
-//             dropdowns.push([buildDropdown_(rec)]);
+  if (cur.exist) {
+    /** skip this checkbox */
+    // sheet.getRange(row + 15, column + 1)
+    const skip = range.offset(15, 1, 1, 1)
+        .getValue() === 'SKIP';
+    if (skip) {
+      cur.possible = false;
+    }
 
-//             // add the members to the matrix
-//             platoonMatrix[idx].members = rec.map(r => r[0]); // member name
-//           } else {
-//             dropdowns.push([null]);
-//             // impossible to fill the platoon if no one can donate
-//             cur.possible = false;
-//             sheet.getRange(row + h, column).setFontColor(COLOR.RED);
-//           }
-//         }
+    // cycle through the units
+    const units = range
+      .getValues() as string[][];
 
-//       });
-//       allDropdowns.push([dropdownsRange, dropdowns]);
-//     }
-//   }
-// }
+    const dropdowns: [DataValidation][] = [];
+    // sheet.getRange(row, column + 1, MAX_PLATOON_UNITS)
+    const dropdownsRange = range.offset(0, 1);
+    for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
 
-// function loop2_(cur: PlatoonDetails, sheet: Sheet) {
-//   if (cur.exist && !cur.possible) {
-//     const baseCol = 4;  // TODO: should it be a setting
+      const unitName = units[h][0];
+      const idx = platoonMatrix.length;
 
-//     const row = cur.row;
-//     const column = cur.getOffset() + baseCol;
-//     const range = sheet.getRange(row, column + 1, MAX_PLATOON_UNITS, 1);
+      if (unitName.length === 0) {
+        // no unit was entered, so skip it
+        platoonMatrix.push(new PlatoonUnit(unitName, 0, 0));
+        dropdowns.push([null]);
 
-//     range.setValue('Skip')
-//       .clearDataValidations()
-//       .setFontColor(COLOR.RED);
-//   }
-// }
+        continue;
+      }
 
-// function loop3_(
-//   cur: PlatoonDetails,
-//   sheet: Sheet,
-//   matrixIdx: number,
-//   placementCount: number[][],
-//   platoonMatrix: PlatoonUnit[],
-//   maxMemberDonations: number,
-//   usedHeroes: KeyedType<KeyedBooleans>,
-//   usedShips: KeyedType<KeyedBooleans>,
-//   baseCol: number,
-//   allDonors:[Range, [string][]][],
-//   allColors: [Range, [COLOR, COLOR][]][],
-// ) {
-//   if (cur.exist) {
-//     if (!cur.possible) {
-//       // skip this platoon
-//       // tslint:disable-next-line:no-parameter-reassignment
-//       matrixIdx += MAX_PLATOON_UNITS;
-//     } else {
-//       // cycle through the heroes
-//       const donors: [string][] = [];
-//       const colors: [COLOR, COLOR][] = [];
-//       const plattonOffset = cur.getOffset();
-//       for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
+      getNeededCount_(unitName);
 
-//         let defaultValue = '';
-//         const count = placementCount[cur.zone];
+      const rec = getRecommendedMembers_(
+        unitName,
+        phase,
+        allUnits,
+      );
 
-//         const unit = platoonMatrix[matrixIdx].name;
-//         for (const member of platoonMatrix[matrixIdx].members) {
+      platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
 
-//           const available = count[member] == null || count[member] < maxMemberDonations;
-//           if (!available) {
-//             continue;
-//           }
+      if (rec.length > 0) {
+        dropdowns.push([buildDropdown_(rec)]);
 
-//           // see if the recommended member's hero has been used
-//           if (cur.isGround) {
-//             // ground units
-//             if (usedHeroes[unit]
-//               && usedHeroes[unit].hasOwnProperty(member)
-//               && !usedHeroes[unit][member]
-//             ) {
-//               usedHeroes[unit][member] = true;
-//               defaultValue = member;
-//               count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
+        // add the members to the matrix
+        platoonMatrix[idx].members = rec.map(r => r[0]); // member name
+      } else {
+        dropdowns.push([null]);
+        // impossible to fill the platoon if no one can donate
+        cur.possible = false;
+        spooler.attach(sheet.getRange(row + h, column))
+          .setFontColor(COLOR.RED);
+      }
+    }
+    spooler.attach(dropdownsRange)
+      .setDataValidations(dropdowns);
+  }
 
-//               break;
-//             }
-//           } else {
-//             // ships
-//             if (usedShips[unit]
-//               && usedShips[unit].hasOwnProperty(member)
-//               && !usedShips[unit][member]
-//             ) {
-//               usedShips[unit][member] = true;
-//               defaultValue = member;
-//               count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
+}
 
-//               break;
-//             }
-//           }
+function loop2_(
+  spooler: utils.Spooler,
+  cur: PlatoonDetails,
+  sheet: Sheet,
+) {
 
-//           if (defaultValue.length > 0) {
-//             // we already have a recommended member
-//             break;
-//           }
-//         }
+  if (cur.exist && !cur.possible) {
+    const baseCol = 4;  // TODO: should it be a setting
 
-//         donors.push([defaultValue]);
+    const row = cur.row;
+    const column = cur.getOffset() + baseCol;
 
-//         // see if we should highlight rare units
-//         if (platoonMatrix[matrixIdx].isMissing()) {
-//           colors.push([COLOR.RED, COLOR.RED]);
-//         } else if (defaultValue.length > 0 && platoonMatrix[matrixIdx].isRare()) {
-//           colors.push([COLOR.BLUE, COLOR.BLUE]);
-//         } else {
-//           colors.push([COLOR.BLACK, COLOR.BLACK]);
-//         }
+    spooler.attach(sheet.getRange(row, column + 1, MAX_PLATOON_UNITS))
+      .setValue('Skip')
+      .clearDataValidations()
+      .setFontColor(COLOR.RED);
+  }
+}
 
-//         // tslint:disable-next-line:no-parameter-reassignment
-//         matrixIdx += 1;
-//       }
-//       const donorsRange =
-//         sheet.getRange(cur.row, baseCol + plattonOffset + 1, MAX_PLATOON_UNITS, 1);
-//       allDonors.push([donorsRange, donors]);
-//       const colorsRange =
-//         sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2);
-//       allColors.push([colorsRange, colors]);
-//     }
-//   }
+function loop3_(
+  spooler: utils.Spooler,
+  cur: PlatoonDetails,
+  sheet: Sheet,
+  matrixIdx: number,
+  placementCount: number[][],
+  platoonMatrix: PlatoonUnit[],
+  maxMemberDonations: number,
+  used: UnitMemberBooleans,
+) {
+  if (cur.exist) {
+    if (!cur.possible) {
+      // skip this platoon
+      // tslint:disable-next-line:no-parameter-reassignment
+      matrixIdx += MAX_PLATOON_UNITS;
+    } else {
+      const baseCol = 4;  // TODO: should it be a setting
+
+      const row = cur.row;
+      const column = cur.getOffset() + baseCol;
+
+      // cycle through the heroes
+      const donors: [string][] = [];
+      const colors: [COLOR, COLOR][] = [];
+      for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
+
+        let defaultValue = undefined;
+        const count = placementCount[cur.zone];
+
+        const unit = platoonMatrix[matrixIdx].name;
+        for (const member of platoonMatrix[matrixIdx].members) {
+
+          const available = count[member] == null || count[member] < maxMemberDonations;
+          if (available) {
+            // see if the recommended member's hero has been used
+            if (used[unit]
+              && used[unit].hasOwnProperty(member)
+              && !used[unit][member]
+            ) {
+              used[unit][member] = true;
+              defaultValue = member;
+              count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
+
+              break;
+            }
+          }
+
+        }
+
+        donors.push([defaultValue || '']);
+
+        // see if we should highlight rare units
+        if (platoonMatrix[matrixIdx].isMissing()) {
+          colors.push([COLOR.RED, COLOR.RED]);
+        } else if (defaultValue && platoonMatrix[matrixIdx].isRare()) {
+          colors.push([COLOR.BLUE, COLOR.BLUE]);
+        } else {
+          colors.push([COLOR.BLACK, COLOR.BLACK]);
+        }
+
+        // tslint:disable-next-line:no-parameter-reassignment
+        matrixIdx += 1;
+      }
+      spooler.attach(sheet.getRange(row, column + 1, MAX_PLATOON_UNITS))
+        .setValues(donors);
+      spooler.attach(sheet.getRange(row, column, MAX_PLATOON_UNITS, 2))
+        .setFontColors(colors);
+    }
+  }
+
+  return matrixIdx;
 }
 
 /** Recommend members for each Platoon */
 function recommendPlatoons() {
+
+  const p = new TerritoryBattles.Phase(config.currentEvent(), config.currentPhase());
 
   const spooler = new utils.Spooler();
 
@@ -920,7 +930,7 @@ function recommendPlatoons() {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = config.currentPhase();
   const alignment = config.currentEvent().toLowerCase();
-  const unavailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as [string][];
+  const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as [string][];
 
   // cache the matrix of hero data
   const heroesTable = new Units.Heroes();
@@ -933,14 +943,14 @@ function recommendPlatoons() {
     (member: string, u: UnitInstance) => {
       return u.rarity > phase
         && u.tags.indexOf(alignment) !== -1
-        && unavailable.findIndex(e => e[0] === member) === -1;
+        && notAvailable.findIndex(e => e[0] === member) === -1;
     },
   );
   filterUnits_(
     allShips,
     (member: string, u: UnitInstance) => {
       return u.rarity > phase
-        && unavailable.findIndex(e => e[0] === member) === -1;
+        && notAvailable.findIndex(e => e[0] === member) === -1;
     },
   );
 
@@ -955,8 +965,7 @@ function recommendPlatoons() {
   initPlatoonPhases_();
 
   // reset the needed counts
-  PLATOON_HERO_NEEDED_COUNT = {};
-  PLATOON_SHIP_NEEDED_COUNT = {};
+  PLATOON_NEEDED_COUNT = {};
 
   // reset the used heroes
   const usedHeroes = resetUsedUnits_(allHeroes);
@@ -994,79 +1003,18 @@ function recommendPlatoons() {
 
   // initialize platoon matrix
   const platoonMatrix: PlatoonUnit[] = [];
-  const baseCol = 4;
 
   for (const cur of platoonOrder) {
 
-    const platoonOffset = cur.getOffset();
-
-    // clear previous contents
-    spooler.attach(sheet.getRange(cur.row, baseCol + platoonOffset + 1, MAX_PLATOON_UNITS, 1))
-      .clearContent()
-      .clearDataValidations()
-      .offset(0, -1, MAX_PLATOON_UNITS, 2)
-      .setFontColor(COLOR.BLACK);
-
-    if (!cur.exist) {  // skip this zone
-      continue;
-    }
-
-    /** skip this checkbox */
-    const skip = sheet.getRange(cur.row + 15, baseCol + platoonOffset + 1, 1, 1)
-        .getValue() === 'SKIP';
-    if (skip) {
-      cur.possible = false;
-    }
-
-    // cycle through the units
-    const units = sheet.getRange(cur.row, baseCol + platoonOffset, MAX_PLATOON_UNITS, 1)
-      .getValues() as string[][];
-
-    const dropdowns: [DataValidation][] = [];
-    const dropdownsRange = sheet.getRange(
-      cur.row,
-      baseCol + platoonOffset + 1,
-      MAX_PLATOON_UNITS,
-      1,
+    loop1_(
+      spooler,
+      cur,
+      platoonMatrix,
+      sheet,
+      phase,
+      cur.isGround ? allHeroes : allShips,
     );
-    for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
 
-      const unitName = units[h][0];
-      const idx = platoonMatrix.length;
-
-      if (unitName.length === 0) {
-        // no unit was entered, so skip it
-        platoonMatrix.push(new PlatoonUnit(unitName, 0, 0));
-        dropdowns.push([null]);
-
-        continue;
-      }
-
-      getNeededCount_(unitName, cur.isGround);
-
-      const rec = getRecommendedMembers_(
-        unitName,
-        phase,
-        cur.isGround ? allHeroes : allShips,
-      );
-
-      platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
-
-      if (rec.length > 0) {
-        dropdowns.push([buildDropdown_(rec)]);
-
-        // add the members to the matrix
-        platoonMatrix[idx].members = rec.map(r => r[0]); // member name
-      } else {
-        dropdowns.push([null]);
-        // impossible to fill the platoon if no one can donate
-        cur.possible = false;
-        spooler.attach(sheet.getRange(cur.row + h, baseCol + platoonOffset))
-          .setFontColor(COLOR.RED);
-      }
-    }
-    spooler.attach(dropdownsRange)
-      .setDataValidations(dropdowns);
   }
 
   // update the unit counts
@@ -1075,28 +1023,20 @@ function recommendPlatoons() {
     const unit = p.name;
 
     // find the unit's count
-    if (PLATOON_HERO_NEEDED_COUNT[unit]) {
-      p.count = PLATOON_HERO_NEEDED_COUNT[unit];
-    } else if (PLATOON_SHIP_NEEDED_COUNT[unit]) {
-      p.count = PLATOON_SHIP_NEEDED_COUNT[unit];
+    if (PLATOON_NEEDED_COUNT[unit]) {
+      p.count = PLATOON_NEEDED_COUNT[unit];
     }
   }
 
   // make sure the platoon is possible to fill
   for (const cur of platoonOrder) {
 
-    if (!cur.exist) {  // skip this zone
-      continue;
-    }
+    loop2_(
+      spooler,
+      cur,
+      sheet,
+    );
 
-    if (!cur.possible) {
-      const plattonOffset = cur.getOffset();
-
-      spooler.attach(sheet.getRange(cur.row, baseCol + 1 + plattonOffset, MAX_PLATOON_UNITS, 1))
-        .setValue('Skip')
-        .clearDataValidations()
-        .setFontColor(COLOR.RED);
-    }
   }
 
   // initialize the placement counts
@@ -1112,83 +1052,17 @@ function recommendPlatoons() {
 
   for (const cur of platoonOrder) {
 
-    if (!cur.exist) {  // skip this zone
-      continue;
-    }
+    matrixIdx = loop3_(
+      spooler,
+      cur,
+      sheet,
+      matrixIdx,
+      placementCount,
+      platoonMatrix,
+      maxMemberDonations,
+      (cur.isGround ?  usedHeroes : usedShips),
+    );
 
-    if (!cur.possible) {
-      // skip this platoon
-      matrixIdx += MAX_PLATOON_UNITS;
-      continue;
-    }
-
-    // cycle through the heroes
-    const donors: [string][] = [];
-    const colors: [COLOR, COLOR][] = [];
-    const plattonOffset = cur.getOffset();
-    for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
-
-      let defaultValue = '';
-      const count = placementCount[cur.zone];
-
-      const unit = platoonMatrix[matrixIdx].name;
-      for (const member of platoonMatrix[matrixIdx].members) {
-
-        const available = count[member] == null || count[member] < maxMemberDonations;
-        if (!available) {
-          continue;
-        }
-
-        // see if the recommended member's hero has been used
-        if (cur.isGround) {
-          // ground units
-          if (usedHeroes[unit]
-            && usedHeroes[unit].hasOwnProperty(member)
-            && !usedHeroes[unit][member]
-          ) {
-            usedHeroes[unit][member] = true;
-            defaultValue = member;
-            count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
-
-            break;
-          }
-        } else {
-          // ships
-          if (usedShips[unit]
-            && usedShips[unit].hasOwnProperty(member)
-            && !usedShips[unit][member]
-          ) {
-            usedShips[unit][member] = true;
-            defaultValue = member;
-            count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
-
-            break;
-          }
-        }
-
-        if (defaultValue.length > 0) {
-          // we already have a recommended member
-          break;
-        }
-      }
-
-      donors.push([defaultValue]);
-
-      // see if we should highlight rare units
-      if (platoonMatrix[matrixIdx].isMissing()) {
-        colors.push([COLOR.RED, COLOR.RED]);
-      } else if (defaultValue.length > 0 && platoonMatrix[matrixIdx].isRare()) {
-        colors.push([COLOR.BLUE, COLOR.BLUE]);
-      } else {
-        colors.push([COLOR.BLACK, COLOR.BLACK]);
-      }
-
-      matrixIdx += 1;
-    }
-    spooler.attach(sheet.getRange(cur.row, baseCol + plattonOffset + 1, MAX_PLATOON_UNITS, 1))
-      .setValues(donors);
-    spooler.attach(sheet.getRange(cur.row, baseCol +  plattonOffset, MAX_PLATOON_UNITS, 2))
-      .setFontColors(colors);
   }
 
   spooler.commit();
