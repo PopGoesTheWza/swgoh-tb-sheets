@@ -225,19 +225,9 @@ namespace TerritoryBattles {
     /** use the Exclusions add-on spreadsheet to filter available units */
     public readonly useExclusions: boolean = true;
     /** use the Not Available list to filter available units */
-    public readonly useNotAvailableq: boolean = true;
+    public readonly useNotAvailable: boolean = true;
     /** array of Territory objects for this phase */
     protected readonly territories: Territory[] = [];
-    /** all heroes (object[name][member] = UnitInstances) */
-    public allHeroes: UnitMemberInstances;  // units[name][member]
-    /** all ships (object[name][member] = UnitInstances) */
-    public allShips: UnitMemberInstances;  // units[name][member]
-    // public availableHeroes: UnitMemberInstances;  // units[name][member]
-    // public availableShips: UnitMemberInstances;  // units[name][member]
-    /** all exclusions (object[member][unit] = boolean) */
-    public exclusions: MemberUnitBooleans = {};  // exclusions[member][unit] = boolean
-    /** list of member name listed as Not Available */
-    public notAvailable: string[] = [];
 
     constructor(event: event, index: phaseIdx) {
 
@@ -249,40 +239,49 @@ namespace TerritoryBattles {
       territories.forEach((e, i: territoryIdx) => this.territories[i] = e(this, i));
     }
 
-    protected readUnits(): void {
-      // cache the matrix of hero data
-      const heroesTable = new Units.Heroes();
-      this.allHeroes = heroesTable.getAllInstancesByUnits();
-      const shipsTable = new Units.Ships();
-      this.allShips = shipsTable.getAllInstancesByUnits();
-    }
-
-    protected readExclusions(): void {
-      const exclusionsId = config.exclusionId();
-      if (exclusionsId.length > 0) {
-        this.exclusions = Exclusions.getList();
-      }
-    }
-
-    protected readNotAvailable(): void {
-      const notAvailable = this.sheet
-        .getRange(56, 4, MAX_MEMBERS, 1)
-        .getValues() as [string][];
-      for (const e of notAvailable) {
-        const name = e[0];
-        if (name.length > 0) {
-          this.notAvailable.push(name);
-        }
-      }
-    }
-
     recommend(): void {
 
       const spooler = new utils.Spooler();
+      const territories = this.territories;
 
-      // init  UnitPools
-      // init exclusions
-      // init notAvailable
+      let exclusions: MemberUnitBooleans;
+      if (this.useExclusions) {
+        const exclusionsId = config.exclusionId();
+        if (exclusionsId.length > 0) {
+          exclusions = Exclusions.getList();
+        }
+      }
+
+      const notAvailable: string[] = [];
+      if (this.useNotAvailable) {
+        const data = this.sheet
+          .getRange(56, 4, MAX_MEMBERS)
+          .getValues() as [string][];
+        for (const e of data) {
+          const name = e[0];
+          if (name.length > 0) {
+            notAvailable.push(name);
+          }
+        }
+      }
+
+      let shipsPool: ShipsPool;
+      let heroesPool: HeroesPool;
+      for (const territory of territories) {
+        if (territory instanceof AirspaceTerritory) {
+          shipsPool = shipsPool || new ShipsPool(this, exclusions, notAvailable);
+          // init  UnitPools
+          // get allUnits
+          // get neededUnits
+          // platoon: clear content, data validation, set color black
+          // check 'skip this'
+          // create dropdown
+        }
+        if (territory instanceof GroundTerritory) {
+          heroesPool = heroesPool || new HeroesPool(this, exclusions, notAvailable);
+          // init  UnitPools
+        }
+      }
 
       // init neededUnit (n[unit][territory][platoon])
 
@@ -290,15 +289,10 @@ namespace TerritoryBattles {
 
       //
 
-      const territories = this.territories;
       for (const territory of territories) {
         spooler.add(territory.writerName());
         territory.showHide();
       }
-
-      this.readUnits();
-      this.readExclusions();
-      this.readNotAvailable();
 
       spooler.commit();
     }
@@ -331,7 +325,7 @@ namespace TerritoryBattles {
     protected readonly phase: Phase;
     public readonly index: territoryIdx;
     protected readonly name: string;
-    protected readonly platoons: Platoon[] = [];
+    protected platoons: Platoon[];
 
     constructor(phase: Phase, index: territoryIdx, name: string) {
 
@@ -424,9 +418,7 @@ namespace TerritoryBattles {
 
     constructor(phase: Phase, index: territoryIdx, name: string, tp: number[]) {
       super(phase, index, name);
-      for (let i = 0; i < MAX_PLATOONS; i += 1) {
-        this.platoons[i] = new AirspacePlatoon(this, i as platoonIdx);
-      }
+      this.platoons = tp.map((value, i) => new AirspacePlatoon(this, i as platoonIdx, value));
     }
 
   }
@@ -438,9 +430,7 @@ namespace TerritoryBattles {
 
     constructor(phase: Phase, index: territoryIdx, name: string, tp: number[]) {
       super(phase, index, name);
-      for (let i = 0; i < MAX_PLATOONS; i += 1) {
-        this.platoons[i] = new GroundPlatoon(this, i as platoonIdx);
-      }
+      this.platoons = tp.map((value, i) => new GroundPlatoon(this, i as platoonIdx, value));
     }
 
   }
@@ -457,13 +447,15 @@ namespace TerritoryBattles {
     protected readonly row: number;
     protected readonly offset: number;
     protected readonly column: number;
+    public readonly value: number;
 
-    constructor(territory: Territory, index: platoonIdx) {
+    constructor(territory: Territory, index: platoonIdx, value: number) {
       this.index = index;
       this.territory = territory;
       this.row = this.territory.index * PLATOON_ZONE_ROW_OFFSET + 2;
       this.offset = this.index * PLATOON_ZONE_COLUMN_OFFSET;
       this.column = this.offset + 4;
+      this.value = value;
     }
 
     getResetButton(): boolean {
@@ -508,7 +500,7 @@ namespace TerritoryBattles {
   class ClosedPlatoon extends Platoon {
 
     constructor(territory: Territory, index: platoonIdx) {
-      super(territory, index);
+      super(territory, index, 0);
     }
 
     writerSlice(): utils.SpooledTask {
@@ -523,16 +515,16 @@ namespace TerritoryBattles {
 
   class AirspacePlatoon extends Platoon {
 
-    constructor(territory: Territory, index: platoonIdx) {
-      super(territory, index);
+    constructor(territory: Territory, index: platoonIdx, value: number) {
+      super(territory, index, value);
     }
 
   }
 
   class GroundPlatoon extends Platoon {
 
-    constructor(territory: Territory, index: platoonIdx) {
-      super(territory, index);
+    constructor(territory: Territory, index: platoonIdx, value: number) {
+      super(territory, index, value);
     }
 
   }
@@ -776,6 +768,7 @@ function loop1_(
         .getValue() === 'SKIP';
     if (skip) {
       cur.possible = false;
+      return;
     }
 
     // cycle through the units
@@ -887,7 +880,7 @@ function loop3_(
             ) {
               used[unit][member] = true;
               defaultValue = member;
-              count[member] = (typeof count[member] === 'number') ? count[member] + 1 : 0;
+              count[member] = (typeof count[member] === 'number' ? count[member] : 0) + 1;
 
               break;
             }
@@ -922,7 +915,7 @@ function loop3_(
 /** Recommend members for each Platoon */
 function recommendPlatoons() {
 
-  const p = new TerritoryBattles.Phase(config.currentEvent(), config.currentPhase());
+  // const p = new TerritoryBattles.Phase(config.currentEvent(), config.currentPhase());
 
   const spooler = new utils.Spooler();
 
