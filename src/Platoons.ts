@@ -325,7 +325,7 @@ namespace TerritoryBattles {
     protected readonly phase: Phase;
     public readonly index: territoryIdx;
     protected readonly name: string;
-    protected platoons: Platoon[];
+    protected platoons: Platoon[] = [];
 
     constructor(phase: Phase, index: territoryIdx, name: string) {
 
@@ -768,7 +768,7 @@ function loop1_(
         .getValue() === 'SKIP';
     if (skip) {
       cur.possible = false;
-      return;
+      // return;
     }
 
     // cycle through the units
