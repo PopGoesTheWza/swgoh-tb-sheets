@@ -28,6 +28,7 @@ namespace Units {
     } else {
       definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
     }
+    config.dataSource.setUnitDefinitionsDate();
     definitions.heroes = definitions.heroes.sort(sortUnits);
     definitions.ships = definitions.ships.sort(sortUnits);
 

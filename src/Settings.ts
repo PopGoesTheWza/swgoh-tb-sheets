@@ -42,6 +42,11 @@ const META_UNIT_PER_MEMBER_COL = 4;
 const META_DATASOURCE_ROW = 14;
 const META_DATASOURCE_COL = 4;
 
+const META_GUILDDATADATE_ROW = 24;
+const META_GUILDDATADATE_COL = 1;
+const META_UNITDEFINITIONSDATE_ROW = 26;
+const META_UNITDEFINITIONSDATE_COL = 1;
+
 const META_HEROES_COL = 7;
 const META_HEROES_DS_COL = 16;
 
@@ -331,6 +336,18 @@ namespace config {
         .getValue() as string;
 
       return value;
+    }
+
+    export function setGuildDataDate(): void {
+      SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(META_GUILDDATADATE_ROW, META_GUILDDATADATE_COL)
+        .setValue(new Date());
+    }
+
+    export function setUnitDefinitionsDate(): void {
+      SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(META_UNITDEFINITIONSDATE_ROW, META_UNITDEFINITIONSDATE_COL)
+        .setValue(new Date());
     }
 
   }
