@@ -5,13 +5,19 @@ namespace Exclusions {
    * get the list of units to exclude
    * exclusions[member][unit] = boolean
    */
-  export function getList(): MemberUnitBooleans {
+  export function getList(phase: TerritoryBattles.phaseIdx): MemberUnitBooleans {
 
     const data = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS).getDataRange()
       .getValues() as string[][];
     const filtered = data.reduce(
       (acc: string[][], e) => {
-        if (e[0].length > 0) {
+        const value = e[0];  // `${e[0]}`;
+        const m = value.match(/^[1-6]+$/);
+        if (m) {
+          if (value.indexOf(`${phase}`) !== -1) {
+            acc.push(e.slice(0, MAX_MEMBERS + 1));
+          }
+        } else if (value.length > 0) {
           acc.push(e.slice(0, MAX_MEMBERS + 1));
         }
         return acc;

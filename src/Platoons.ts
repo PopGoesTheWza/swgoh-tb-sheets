@@ -248,7 +248,7 @@ namespace TerritoryBattles {
       if (this.useExclusions) {
         const exclusionsId = config.exclusionId();
         if (exclusionsId.length > 0) {
-          exclusions = Exclusions.getList();
+          exclusions = Exclusions.getList(this.index);
         }
       }
 
@@ -268,19 +268,26 @@ namespace TerritoryBattles {
       let shipsPool: ShipsPool;
       let heroesPool: HeroesPool;
       for (const territory of territories) {
+        let pool: HeroesPool|ShipsPool;
         if (territory instanceof AirspaceTerritory) {
           shipsPool = shipsPool || new ShipsPool(this, exclusions, notAvailable);
-          // init  UnitPools
-          // get allUnits
-          // get neededUnits
-          // platoon: clear content, data validation, set color black
-          // check 'skip this'
-          // create dropdown
+          pool = shipsPool;
         }
         if (territory instanceof GroundTerritory) {
           heroesPool = heroesPool || new HeroesPool(this, exclusions, notAvailable);
-          // init  UnitPools
+          pool = heroesPool;
         }
+        if (pool) {}
+        // init  UnitPools
+        // get allUnits
+        // get neededUnits
+        // platoon: clear content, data validation, set color black
+        // check 'skip this'
+        // create dropdown
+        // mark impossible slots
+        // mark impossible platoons
+
+        // assign unit
       }
 
       // init neededUnit (n[unit][territory][platoon])
@@ -325,7 +332,7 @@ namespace TerritoryBattles {
     protected readonly phase: Phase;
     public readonly index: territoryIdx;
     protected readonly name: string;
-    protected platoons: Platoon[] = [];
+    public platoons: Platoon[] = [];
 
     constructor(phase: Phase, index: territoryIdx, name: string) {
 
@@ -609,6 +616,8 @@ namespace TerritoryBattles {
     protected units: UnitMemberInstances;  // units[name][member]
     protected readonly exclusions: MemberUnitBooleans;  // excluded[member][unit] = boolean
     protected readonly notAvailable: string[];
+    protected territories: Territory[] = [];
+    protected platoons: Platoon[] = [];
 
     constructor(
       phase: Phase,
@@ -620,6 +629,14 @@ namespace TerritoryBattles {
       this.allUnits = utils.clone(allUnits);
       this.exclusions = utils.clone(exclusions);
       this.notAvailable = utils.clone(notAvailable);
+    }
+
+    public addTerrotory(territory: Territory) {
+      this.territories.push(territory);
+      const platoons = territory.platoons;
+      for (const platoon of platoons) {
+        this.platoons.push(platoon);
+      }
     }
 
     protected filter(filter: (member: string, u: UnitInstance) => boolean): void {
@@ -950,7 +967,7 @@ function recommendPlatoons() {
   // remove heroes listed on Exclusions sheet
   const exclusionsId = config.exclusionId();
   if (exclusionsId.length > 0) {
-    const exclusions = Exclusions.getList();
+    const exclusions = Exclusions.getList(phase);
     Exclusions.process(allHeroes, exclusions);
     Exclusions.process(allShips, exclusions, config.currentEvent());
   }
