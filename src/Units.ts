@@ -12,6 +12,11 @@ function reloadUnitDefinitions() {
 /** units related classes and functions */
 namespace Units {
 
+  export enum TYPES {
+    HERO = 1,
+    SHIP = 2,
+  }
+
   const sortUnits = (a: UnitDefinition, b: UnitDefinition) => {
     return caseInsensitive_(a.name, b.name);
   };
@@ -405,7 +410,7 @@ namespace Units {
         const level = +m[2];
         const gearLevel = +m[3];
         const power = +m[4];
-        result = { gearLevel, level, power, rarity, stats };
+        result = { gearLevel, level, power, rarity, stats, type: Units.TYPES.HERO };
       }
 
       return result;
@@ -475,7 +480,7 @@ namespace Units {
         const rarity = +m[1];
         const level = +m[2];
         const power = +m[3];
-        result = { level, power, rarity, stats };
+        result = { level, power, rarity, stats, type: Units.TYPES.SHIP };
       }
 
       return result;

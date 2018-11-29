@@ -128,6 +128,7 @@ interface UnitDefinition {
  * (baseId, gearLevel, level, name, power, rarity, stats, tags)
  */
 interface UnitInstance {
+  type: Units.TYPES;
   baseId?: string;
   gearLevel?: number;
   level: number;
