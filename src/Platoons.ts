@@ -217,7 +217,6 @@ namespace TerritoryBattles {
    */
   export class Phase {
 
-    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
     /** event type (LS/DS) */
     public readonly event: event;
     /** phase number */
@@ -254,7 +253,7 @@ namespace TerritoryBattles {
 
       const notAvailable: string[] = [];
       if (this.useNotAvailable) {
-        const data = this.sheet
+        const data = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
           .getRange(56, 4, MAX_MEMBERS)
           .getValues() as [string][];
         for (const e of data) {
@@ -277,9 +276,11 @@ namespace TerritoryBattles {
           heroesPool = heroesPool || new HeroesPool(this, exclusions, notAvailable);
           pool = heroesPool;
         }
-        if (pool) {}
-        // init  UnitPools
         // get allUnits
+        // init  UnitPools
+        if (pool) {
+          pool.addTerritory(territory);
+        }
         // get neededUnits
         // platoon: clear content, data validation, set color black
         // check 'skip this'
@@ -388,7 +389,7 @@ namespace TerritoryBattles {
 
     writerResetButtons(): utils.SpooledTask[] {
       const platoons = this.platoons;
-      const result = platoons.map(p => p.writerResetButton());
+      const result = platoons.map(p => p.writerResetSkipButton());
 
       return result;
     }
@@ -444,62 +445,103 @@ namespace TerritoryBattles {
 
   abstract class Platoon {
 
-    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+    protected readonly unitsRange: GoogleAppsScript.Spreadsheet.Range;
+    protected readonly donorsRange: GoogleAppsScript.Spreadsheet.Range;
+    protected readonly skipButtonRange: GoogleAppsScript.Spreadsheet.Range;
+    // protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
     protected slice: slice;
-    protected readonly territory: Territory;
-    protected readonly index: platoonIdx;
+    public readonly territory: Territory;
+    public readonly index: platoonIdx;
     // public readonly isGround: boolean;
     // public readonly isOpen: boolean;
     // public possible: boolean;
-    protected readonly row: number;
-    protected readonly offset: number;
-    protected readonly column: number;
+    public slots: Slot[] = [];
     public readonly value: number;
 
     constructor(territory: Territory, index: platoonIdx, value: number) {
       this.index = index;
       this.territory = territory;
-      this.row = this.territory.index * PLATOON_ZONE_ROW_OFFSET + 2;
-      this.offset = this.index * PLATOON_ZONE_COLUMN_OFFSET;
-      this.column = this.offset + 4;
+      const row = territory.index * PLATOON_ZONE_ROW_OFFSET + 2;
+      const column = index * PLATOON_ZONE_COLUMN_OFFSET + 4;
+      const range = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+        .getRange(row, column, MAX_PLATOON_UNITS);
+      this.unitsRange = range;
+      this.donorsRange = range.offset(0, 1);
+      this.skipButtonRange = range.offset(MAX_PLATOON_UNITS, 1, 1, 1);
       this.value = value;
+      for (let index = 0; index <= MAX_PLATOON_UNITS; index += 1) {
+        this.slots.push(new Slot(this, index));
+      }
     }
 
-    getResetButton(): boolean {
-      const range = this.sheet
-        .getRange(this.row + MAX_PLATOON_UNITS, this.column + 1, MAX_PLATOON_UNITS);
+    getDonorList(): string[] {
+      const values = this.donorsRange
+        .getValues() as [string][];
+      const list = values.map((e) => {
+        let value = e[0];
+        if (typeof value === 'string') {
+          value = value.trim();
+          value = value.length > 0 ? value : undefined;
+        } else {
+          value = undefined;
+        }
 
-      return range.getValue() as string === 'SKIP';
+        return value;
+      });
+
+      return list;
+    }
+
+    getUnitList(): string[] {
+      const values = this.unitsRange
+        .getValues() as [string][];
+      const list = values.map((e) => {
+        let value = e[0];
+        if (typeof value === 'string') {
+          value = value.trim();
+          value = value.length > 0 ? value : undefined;
+        } else {
+          value = undefined;
+        }
+
+        return value;
+      });
+
+      return list;
+    }
+
+    getSkipButton(): boolean {
+      return this.skipButtonRange.getValue() as string === 'SKIP';
     }
 
     setSlice(slice: slice): void {
       this.slice = slice;
     }
 
-    writerResetButton(): utils.SpooledTask {
-      const range = this.sheet
-        .getRange(this.row + MAX_PLATOON_UNITS, this.column + 1, MAX_PLATOON_UNITS);
-      const writer = () => { range.clearContent(); };
+    writerResetDonors(): utils.SpooledTask {
+      const range = this.donorsRange;
 
-      return writer;
+      return () => {
+        range.clearContent()
+          .clearDataValidations()
+          .setFontColor(COLOR.BLACK);
+      };
     }
 
-    writerResetDonors(): utils.SpooledTask {
-      const range = this.sheet
-        .getRange(this.row, this.column + 1, MAX_PLATOON_UNITS);
-      const writer = () =>
-        { range.clearContent().clearDataValidations().setFontColor(COLOR.BLACK); };
+    writerResetSkipButton(): utils.SpooledTask {
+      const range = this.skipButtonRange;
 
-      return writer;
+      return () => { range.clearContent(); };
     }
 
     writerSlice(): utils.SpooledTask {
       const data = this.slice.map(e => [e]);
-      const range = this.sheet
-        .getRange(this.row, this.column, MAX_PLATOON_UNITS);
-      const writer = () => { range.setValues(data).setFontColor(COLOR.BLACK); };
+      const range = this.unitsRange;
 
-      return writer;
+      return () => {
+        range.setValues(data)
+          .setFontColor(COLOR.BLACK);
+      };
     }
 
   }
@@ -511,11 +553,12 @@ namespace TerritoryBattles {
     }
 
     writerSlice(): utils.SpooledTask {
-      const range = this.sheet
-        .getRange(this.row, this.column, MAX_PLATOON_UNITS);
-      const writer = () => { range.clearContent().setFontColor(COLOR.BLACK); };
+      const range = this.unitsRange;
 
-      return writer;
+      return () => {
+        range.clearContent()
+          .setFontColor(COLOR.BLACK);
+      };
     }
 
   }
@@ -532,6 +575,28 @@ namespace TerritoryBattles {
 
     constructor(territory: Territory, index: platoonIdx, value: number) {
       super(territory, index, value);
+    }
+
+  }
+
+  class Slot {
+
+    protected readonly unitRange: GoogleAppsScript.Spreadsheet.Range;
+    protected readonly donorRange: GoogleAppsScript.Spreadsheet.Range;
+    protected readonly platoon: Platoon;
+    protected readonly index: number;
+    public unit: string;
+    public member: string;
+
+    constructor(platoon: Platoon, index: number) {
+      this.index = index;
+      this.platoon = platoon;
+      const row = platoon.territory.index * PLATOON_ZONE_ROW_OFFSET + index + 2;
+      const column = platoon.index * PLATOON_ZONE_COLUMN_OFFSET + 4;
+      const range = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+        .getRange(row, column);
+      this.unitRange = range;
+      this.donorRange = range.offset(0, 1);
     }
 
   }
@@ -631,7 +696,7 @@ namespace TerritoryBattles {
       this.notAvailable = utils.clone(notAvailable);
     }
 
-    public addTerrotory(territory: Territory) {
+    public addTerritory(territory: Territory) {
       this.territories.push(territory);
       const platoons = territory.platoons;
       for (const platoon of platoons) {
