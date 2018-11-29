@@ -581,8 +581,8 @@ namespace TerritoryBattles {
 
   class Slot {
 
-    protected readonly unitRange: GoogleAppsScript.Spreadsheet.Range;
-    protected readonly donorRange: GoogleAppsScript.Spreadsheet.Range;
+    // protected readonly unitRange: GoogleAppsScript.Spreadsheet.Range;
+    // protected readonly donorRange: GoogleAppsScript.Spreadsheet.Range;
     protected readonly platoon: Platoon;
     protected readonly index: number;
     public unit: string;
@@ -591,12 +591,12 @@ namespace TerritoryBattles {
     constructor(platoon: Platoon, index: number) {
       this.index = index;
       this.platoon = platoon;
-      const row = platoon.territory.index * PLATOON_ZONE_ROW_OFFSET + index + 2;
-      const column = platoon.index * PLATOON_ZONE_COLUMN_OFFSET + 4;
-      const range = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
-        .getRange(row, column);
-      this.unitRange = range;
-      this.donorRange = range.offset(0, 1);
+      // const row = platoon.territory.index * PLATOON_ZONE_ROW_OFFSET + index + 2;
+      // const column = platoon.index * PLATOON_ZONE_COLUMN_OFFSET + 4;
+      // const range = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+      //   .getRange(row, column);
+      // this.unitRange = range;
+      // this.donorRange = range.offset(0, 1);
     }
 
   }
