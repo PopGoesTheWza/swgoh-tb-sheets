@@ -37,7 +37,7 @@ namespace Exclusions {
       // For each exclusion cell
       e.forEach((x, c) => {
         const member = members[c];
-        const isExcluded = Boolean(x ? x.trim() : '');  // exclude if cell is not empty?
+        const isExcluded = Boolean(x ? `${x}`.trim() : '');  // exclude if cell is not empty?
         if (isExcluded) {
           if (!exclusions[member]) {
             exclusions[member] = {};
