@@ -1,9 +1,15 @@
 /** API Functions to pull data from swgoh.gg */
 namespace SwgohGg {
 
+  enum COMBAT_TYPE {
+    HERO = 1,
+    SHIP = 2,
+  }
+
   interface SwgohGgUnit {
     data: {
       base_id: string;
+      combat_type: COMBAT_TYPE;
       gear: {
         base_id: string;
         is_obtained: boolean;
@@ -36,7 +42,7 @@ namespace SwgohGg {
     alignment: string;
     base_id: string;
     categories: string[];
-    combat_type: number;
+    combat_type: COMBAT_TYPE;
     description: string;
     gear_levels: {
       tier: number;
@@ -168,8 +174,12 @@ namespace SwgohGg {
         const unitArray: UnitInstances = {};
         for (const e of member.units) {
           const d = e.data;
+          const type = d.combat_type === COMBAT_TYPE.HERO
+            ? Units.TYPES.HERO
+            : Units.TYPES.SHIP;
           const baseId = d.base_id;
           unitArray[baseId] = {
+            type,
             baseId,
             gearLevel: d.gear_level,
             level: d.level,
@@ -230,8 +240,12 @@ namespace SwgohGg {
       const units = player.units;
       for (const o of json.units) {
         const d = o.data;
+        const type = d.combat_type === COMBAT_TYPE.HERO
+          ? Units.TYPES.HERO
+          : Units.TYPES.SHIP;
         const baseId = d.base_id;
         units[baseId] = {
+          type,
           baseId,
           gearLevel: d.gear_level,
           level: d.level,

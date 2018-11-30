@@ -63,7 +63,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
   type UnitsList = {
     nameKey: string,
     forceAlignment: number,
-    combatType: number,
+    combatType: swgohhelpapi.COMBAT_TYPE,
     baseId: string,
     categoryIdList: [string],
   };
@@ -82,7 +82,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
     const client = new swgohhelpapi.exports.Client(settings);
 
     const units: [UnitsList] = client.fetchData({
-      collection: 'unitsList',
+      collection: swgohhelpapi.Collections.unitsList,
       language: swgohhelpapi.Languages.eng_us,
       match: {
         rarity: 7,
@@ -101,7 +101,9 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
     if (units && units.length && units.length > 0) {
       return units.reduce(
         (acc: UnitsDefinitions, e) => {
-          const bucket = e.combatType === 1 ? acc.heroes : acc.ships;
+          const bucket = e.combatType === swgohhelpapi.COMBAT_TYPE.HERO
+            ? acc.heroes
+            : acc.ships;
           const tags = e.categoryIdList.reduce(
             (a: [string], c) => {
               const tag = categoryId[c];
@@ -218,7 +220,11 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
               const allyCode = i.allyCode;
               const index = membersData.findIndex(e => e.allyCode === allyCode);
               if (index > -1) {
+                const type = i.type === swgohhelpapi.COMBAT_TYPE.HERO
+                  ? Units.TYPES.HERO
+                  : Units.TYPES.SHIP;
                 membersData[index].units[baseId] = {
+                  type,
                   baseId,
                   gearLevel: i.gearLevel,
                   level: i.level,
@@ -297,7 +303,11 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
       };
       for (const u of e.roster) {
         const baseId = u.defId;
+        const type = u.combatType === swgohhelpapi.COMBAT_TYPE.HERO
+          ? Units.TYPES.HERO
+          : Units.TYPES.SHIP;
         player.units[baseId] = {
+          type,
           baseId: u.defId,
           gearLevel: u.gear,
           level: u.level,
