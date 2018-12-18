@@ -46,7 +46,7 @@ namespace SwgohHelp {
   /** check if swgohhelpapi api is installed */
   function checkLibrary(): boolean {
 
-    const result = Boolean(swgohhelpapi);
+    const result = !!swgohhelpapi;
     if (!result) {
       const UI = SpreadsheetApp.getUi();
       UI.alert(
@@ -54,7 +54,7 @@ namespace SwgohHelp {
         `Please visit the link below to reinstall it.
 https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
         UI.ButtonSet.OK,
-);
+      );
     }
 
     return result;
