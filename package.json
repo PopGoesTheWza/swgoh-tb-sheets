@@ -24,16 +24,16 @@
     "swgoh"
   ],
   "dependencies": {
-    "@google/clasp": "^1.6.3"
+    "@google/clasp": "^1.7.0"
   },
   "devDependencies": {
     "@fimbul/ymir": "^0.16.0",
-    "@types/google-apps-script": "0.0.27",
-    "eslint": "^5.9.0",
+    "@types/google-apps-script": "0.0.33",
+    "eslint": "^5.10.0",
     "gas-lib": "^2.0.2",
-    "prettier": "^1.15.2",
+    "prettier": "^1.15.3",
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.11.1",
-    "typescript": "^3.1.6"
+    "typescript": "^3.2.2"
   }
 }
