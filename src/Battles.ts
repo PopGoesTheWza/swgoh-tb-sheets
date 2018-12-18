@@ -294,6 +294,9 @@ function getMembers_(): PlayerData[] {
   } else if (config.dataSource.isSwgohGg()) {
     members = SwgohGg.getGuildData(config.SwgohGg.guild());
   }
+  if (!members) {
+    throw new Error('The datasource returned no data');
+  }
   config.dataSource.setGuildDataDate();
 
   const definitions = Units.getDefinitions();
