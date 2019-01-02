@@ -1,4 +1,4 @@
-# SWGoH Territory Battles Sheets
+# SWGoH Territory Battles Sheets [![clasp](https://img.shields.io/badge/built%20with-clasp-4285f4.svg)](https://github.com/google/clasp)
 
 Google Apps Script SWGoH Territory Battles Google Spreadsheet
 - [Instructions Manual](https://docs.google.com/document/d/1InDnFdYdlRDpejeiFkGi6HxMEWmBbfX_wAvWRf1MCME/edit?usp=sharing)
@@ -6,7 +6,7 @@ Google Apps Script SWGoH Territory Battles Google Spreadsheet
 
 ## Getting Started
           
-The `dist` directory contains the bundled code that is pushed as Google Apps Script into the Google speadsheet.
+The `src` directory contains the bundled code that is pushed as Google Apps Script into the Google speadsheet.
 
 ## Build your own copy
 
@@ -17,7 +17,7 @@ Prerequisite:
 Steps:
 1. Make a local copy of the GitHub repository.
 1. Edit the file `.clasp.json` with the scriptId of your own copy of the Territory Battles spreadsheet
-1. If needed, edit the source `.ts` files under the `dist/` directory
+1. If needed, edit the source `.ts` files under the `src/` directory
 1. Use Clasp CLI to push the transpiled TypeScript into your Google script
 1. (Optional) issue a Pull Request for your changes to be added to the official release
 
