@@ -71,7 +71,7 @@ namespace Exclusions {
       }
     }
 
-    return data;
+    return data;  // TODO: go unmutable
   }
 
 }

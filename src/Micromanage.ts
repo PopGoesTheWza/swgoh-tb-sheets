@@ -131,7 +131,7 @@ function sendMicroByMemberWebhook(): void {
   }
 
   entries = entries.sort((a, b) => {
-    return caseInsensitive_(a.member, b.member);
+    return utils.caseInsensitive(a.member, b.member);
   });
 
   const memberMentions = discord.getMemberMentions();
@@ -202,7 +202,7 @@ function sendMicroByMemberWebhook(): void {
     const jsonObject: DiscordPayload = {};
     jsonObject.content = content;
     jsonObject.embeds = embeds;
-    const options: URLFetchRequestOptions = urlFetchMakeParam_(jsonObject);
+    const options: URL_Fetch.URLFetchRequestOptions = urlFetchMakeParam_(jsonObject);
     urlFetchExecute_(webhookURL, options);
     Utilities.sleep(WAIT_TIME);
   }
@@ -210,9 +210,9 @@ function sendMicroByMemberWebhook(): void {
 
 /** Setup the fetch parameters */
 // TODO: Make generic for all Discord webhooks
-function urlFetchMakeParam_(jsonObject: object): URLFetchRequestOptions {
+function urlFetchMakeParam_(jsonObject: object): URL_Fetch.URLFetchRequestOptions {
 
-  const options: URLFetchRequestOptions = {
+  const options: URL_Fetch.URLFetchRequestOptions = {
     method: 'post',
     contentType: 'application/json',
     // Convert the JavaScript object to a JSON string.

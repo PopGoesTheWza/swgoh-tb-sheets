@@ -86,7 +86,7 @@ namespace SwgohGg {
 
     let json;
     try {
-      const params: URLFetchRequestOptions = {
+      const params: URL_Fetch.URLFetchRequestOptions = {
         // followRedirects: true,
         muteHttpExceptions: true,
       };

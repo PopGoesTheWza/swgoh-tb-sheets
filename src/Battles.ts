@@ -1,7 +1,7 @@
 /** set the value and style in a cell */
 function spooledSetCellValue_(
   spooler: utils.Spooler,
-  range: Range | utils.SpooledRange,
+  range: Spreadsheet.Range | utils.SpooledRange,
   value: boolean|number|string|Date,
   bold: boolean,
   align?: 'left' | 'center' | 'right',
@@ -121,7 +121,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   const sortFunction = config.sortRoster()
     // sort roster by member name
-    ? (a, b) => caseInsensitive_(a.name, b.name)
+    ? (a, b) => utils.caseInsensitive(a.name, b.name)
     // sort roster by GP
     : (a, b) => b.gp - a.gp;
 

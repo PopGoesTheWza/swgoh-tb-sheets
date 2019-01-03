@@ -94,7 +94,7 @@ namespace discord {
   function getPlatoonDonations(
     platoon: string[][],
     donations: string[][],
-    rules: DataValidation[][],
+    rules: Spreadsheet.DataValidation[][],
     memberMentions: KeyedStrings,
   ): string[][] {
 
@@ -125,7 +125,7 @@ namespace discord {
 
         // only add rare donations
         if (criteria[0].length < RARE_MAX) {
-          const sorted = criteria[0].sort(caseInsensitive_);
+          const sorted = criteria[0].sort(utils.caseInsensitive);
           const names: string[] = [];
           for (const name of sorted) {
             const mention = memberMentions[name];
@@ -332,7 +332,7 @@ namespace discord {
         [],
       );
       // sort by member
-      donations = acc.sort((a, b) => caseInsensitive_(a[0], b[0]));
+      donations = acc.sort((a, b) => utils.caseInsensitive(a[0], b[0]));
     }
 
     // format the needed donations

@@ -11,10 +11,12 @@ declare namespace SwgohHelp {
 const SPREADSHEET = SpreadsheetApp.getActive();
 // const UI = SpreadsheetApp.getUi();
 
-type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation;
-type Range = GoogleAppsScript.Spreadsheet.Range;
-type Sheet = GoogleAppsScript.Spreadsheet.Sheet;
-type URLFetchRequestOptions = GoogleAppsScript.URL_Fetch.URLFetchRequestOptions;
+import Spreadsheet = GoogleAppsScript.Spreadsheet;
+// type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation;
+// type Range = GoogleAppsScript.Spreadsheet.Range;
+// type Sheet = GoogleAppsScript.Spreadsheet.Sheet;
+import URL_Fetch = GoogleAppsScript.URL_Fetch;
+// type URLFetchRequestOptions = GoogleAppsScript.URL_Fetch.URLFetchRequestOptions;
 
 /** Global constants */
 const MAX_MEMBERS = 50;

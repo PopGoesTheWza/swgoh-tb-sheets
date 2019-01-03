@@ -99,7 +99,7 @@ function setZoneName_(
   spooler: utils.Spooler,
   phase: TerritoryBattles.phaseIdx,
   zone: number,
-  sheet: Sheet,
+  sheet: Spreadsheet.Sheet,
   platoonRow: number,
 ): string {
 
@@ -154,7 +154,7 @@ function getRecommendedMembers_(
 }
 
 /** create the dropdown list */
-function buildDropdown_(memberList: [string, number][]): DataValidation {
+function buildDropdown_(memberList: [string, number][]): Spreadsheet.DataValidation {
 
   const formatList = memberList.map(e => e[0]);
 
@@ -244,25 +244,25 @@ namespace TerritoryBattles {
       const territories = this.territories;
 
       let exclusions: MemberUnitBooleans;
-      if (this.useExclusions) {
-        const exclusionsId = config.exclusionId();
-        if (exclusionsId.length > 0) {
-          exclusions = Exclusions.getList(this.index);
-        }
+      const exclusionsId = config.exclusionId();
+      if (exclusionsId.length > 0) {
+        exclusions = Exclusions.getList(this.index);
       }
+      // if (this.useExclusions) {
+      // }
 
       const notAvailable: string[] = [];
-      if (this.useNotAvailable) {
-        const data = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
-          .getRange(56, 4, MAX_MEMBERS)
-          .getValues() as [string][];
-        for (const e of data) {
-          const name = e[0];
-          if (name.length > 0) {
-            notAvailable.push(name);
-          }
+      const data = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+        .getRange(56, 4, MAX_MEMBERS)
+        .getValues() as [string][];
+      for (const e of data) {
+        const name = e[0];
+        if (name.length > 0) {
+          notAvailable.push(name);
         }
       }
+      // if (this.useNotAvailable) {
+      // }
 
       let shipsPool: ShipsPool;
       let heroesPool: HeroesPool;
@@ -445,9 +445,9 @@ namespace TerritoryBattles {
 
   abstract class Platoon {
 
-    protected readonly unitsRange: GoogleAppsScript.Spreadsheet.Range;
-    protected readonly donorsRange: GoogleAppsScript.Spreadsheet.Range;
-    protected readonly skipButtonRange: GoogleAppsScript.Spreadsheet.Range;
+    protected readonly unitsRange: Spreadsheet.Range;
+    protected readonly donorsRange: Spreadsheet.Range;
+    protected readonly skipButtonRange: Spreadsheet.Range;
     // protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
     protected slice: slice;
     public readonly territory: Territory;
@@ -581,8 +581,8 @@ namespace TerritoryBattles {
 
   class Slot {
 
-    // protected readonly unitRange: GoogleAppsScript.Spreadsheet.Range;
-    // protected readonly donorRange: GoogleAppsScript.Spreadsheet.Range;
+    // protected readonly unitRange: Spreadsheet.Range;
+    // protected readonly donorRange: Spreadsheet.Range;
     protected readonly platoon: Platoon;
     protected readonly index: number;
     public unit: string;
@@ -825,7 +825,7 @@ function loop1_(
   spooler: utils.Spooler,
   cur: PlatoonDetails,
   platoonMatrix: PlatoonUnit[],
-  sheet: Sheet,
+  sheet: Spreadsheet.Sheet,
   phase: TerritoryBattles.phaseIdx,
   allUnits: UnitMemberInstances,
 ) {
@@ -857,7 +857,7 @@ function loop1_(
     const units = range
       .getValues() as string[][];
 
-    const dropdowns: [DataValidation][] = [];
+    const dropdowns: [Spreadsheet.DataValidation][] = [];
     // sheet.getRange(row, column + 1, MAX_PLATOON_UNITS)
     const dropdownsRange = range.offset(0, 1);
     for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
@@ -905,7 +905,7 @@ function loop1_(
 function loop2_(
   spooler: utils.Spooler,
   cur: PlatoonDetails,
-  sheet: Sheet,
+  sheet: Spreadsheet.Sheet,
 ) {
 
   if (cur.exist && !cur.possible) {
@@ -924,7 +924,7 @@ function loop2_(
 function loop3_(
   spooler: utils.Spooler,
   cur: PlatoonDetails,
-  sheet: Sheet,
+  sheet: Spreadsheet.Sheet,
   matrixIdx: number,
   placementCount: number[][],
   platoonMatrix: PlatoonUnit[],

@@ -18,7 +18,7 @@ namespace Units {
   }
 
   const sortUnits = (a: UnitDefinition, b: UnitDefinition) => {
-    return caseInsensitive_(a.name, b.name);
+    return utils.caseInsensitive(a.name, b.name);
   };
 
   /** request units definitions from data source (and cache them for 6 hours) */
@@ -103,9 +103,9 @@ namespace Units {
     /** column which holds units for the first member */
     private columnOffset: number;
     /** name of the sheet on which the units are stored */
-    protected sheet: Sheet;
+    protected sheet: Spreadsheet.Sheet;
 
-    constructor(offset: number, sheet: Sheet) {
+    constructor(offset: number, sheet: Spreadsheet.Sheet) {
 
       this.columnOffset = offset;
       this.sheet = sheet;
