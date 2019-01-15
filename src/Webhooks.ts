@@ -102,12 +102,12 @@ namespace discord {
 
     // cycle through the heroes
     for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
-      if (platoon[h][0].length === 0) {
-        continue; // no unit needed here
-      }
-
       if (platoon[h][1].length === 0 || platoon[h][1] === 'Skip') {
         return undefined; // impossible platoon
+      }
+
+      if (platoon[h][0].length === 0) {
+        continue; // no unit needed here
       }
 
       // see if the hero is already in donations
