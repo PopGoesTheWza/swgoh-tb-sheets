@@ -80,7 +80,7 @@ function populateEventTable_(
         // refresh from data source
         const definitions = Units.getDefinitionsFromDataSource();
         // replace content of unitsIndex with definitions
-        unitsIndex.splice(0, unitsIndex.length, ...definitions.heroes.concat(definitions.ships));
+        unitsIndex.splice(0, unitsIndex.length, ...[...definitions.heroes, ...definitions.ships]);
         // refresh nameToBaseId with updated unitsIndex
         for (const e of unitsIndex) {
           nameToBaseId[e.name] = e.baseId;
@@ -206,7 +206,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
     .getValues() as number[][];
 
   const definitions = Units.getDefinitions();
-  const unitsIndex = definitions.heroes.concat(definitions.ships);
+  const unitsIndex = [...definitions.heroes, ...definitions.ships];
 
   // add & rename
   for (const e of add) {
@@ -300,7 +300,7 @@ function getMembers_(): PlayerData[] {
   config.dataSource.setGuildDataDate();
 
   const definitions = Units.getDefinitions();
-  const unitsIndex = definitions.heroes.concat(definitions.ships);
+  const unitsIndex = [...definitions.heroes, ...definitions.ships];
   const missingUnit = members.some((m: PlayerData) => {
     for (const baseId in m.units) {
       if (unitsIndex.findIndex(e => e.baseId === baseId) === -1) {
@@ -326,7 +326,7 @@ function setupEvent(): void {
 
   // // make sure the roster is up-to-date
   const definitions = Units.getDefinitions();
-  const unitsIndex = definitions.heroes.concat(definitions.ships);
+  const unitsIndex = [...definitions.heroes, ...definitions.ships];
 
   // Figure out which data source to use
   let members = getMembers_();
@@ -539,7 +539,7 @@ function setupEvent(): void {
   const width = table.reduce((a: number, e) => Math.max(a, e.length), 0);
   table = table.map(
     e =>
-      e.length !== width ? e.concat(Array(width).fill(null)).slice(0, width) : e,
+      e.length !== width ? [...e, ...Array(width).fill(null)].slice(0, width) : e,
   );
   tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
     .setValues(table);

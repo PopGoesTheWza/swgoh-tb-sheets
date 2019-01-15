@@ -121,7 +121,7 @@ namespace Units {
       for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
         const range = sheet.getRange(platoonRow, (platoon * 4) + 4, MAX_PLATOON_UNITS, 1);
         const values = range.getValues() as string[][];
-        units = units.concat(values);
+        units = [...units, ...values];
       }
 
       // flatten the array and keep only unique values
@@ -339,7 +339,7 @@ namespace Units {
 
       // Write our data
       this.sheet.getRange(1, this.columnOffset, definitions.length + 1, memberList.length)
-        .setValues([headers].concat(data));
+        .setValues([...[headers], ...data]);
     }
 
     /** set the unit definitions and phase count formulas */
@@ -379,7 +379,7 @@ namespace Units {
       ];
 
       this.sheet.getRange(1, 1, result.length + 1, headers.length)
-        .setValues([headers].concat(result));
+        .setValues([...[headers], ...result]);
       return;
     }
   }
@@ -420,7 +420,7 @@ namespace Units {
     getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
 
       const platoonUnits: string[] = (!isLight_(config.currentEvent()) || phase > 1)
-        ? Heroes.getUniquePlatoonUnits(1).concat(Heroes.getUniquePlatoonUnits(2))
+        ? [...Heroes.getUniquePlatoonUnits(1), ...Heroes.getUniquePlatoonUnits(2)]
         : Heroes.getUniquePlatoonUnits(1);
 
       return super.getNeededRareList(phase, platoonUnits);

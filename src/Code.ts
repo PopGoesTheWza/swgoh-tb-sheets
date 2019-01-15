@@ -93,7 +93,7 @@ namespace Player {
           // refresh from data source
           const definitions = Units.getDefinitionsFromDataSource();
           // replace content of unitsIndex with definitions
-          unitsIndex.splice(0, unitsIndex.length, ...definitions.heroes.concat(definitions.ships));
+          unitsIndex.splice(0, unitsIndex.length, ...[...definitions.heroes, ...definitions.ships]);
           // try again... once
           d = unitsIndex.find(e => e.baseId === baseId);
         }
@@ -235,7 +235,7 @@ namespace Snapshot {
 function playerSnapshot(): void {
 
   const definitions = Units.getDefinitions();
-  const unitsIndex = definitions.heroes.concat(definitions.ships);
+  const unitsIndex = [...definitions.heroes, ...definitions.ships];
 
   // collect the meta data for the heroes
   const filter = config.currentEvent(); // TODO: potentially broken if TB not sync
