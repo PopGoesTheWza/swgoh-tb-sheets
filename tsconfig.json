@@ -3,17 +3,16 @@
   "files": [
     "src/Code.ts",
     "src/Settings.ts",
-    // "src/Ships.ts",
     "src/Exclusions.ts",
     "src/Units.ts",
     "src/Battles.ts",
     "src/Platoons.ts",
     "src/Webhooks.ts",
     "src/Micromanage.ts",
-    "src/lib.ts",
-    // "src/Scorpio.ts",
     "src/SwgohGg.ts",
-    "src/SwgohHelp.ts"
+    "src/SwgohHelp.ts",
+    "src/utils.ts",
+    "src/lib.ts",
   ],
   "compilerOptions": {
     // only emit .d.ts
