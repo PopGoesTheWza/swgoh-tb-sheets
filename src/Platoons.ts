@@ -1,4 +1,3 @@
-
 let PLATOON_PHASES: [string, string, string][] = [];
 let PLATOON_NEEDED_COUNT: KeyedNumbers = {};
 
@@ -358,6 +357,8 @@ namespace TerritoryBattles {
     }
 
     readSlices(): void {
+      const definitions = Units.getDefinitions();
+      const unitsIndex = [...definitions.heroes, ...definitions.ships];
       const rowOffset = this.phase.event === ALIGNMENT.LIGHTSIDE ? 56 : 2;
       const row = this.index * PLATOON_SLICE_ROW_OFFSET + rowOffset;
       const column = (this.phase.index - 1) * PLATOON_SLICE_COLUMN_OFFSET + 2;
@@ -366,7 +367,10 @@ namespace TerritoryBattles {
         .getValues() as string[][];
       const result: slices = [[], [], [], [], [], []];
       for (const row of data) {
-        row.forEach((e, i) => { result[i].push(e); });
+        row.forEach((e, i) => {
+          const match = unitsIndex.find(u => u.baseId === e);
+          result[i].push(match ? match.name : e);
+        });
       }
       result.forEach((e, i) => { this.platoons[i].setSlice(e); });
     }
