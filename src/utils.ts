@@ -1,4 +1,3 @@
-
 namespace utils {
 
   /** string[] callback for case insensitive alphabetical sort */
