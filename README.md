@@ -5,7 +5,11 @@ Google Apps Script SWGoH Territory Battles Google Spreadsheet
 - [Spreadsheet template](https://docs.google.com/spreadsheets/d/17aFVEsOPe-HzoOZm0UizCSEbkc7fS_-4uCETRxkUxLw/edit?usp=sharing)
 
 ## Getting Started
-          
+
+- Make sure you have installed a recent version of [Node.js](https://nodejs.org/en/)
+- install Clasp and TypeScript `npm install -g @google/clasp typescript`
+- clone this project and edit `.clasp.json` with the scriptId of your copy of the Spreadsheet template (see above)
+
 The `src` directory contains the bundled code that is pushed as Google Apps Script into the Google speadsheet.
 
 ## Build your own copy
