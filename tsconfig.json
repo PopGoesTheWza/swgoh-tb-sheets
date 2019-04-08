@@ -1,27 +1,24 @@
 {
   // list all files to process for .d.ts declarations
-  "files": [
-    "src/Code.ts",
-    "src/Settings.ts",
-    "src/Exclusions.ts",
-    "src/Units.ts",
-    "src/Battles.ts",
-    "src/Platoons.ts",
-    "src/Webhooks.ts",
-    "src/Micromanage.ts",
-    "src/SwgohGg.ts",
-    "src/SwgohHelp.ts",
-    "src/utils.ts",
-    "src/lib.ts",
-  ],
+  // "files": [
+  //   "src/Code.ts",
+  //   "src/Settings.ts",
+  //   "src/Exclusions.ts",
+  //   "src/Units.ts",
+  //   "src/Battles.ts",
+  //   "src/Platoons.ts",
+  //   "src/Webhooks.ts",
+  //   "src/Micromanage.ts",
+  //   "src/SwgohGg.ts",
+  //   "src/SwgohHelp.ts",
+  //   "src/utils.ts",
+  //   "src/lib.ts",
+  // ],
   "compilerOptions": {
-    // only emit .d.ts
-    "emitDeclarationOnly": true,
     "declaration": true,
     
     "noEmitOnError": true,
     "outDir": "dist",
-
     // adapted from https://github.com/grant/ts2gas/blob/master/index.js
     "lib": ["es2015"],
     "target": "ES3",
@@ -36,5 +33,8 @@
   // "include": ["src/**/*.ts"],
   "exclude": [
     "node_modules"
+  ],
+  "include": [
+    "src/**/*"
   ]
 }
