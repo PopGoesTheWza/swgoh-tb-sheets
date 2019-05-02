@@ -105,7 +105,9 @@ type KeyedNumbers = KeyedType<number>;
 type KeyedStrings = KeyedType<string>;
 
 interface PlayerData {
+  /** allycode */
   allyCode: number;
+  /** gp */
   gp: number;
   heroesGp: number;
   level?: number;

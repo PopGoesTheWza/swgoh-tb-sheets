@@ -130,7 +130,7 @@ function sendMicroByMemberWebhook(): void {
     }
   }
 
-  entries = entries.sort((a, b) => {
+  entries.sort((a, b) => {
     return utils.caseInsensitive(a.member, b.member);
   });
 
@@ -210,7 +210,7 @@ function sendMicroByMemberWebhook(): void {
 
 /** Setup the fetch parameters */
 // TODO: Make generic for all Discord webhooks
-function urlFetchMakeParam_(jsonObject: object): URL_Fetch.URLFetchRequestOptions {
+function urlFetchMakeParam_(jsonObject: DiscordPayload): URL_Fetch.URLFetchRequestOptions {
 
   const options: URL_Fetch.URLFetchRequestOptions = {
     method: 'post',

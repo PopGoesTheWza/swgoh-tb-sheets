@@ -113,8 +113,8 @@ function setZoneName_(
 /** Clear the full chart */
 function resetPlatoons(): void {
 
-  const event = config.currentEvent() as TerritoryBattles.event;
-  const phase = config.currentPhase() as TerritoryBattles.phaseIdx;
+  const event = config.currentEvent();
+  const phase = config.currentPhase();
   new TerritoryBattles.Phase(event, phase).reset();
 }
 
@@ -147,9 +147,9 @@ function getRecommendedMembers_(
   }
 
   // sort list by power
-  const memberList = rec.sort((a, b) => a[1] - b[1]);  // sorts by 2nd element ascending
+  rec.sort((a, b) => a[1] - b[1]);  // sorts by 2nd element ascending
 
-  return memberList;
+  return rec;
 }
 
 /** create the dropdown list */

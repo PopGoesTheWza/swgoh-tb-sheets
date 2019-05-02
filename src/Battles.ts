@@ -114,8 +114,15 @@ function populateEventTable_(
   return table;
 }
 
-/** update the guild roster */
-function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
+/**
+ * Updates the guild roster
+ *
+ * @param members - array of members
+ * @returns array of PlayerData
+ */
+function updateGuildRoster_(
+  members: PlayerData[],
+): PlayerData[] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
 
@@ -485,7 +492,7 @@ function setupEvent(): void {
 
     // lastPhase = e.phase;
     total += phaseCount;
-    phaseCount = 0;
+    // phaseCount = 0;
   }
 
   const lastHeroRow = tbRow;

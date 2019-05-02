@@ -34,8 +34,8 @@ namespace Units {
       definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
     }
     config.dataSource.setUnitDefinitionsDate();
-    definitions.heroes = definitions.heroes.sort(sortUnits);
-    definitions.ships = definitions.ships.sort(sortUnits);
+    definitions.heroes.sort(sortUnits);
+    definitions.ships.sort(sortUnits);
 
     const heroesTable = new Heroes();
     const shipsTable = new Ships();

@@ -73,6 +73,18 @@ namespace SwgohGg {
     units: SwgohGgUnit[];
   }
 
+  const ggUnitRespToUnitDef = (e: SwgohGgUnitResponse) => {
+    const tags = [e.alignment, e.role, ...e.categories]
+      .join(' ')
+      .toLowerCase();
+    const unit: UnitDefinition = {
+      tags,
+      baseId: e.base_id,
+      name: e.name,
+    };
+    return unit;
+  };
+
   /**
    * Send request to SwgohGg API
    * param link API 'GET' request
@@ -110,19 +122,7 @@ namespace SwgohGg {
     const json = requestApi<SwgohGgUnitResponse[]>(
       'https://swgoh.gg/api/characters/',
     );
-    const mapping = (e: SwgohGgUnitResponse) => {
-      const tags = [e.alignment, e.role, ...e.categories]
-        .join(' ')
-        .toLowerCase();
-      const unit: UnitDefinition = {
-        tags,
-        baseId: e.base_id,
-        name: e.name,
-      };
-      return unit;
-    };
-
-    return json.map(mapping);
+    return json.map(ggUnitRespToUnitDef);
   }
 
   /**
@@ -134,19 +134,7 @@ namespace SwgohGg {
     const json = requestApi<SwgohGgUnitResponse[]>(
       'https://swgoh.gg/api/ships/',
     );
-    const mapping = (e: SwgohGgUnitResponse) => {
-      const tags = [e.alignment, e.role, ...e.categories]
-        .join(' ')
-        .toLowerCase();
-      const unit: UnitDefinition = {
-        tags,
-        baseId: e.base_id,
-        name: e.name,
-      };
-      return unit;
-    };
-
-    return json.map(mapping);
+    return json.map(ggUnitRespToUnitDef);
   }
 
   /** Create guild API link */
