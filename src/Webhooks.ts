@@ -332,7 +332,8 @@ namespace discord {
         [],
       );
       // sort by member
-      donations = acc.sort((a, b) => utils.caseInsensitive(a[0], b[0]));
+      acc.sort((a, b) => utils.caseInsensitive(a[0], b[0]));
+      donations = acc;
     }
 
     // format the needed donations
@@ -420,11 +421,14 @@ function sendPlatoonDepthWebhook(): void {
     }
   }
 
-  const options = urlFetchMakeParam_({
-    content: descriptionText,
-    embeds: [{ fields }],
-  });
-  urlFetchExecute_(webhookURL, options);
+  for (let p = 0; p < fields.length; p += 6) {
+    const pp = fields.slice().slice(p, p + 6);
+    const options = urlFetchMakeParam_({
+      content: descriptionText,
+      embeds: [{ fields: pp }],
+    });
+    urlFetchExecute_(webhookURL, options);
+  }
 }
 
 /** Send a Webhook to Discord */
