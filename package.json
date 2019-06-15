@@ -24,12 +24,12 @@
     "swgoh"
   ],
   "dependencies": {
-    "@google/clasp": "^2.*",
-    "typescript": "^3.*"
+    "@google/clasp": "^2.1.0",
+    "typescript": "^3.5.2"
   },
   "devDependencies": {
-    "@types/google-apps-script": "^0.*",
-    "tslint": "^5.*",
-    "tslint-config-airbnb": "^5.*"
+    "@types/google-apps-script": "^0.0.53",
+    "tslint": "^5.17.0",
+    "tslint-config-airbnb": "^5.11.1"
   }
 }
