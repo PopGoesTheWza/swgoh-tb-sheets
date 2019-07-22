@@ -37,10 +37,10 @@
     reflect-metadata "^0.1.12"
     tslib "^1.8.1"
 
-"@google/clasp@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@google/clasp/-/clasp-2.2.0.tgz#482494361d1cafafa1a02a53d5cb5e742170135c"
-  integrity sha512-re98LTZPPNaZBICUa0MEaDMM05Ua+nL8aa5B7cGhBQKQXJ6siT/2XNGfewvkSriEB1TvP2PcXZZR/LLpVZXP+w==
+"@google/clasp@^2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@google/clasp/-/clasp-2.2.1.tgz#1b7841f75ff0eb169bd978964d963fa85af8bb87"
+  integrity sha512-dUdEBfwOuC1d95o1ntZ+4a60M65q2vwvHvgD22bPCx+OU0m+ZUBs5rZSloh/IGDjEVqFbDsHU6SLgM0x3MOhgA==
   dependencies:
     chalk "^2.4.2"
     cli-spinner "^0.2.10"
@@ -1745,6 +1745,11 @@ typescript@^3.4.4, typescript@^3.5.2:
   version "3.5.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.5.2.tgz#a09e1dc69bc9551cadf17dba10ee42cf55e5d56c"
   integrity sha512-7KxJovlYhTX5RaRbUdkAXN1KUZ8PwWlTzQdHV6xNqvuFOs7+WBo10TQUqT19Q/Jz2hk5v9TQDIhyLhhJY4p5AA==
+
+typescript@^3.5.3:
+  version "3.5.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.5.3.tgz#c830f657f93f1ea846819e929092f5fe5983e977"
+  integrity sha512-ACzBtm/PhXBDId6a6sDJfroT2pOWt/oOnk4/dElG5G33ZL776N3Y6/6bKZJBFpd+b05F3Ct9qDjMeJmRWtE2/g==
 
 universalify@^0.1.0:
   version "0.1.2"
