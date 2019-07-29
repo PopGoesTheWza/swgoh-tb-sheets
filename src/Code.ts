@@ -262,7 +262,7 @@ function playerSnapshot(): void {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
   const playerData = Snapshot.getData(
     sheet,
-    isGeo_(filter) ? ALIGNMENT.DARKGEONOSIS : filter,
+    isGeo_(filter) ? ALIGNMENT.DARKSIDE : filter,
     unitsIndex,
   );
   if (playerData) {
