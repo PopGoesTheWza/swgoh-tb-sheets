@@ -156,12 +156,26 @@ function isLight_(filter: string): boolean {
   return filter === ALIGNMENT.LIGHTSIDE;
 }
 
+/** is alignment 'Light Side' */
+function isDark_(filter: string): boolean {
+  return filter === ALIGNMENT.DARKSIDE;
+}
+
+/** is alignment 'Light Side' */
+function isGeo_(filter: string): boolean {
+  return filter === ALIGNMENT.DARKGEONOSIS;
+}
+
 /** get the current event definition */
 function getEventDefinition_(filter: string): [string, string][] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
-  const col = (isLight_(filter) ? META_HEROES_COL : META_HEROES_DS_COL) + 2;
+  const col = (
+    isLight_(filter) ? META_HEROES_COL :
+    isDark_(filter) ? META_HEROES_DS_COL :
+    META_HEROES_GEO_DS_COL
+    ) + 2;
   const numRows = sheet.getLastRow() - row + 1;
   const values = sheet.getRange(row, col, numRows).getValues() as [string][];
 
@@ -240,14 +254,17 @@ function playerSnapshot(): void {
   // collect the meta data for the heroes
   const filter = config.currentEvent(); // TODO: potentially broken if TB not sync
   const meta = getEventDefinition_(filter);
-
   // get all hero stats
   let countFiltered = 0;
   let countTagged = 0;
   const characterTag = config.tagFilter(); // TODO: potentially broken if TB not sync
   const powerTarget = config.requiredHeroGp();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
-  const playerData = Snapshot.getData(sheet, filter, unitsIndex);
+  const playerData = Snapshot.getData(
+    sheet,
+    isGeo_(filter) ? ALIGNMENT.DARKGEONOSIS : filter,
+    unitsIndex,
+  );
   if (playerData) {
     for (const baseId in playerData.units) {
       const u = playerData.units[baseId];

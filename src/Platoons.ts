@@ -17,7 +17,8 @@ class PlatoonDetails {
     this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
-    this.exist = zone !== 0 || phase > 2;
+    this.exist = zone !== 0
+      || phase > (config.currentEvent() === ALIGNMENT.DARKGEONOSIS ? 1 : 2);
   }
 
   getOffset() {
@@ -81,6 +82,15 @@ function initPlatoonPhases_(): void {
         'Rebel Base South Entrance',
       ],
     ];
+  } else if (filter === ALIGNMENT.DARKGEONOSIS) {
+    PLATOON_PHASES = [
+      ['', 'Droid Factory', 'Canyons'],
+      ['Core Ship Yards', 'Separatist Command', 'Petranaki Arena'],
+      ['Contested Airspace', 'Battleground', 'Sand Dunes'],
+      ['Republic Fleet', 'Count Dooku Hangar', 'Rear Flank'],
+      ['???', '???', '???'],
+      ['???', '???', '???'],
+    ];
   } else {
     PLATOON_PHASES = [
       ['???', '???', '???'],
@@ -130,7 +140,9 @@ function getRecommendedMembers_(
 ): [string, number][] {
 
   // see how many stars are needed
-  const minRarity = phase + 1;
+  const minRarity = config.currentEvent() === ALIGNMENT.DARKGEONOSIS
+    ? (phase < 3 ? 6 : 7)
+    : phase + 1;
 
   const rec: [string, number][] = [];
 
@@ -202,7 +214,7 @@ function filterUnits_(
 namespace TerritoryBattles {
 
   /** supported events for TB */
-  export type event = ALIGNMENT.DARKSIDE|ALIGNMENT.LIGHTSIDE;
+  export type event = ALIGNMENT.DARKGEONOSIS|ALIGNMENT.DARKSIDE|ALIGNMENT.LIGHTSIDE;
   /** TB phases */
   export type phaseIdx = 1|2|3|4|5|6;
   /** TB territories (zero-based) */
@@ -359,7 +371,8 @@ namespace TerritoryBattles {
     readSlices(): void {
       const definitions = Units.getDefinitions();
       const unitsIndex = [...definitions.heroes, ...definitions.ships];
-      const rowOffset = this.phase.event === ALIGNMENT.LIGHTSIDE ? 56 : 2;
+      const rowOffset = this.phase.event === ALIGNMENT.LIGHTSIDE ? 56
+        : ALIGNMENT.DARKSIDE ? 2 : 110;
       const row = this.index * PLATOON_SLICE_ROW_OFFSET + rowOffset;
       const column = (this.phase.index - 1) * PLATOON_SLICE_COLUMN_OFFSET + 2;
       const data = SPREADSHEET.getSheetByName(SHEETS.SLICES)
@@ -676,6 +689,28 @@ namespace TerritoryBattles {
         ground('Rebel Base South Entrance', [260, 260, 260, 260, 260, 260]),
       ],
     },
+    'Geo Dark': {
+      1: [
+        closed,
+        ground('Droid Factory', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+        ground('Canyons', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+      ],
+      2: [
+        airspace('Core Ship Yards', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+        ground('Separatist Command', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+        ground('Patranaki Arena', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+      ],
+      3: [
+        airspace('Contested Airspace', [250, 250, 250, 250, 250, 250]),
+        ground('Battleground', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+        ground('Sand Dunes', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+      ],
+      4: [
+        airspace('Republic Fleet', [333.3, 333.3, 333.3, 333.3, 333.3, 333.3]),
+        ground('Count Dookus Hangar', [250, 250, 250, 250, 250, 250]),
+        ground('Rear Flank', [250, 250, 250, 250, 250, 250]),
+      ],
+    },
   };
 
   abstract class UnitPool {
@@ -784,13 +819,15 @@ namespace TerritoryBattles {
     }
 
     protected filter() {
-
-      const phase = this.phase.index;
-      const alignment = config.currentEvent().toLowerCase();
+      const event = config.currentEvent();
+      const rarityThreshold = event === ALIGNMENT.DARKGEONOSIS
+        ? (this.phase.index < 3 ? 5 : 6)
+        : this.phase.index;
+      const alignment = (event === ALIGNMENT.LIGHTSIDE ? event : ALIGNMENT.DARKSIDE).toLowerCase();
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
-        u.rarity > phase && u.tags.indexOf(alignment) !== -1;
+        u.rarity > rarityThreshold && u.tags.indexOf(alignment) !== -1;
       // && this.notAvailable.findIndex(e => e[0] === member) === -1
 
       super.filter(filter);
@@ -1008,7 +1045,11 @@ function recommendPlatoons() {
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = config.currentPhase();
-  const alignment = config.currentEvent().toLowerCase();
+  const event = config.currentEvent();
+  const rarityThreshold = event === ALIGNMENT.DARKGEONOSIS
+    ? (phase < 3 ? 5 : 6)
+    : phase;
+  const alignment = (event === ALIGNMENT.LIGHTSIDE ? event : ALIGNMENT.DARKSIDE).toLowerCase();
   const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as [string][];
 
   // cache the matrix of hero data
@@ -1020,7 +1061,7 @@ function recommendPlatoons() {
   filterUnits_(
     allHeroes,
     (member: string, u: UnitInstance) => {
-      return u.rarity > phase
+      return u.rarity > rarityThreshold
         && u.tags.indexOf(alignment) !== -1
         && notAvailable.findIndex(e => e[0] === member) === -1;
     },
@@ -1028,7 +1069,7 @@ function recommendPlatoons() {
   filterUnits_(
     allShips,
     (member: string, u: UnitInstance) => {
-      return u.rarity > phase
+      return u.rarity > rarityThreshold
         && notAvailable.findIndex(e => e[0] === member) === -1;
     },
   );

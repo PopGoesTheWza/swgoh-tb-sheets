@@ -51,6 +51,7 @@ const META_UNITDEFINITIONSDATE_COL = 1;
 
 const META_HEROES_COL = 7;
 const META_HEROES_DS_COL = 16;
+const META_HEROES_GEO_DS_COL = 25;
 
 const META_HEROES_COUNT_ROW = 5;
 const META_HEROES_COUNT_COL = 5;
@@ -179,6 +180,7 @@ type UnitMemberInstances = {
 
 /** Constants for alignment */
 enum ALIGNMENT {
+  DARKGEONOSIS = 'Geo Dark',
   DARKSIDE = 'Dark Side',
   LIGHTSIDE = 'Light Side',
 }

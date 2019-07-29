@@ -380,7 +380,9 @@ function setupEvent(): void {
 
   // collect the meta data for the heroes
   const row = 2;
-  const col = isLight_(config.currentEvent()) ? META_HEROES_COL : META_HEROES_DS_COL;
+  const col = isLight_(config.currentEvent()) ? META_HEROES_COL :
+    isDark_(config.currentEvent()) ? META_HEROES_DS_COL :
+    META_HEROES_GEO_DS_COL;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8)
     .getValues() as eventData[];
