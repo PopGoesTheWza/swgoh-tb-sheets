@@ -462,7 +462,7 @@ function allRareUnitsWebhook(): void {
   const fields: discord.MessageEmbedFields[] = [];
 
   // TODO: regroup phases and zones management
-  if (phase > (config.currentEvent() === ALIGNMENT.DARKGEONOSIS ? 1 : 2)) {
+  if (phase > (isGeo_(config.currentEvent()) ? 1 : 2)) {
     // get the ships list
     const shipsTable = new Units.Ships();
     const ships = shipsTable.getNeededRareList(phase);
