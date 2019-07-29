@@ -17,8 +17,7 @@ class PlatoonDetails {
     this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
-    this.exist = zone !== 0
-      || phase > (config.currentEvent() === ALIGNMENT.DARKGEONOSIS ? 1 : 2);
+    this.exist = zone !== 0 || phase > (isGeo_(config.currentEvent()) ? 1 : 2);
   }
 
   getOffset() {
@@ -69,7 +68,7 @@ function initPlatoonPhases_(): void {
       ['Contested Airspace', 'Snowfields', 'Forward Stronghold'],
       ['Imperial Fleet Staging Area', 'Imperial Flank', 'Imperial Landing'],
     ];
-  } else if (filter === ALIGNMENT.DARKSIDE) {
+  } else if (isDark_(filter)) {
     PLATOON_PHASES = [
       ['', 'Imperial Flank', 'Imperial Landing'],
       ['', 'Snowfields', 'Forward Stronghold'],
@@ -82,7 +81,7 @@ function initPlatoonPhases_(): void {
         'Rebel Base South Entrance',
       ],
     ];
-  } else if (filter === ALIGNMENT.DARKGEONOSIS) {
+  } else if (isGeo_(filter)) {
     PLATOON_PHASES = [
       ['', 'Droid Factory', 'Canyons'],
       ['Core Ship Yards', 'Separatist Command', 'Petranaki Arena'],
@@ -140,10 +139,7 @@ function getRecommendedMembers_(
 ): [string, number][] {
 
   // see how many stars are needed
-  const minRarity = config.currentEvent() === ALIGNMENT.DARKGEONOSIS
-    ? (phase < 3 ? 6 : 7)
-    : phase + 1;
-
+  const minRarity = isGeo_(config.currentEvent()) ? (phase < 3 ? 6 : 7) : phase + 1;
   const rec: [string, number][] = [];
 
   const members = data[unitName];
@@ -371,8 +367,10 @@ namespace TerritoryBattles {
     readSlices(): void {
       const definitions = Units.getDefinitions();
       const unitsIndex = [...definitions.heroes, ...definitions.ships];
-      const rowOffset = this.phase.event === ALIGNMENT.LIGHTSIDE ? 56
-        : ALIGNMENT.DARKSIDE ? 2 : 110;
+      const rowOffset =
+        isLight_(this.phase.event) ? 56 :
+        isDark_(this.phase.event) ? 2 :
+        110;
       const row = this.index * PLATOON_SLICE_ROW_OFFSET + rowOffset;
       const column = (this.phase.index - 1) * PLATOON_SLICE_COLUMN_OFFSET + 2;
       const data = SPREADSHEET.getSheetByName(SHEETS.SLICES)
@@ -820,10 +818,8 @@ namespace TerritoryBattles {
 
     protected filter() {
       const event = config.currentEvent();
-      const rarityThreshold = event === ALIGNMENT.DARKGEONOSIS
-        ? (this.phase.index < 3 ? 5 : 6)
-        : this.phase.index;
-      const alignment = (event === ALIGNMENT.LIGHTSIDE ? event : ALIGNMENT.DARKSIDE).toLowerCase();
+      const rarityThreshold = isGeo_(event) ? (this.phase.index < 3 ? 5 : 6) : this.phase.index;
+      const alignment = (isLight_(event) ? event : ALIGNMENT.DARKSIDE).toLowerCase();
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
@@ -1046,10 +1042,8 @@ function recommendPlatoons() {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = config.currentPhase();
   const event = config.currentEvent();
-  const rarityThreshold = event === ALIGNMENT.DARKGEONOSIS
-    ? (phase < 3 ? 5 : 6)
-    : phase;
-  const alignment = (event === ALIGNMENT.LIGHTSIDE ? event : ALIGNMENT.DARKSIDE).toLowerCase();
+  const rarityThreshold = isGeo_(event) ? (phase < 3 ? 5 : 6) : phase;
+  const alignment = (isLight_(event) ? event : ALIGNMENT.DARKSIDE).toLowerCase();
   const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as [string][];
 
   // cache the matrix of hero data
