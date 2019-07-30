@@ -171,11 +171,14 @@ function getEventDefinition_(filter: string): [string, string][] {
 
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
-  const col = (
-    isLight_(filter) ? META_HEROES_COL :
-    isDark_(filter) ? META_HEROES_DS_COL :
-    META_HEROES_GEO_DS_COL
-    ) + 2;
+  const col = 2 + (
+    isLight_(filter)
+      ? META_HEROES_COL
+      : isDark_(filter)
+        ? META_HEROES_DS_COL
+        : META_HEROES_GEO_DS_COL
+  );
+
   const numRows = sheet.getLastRow() - row + 1;
   const values = sheet.getRange(row, col, numRows).getValues() as [string][];
 
@@ -247,13 +250,14 @@ namespace Snapshot {
 
 /** create a snapshot of a player or guild member */
 function playerSnapshot(): void {
+  // TODO: add toast
+  const event = config.currentEvent();
 
   const definitions = Units.getDefinitions();
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
 
   // collect the meta data for the heroes
-  const filter = config.currentEvent(); // TODO: potentially broken if TB not sync
-  const meta = getEventDefinition_(filter);
+  const meta = getEventDefinition_(event);
   // get all hero stats
   let countFiltered = 0;
   let countTagged = 0;
@@ -262,7 +266,7 @@ function playerSnapshot(): void {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
   const playerData = Snapshot.getData(
     sheet,
-    isGeo_(filter) ? ALIGNMENT.DARKSIDE : filter,
+    isGeo_(event) ? ALIGNMENT.DARKSIDE : event,
     unitsIndex,
   );
   if (playerData) {
@@ -292,7 +296,7 @@ function playerSnapshot(): void {
     baseData.push(['GP', playerData.gp]);
     baseData.push(['GP Heroes', playerData.heroesGp]);
     baseData.push(['GP Ships', playerData.shipsGp]);
-    baseData.push([`${filter} 7* P${powerTarget}+`, countFiltered]);
+    baseData.push([`${event} 7* P${powerTarget}+`, countFiltered]);
     baseData.push([`${characterTag} 7* P${powerTarget}+`, countTagged]);
 
     const rowGp = 1;
