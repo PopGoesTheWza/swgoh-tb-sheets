@@ -56,7 +56,10 @@ namespace Exclusions {
     exclusions: MemberUnitBooleans,
     event: string = undefined,  // used to validate ship alignment
   ) {
-    const filter = event ? event.trim().toLowerCase() : undefined;
+    const filter = event
+      ? event.trim().toLowerCase()
+      : undefined;
+
     for (const member in exclusions) {
       const units = exclusions[member];
       for (const unit in units) {

@@ -477,13 +477,16 @@ namespace config {
         .getRange(row, DISCORD_WEBHOOK_COL)
         .getValue() as string;
 
-      return text.length > 0 ? text.replace('{0}', String(phase)) : defaultVal;
+      return text.length > 0
+        ? text.replace('{0}', String(phase))
+        : defaultVal;
     }
 
     /** Get the Description for the phase */
     export function webhookDescription(phase: TerritoryBattles.phaseIdx): string {
+      const event = config.currentEvent();
 
-      const columnOffset = isLight_(config.currentEvent()) ? 0 : 1;
+      const columnOffset = isLight_(event) ? 0 : 1;
       const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
         .getValue() as string;

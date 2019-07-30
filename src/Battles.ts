@@ -7,7 +7,10 @@ function spooledSetCellValue_(
   align?: 'left' | 'center' | 'right',
 ): utils.SpooledRange {
 
-  const spooled = range instanceof utils.SpooledRange ? range : spooler.attach(range);
+  const spooled = range instanceof utils.SpooledRange
+    ? range
+    : spooler.attach(range);
+
   spooled.setFontWeight(bold ? 'bold' : 'normal')
     .setHorizontalAlignment(align)
     .setValue(value);
@@ -226,7 +229,12 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   for (const e of add) {
     const allyCode = e[1];
     if (allyCode && allyCode > 0) {
-      const name = ((typeof e[0] === 'string') ? e[0] : `${e[0]}`).trim();
+      const name = (
+        (typeof e[0] === 'string')
+        ? e[0]
+        : `${e[0]}`
+      ).trim();
+
       const index = members.findIndex(m => m.allyCode === allyCode);
       if (index === -1) {
         // get PlayerData and update members
@@ -349,6 +357,8 @@ function getMembers_(): PlayerData[] {
 
 /** setup the current event */
 function setupEvent(): void {
+  const event = config.currentEvent();
+
   const ss = SpreadsheetApp.getActive();
 
   // // make sure the roster is up-to-date
@@ -409,8 +419,8 @@ function setupEvent(): void {
 
   // collect the meta data for the heroes
   const row = 2;
-  const col = isLight_(config.currentEvent()) ? META_HEROES_COL :
-    isDark_(config.currentEvent()) ? META_HEROES_DS_COL :
+  const col = isLight_(event) ? META_HEROES_COL :
+    isDark_(event) ? META_HEROES_DS_COL :
     META_HEROES_GEO_DS_COL;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8)
@@ -583,7 +593,6 @@ function setupEvent(): void {
   tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
     .setValues(table);
 
-  const event = config.currentEvent();
   if (isDark_(event)) {
     [
       SHEETS.DSPLATOONAUDIT,

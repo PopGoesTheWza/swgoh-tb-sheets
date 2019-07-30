@@ -444,6 +444,7 @@ function sendPlatoonSimplifiedByMemberWebhook(): void {
 /** Send a message to Discord that lists all units to watch out for in the current phase */
 function allRareUnitsWebhook(): void {
 
+  const event = config.currentEvent();
   const phase = config.currentPhase();
 
   const webhookURL = config.discord.webhookUrl(); // get the webhook
@@ -462,7 +463,7 @@ function allRareUnitsWebhook(): void {
   const fields: discord.MessageEmbedFields[] = [];
 
   // TODO: regroup phases and zones management
-  if (phase > (isGeo_(config.currentEvent()) ? 1 : 2)) {
+  if (phase > (isGeo_(event) ? 1 : 2)) {
     // get the ships list
     const shipsTable = new Units.Ships();
     const ships = shipsTable.getNeededRareList(phase);

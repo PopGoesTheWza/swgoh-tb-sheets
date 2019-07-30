@@ -17,7 +17,8 @@ class PlatoonDetails {
     this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
-    this.exist = zone !== 0 || phase > (isGeo_(config.currentEvent()) ? 1 : 2);
+    this.exist = zone !== 0
+      || phase > (isGeo_(config.currentEvent()) ? 1 : 2);
   }
 
   getOffset() {
@@ -121,8 +122,11 @@ function setZoneName_(
 
 /** Clear the full chart */
 function resetPlatoons(): void {
+  const event = config.currentEvent();
+  const phase = config.currentPhase();
+
   SpreadsheetApp.getActive().toast(
-    `Platoons for ${config.currentEvent()} phase ${config.currentPhase()} reseted.`,
+    `Platoons for ${event} phase ${phase} reseted.`,
     'Reset platoons',
     3,
   );
@@ -145,9 +149,13 @@ function getRecommendedMembers_(
   phase: TerritoryBattles.phaseIdx,
   data: UnitMemberInstances,
 ): [string, number][] {
+  const event = config.currentEvent();
 
   // see how many stars are needed
-  const minRarity = isGeo_(config.currentEvent()) ? (phase < 3 ? 6 : 7) : phase + 1;
+  const minRarity = isGeo_(event)
+    ? (phase < 3 ? 6 : 7)
+    : phase + 1;
+
   const rec: [string, number][] = [];
 
   const members = data[unitName];
@@ -375,10 +383,12 @@ namespace TerritoryBattles {
     readSlices(): void {
       const definitions = Units.getDefinitions();
       const unitsIndex = [...definitions.heroes, ...definitions.ships];
-      const rowOffset =
-        isLight_(this.phase.event) ? 56 :
-        isDark_(this.phase.event) ? 2 :
-        110;
+      const rowOffset = isLight_(this.phase.event)
+        ? 56
+        : isDark_(this.phase.event)
+        ? 2
+        : 110;
+
       const row = this.index * PLATOON_SLICE_ROW_OFFSET + rowOffset;
       const column = (this.phase.index - 1) * PLATOON_SLICE_COLUMN_OFFSET + 2;
       const data = SPREADSHEET.getSheetByName(SHEETS.SLICES)
@@ -826,8 +836,15 @@ namespace TerritoryBattles {
 
     protected filter() {
       const event = config.currentEvent();
-      const rarityThreshold = isGeo_(event) ? (this.phase.index < 3 ? 5 : 6) : this.phase.index;
-      const alignment = (isLight_(event) ? event : ALIGNMENT.DARKSIDE).toLowerCase();
+      const rarityThreshold = isGeo_(event)
+        ? (this.phase.index < 3 ? 5 : 6)
+        : this.phase.index;
+
+      const alignment = (
+        isLight_(event)
+          ? event
+          : ALIGNMENT.DARKSIDE
+      ).toLowerCase();
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
@@ -1007,7 +1024,11 @@ function loop3_(
             ) {
               used[unit][member] = true;
               defaultValue = member;
-              count[member] = (typeof count[member] === 'number' ? count[member] : 0) + 1;
+              count[member] = (
+                typeof count[member] === 'number'
+                  ? count[member]
+                  : 0
+              ) + 1;
 
               break;
             }
@@ -1041,17 +1062,25 @@ function loop3_(
 
 /** Recommend members for each Platoon */
 function recommendPlatoons() {
+  const event = config.currentEvent();
 
-  // const p = new TerritoryBattles.Phase(config.currentEvent(), config.currentPhase());
+  // const p = new TerritoryBattles.Phase(event(), config.currentPhase());
 
   const spooler = new utils.Spooler();
 
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const event = config.currentEvent();
   const phase = config.currentPhase();
-  const rarityThreshold = isGeo_(event) ? (phase < 3 ? 5 : 6) : phase;
-  const alignment = (isLight_(event) ? event : ALIGNMENT.DARKSIDE).toLowerCase();
+  const rarityThreshold = isGeo_(event)
+    ? (phase < 3 ? 5 : 6)
+    : phase;
+
+  const alignment = (
+    isLight_(event)
+      ? event
+      : ALIGNMENT.DARKSIDE
+  ).toLowerCase();
+
   const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as [string][];
 
   SpreadsheetApp.getActive().toast(
@@ -1087,7 +1116,7 @@ function recommendPlatoons() {
   if (exclusionsId.length > 0) {
     const exclusions = Exclusions.getList(phase);
     Exclusions.process(allHeroes, exclusions);
-    Exclusions.process(allShips, exclusions, config.currentEvent());
+    Exclusions.process(allShips, exclusions, event);
   }
 
   initPlatoonPhases_();

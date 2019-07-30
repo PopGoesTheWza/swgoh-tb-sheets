@@ -104,6 +104,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           const bucket = e.combatType === swgohhelpapi.COMBAT_TYPE.HERO
             ? acc.heroes
             : acc.ships;
+
           const tags = e.categoryIdList.reduce(
             (a: [string], c) => {
               const tag = categoryId[c];
@@ -116,7 +117,12 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           );
           const alignment = e.forceAlignment === 2
             ? categoryId.alignment_light
-            : (e.forceAlignment === 3 ? categoryId.alignment_dark : undefined);
+            : (
+              e.forceAlignment === 3
+                ? categoryId.alignment_dark
+                : undefined
+            );
+
           if (alignment) {
             tags.unshift(alignment);
           }
@@ -223,6 +229,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
                 const type = i.type === swgohhelpapi.COMBAT_TYPE.HERO
                   ? Units.TYPES.HERO
                   : Units.TYPES.SHIP;
+
                 membersData[index].units[baseId] = {
                   type,
                   baseId,
@@ -306,6 +313,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
         const type = u.combatType === swgohhelpapi.COMBAT_TYPE.HERO
           ? Units.TYPES.HERO
           : Units.TYPES.SHIP;
+
         player.units[baseId] = {
           type,
           baseId: u.defId,
