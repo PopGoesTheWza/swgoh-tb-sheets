@@ -121,7 +121,15 @@ function setZoneName_(
 
 /** Clear the full chart */
 function resetPlatoons(): void {
+  SpreadsheetApp.getActive().toast(
+    `Platoons for ${config.currentEvent()} phase ${config.currentPhase()} reseted.`,
+    'Reset platoons',
+    3,
+  );
+  resetPlatoonsNoUI();
+}
 
+function resetPlatoonsNoUI(): void {
   const event = config.currentEvent();
   const phase = config.currentPhase();
   new TerritoryBattles.Phase(event, phase).reset();
@@ -1040,11 +1048,17 @@ function recommendPlatoons() {
 
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const phase = config.currentPhase();
   const event = config.currentEvent();
+  const phase = config.currentPhase();
   const rarityThreshold = isGeo_(event) ? (phase < 3 ? 5 : 6) : phase;
   const alignment = (isLight_(event) ? event : ALIGNMENT.DARKSIDE).toLowerCase();
   const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as [string][];
+
+  SpreadsheetApp.getActive().toast(
+    `Using units above ${rarityThreshold}⭐ rarity for ${event} phase ${phase} ready.`,
+    'Recommend platoons',
+    3,
+  );
 
   // cache the matrix of hero data
   const heroesTable = new Units.Heroes();
@@ -1180,4 +1194,9 @@ function recommendPlatoons() {
   }
 
   spooler.commit();
+  SpreadsheetApp.getActive().toast(
+    `Platoons for ${event} phase ${phase} ready.`,
+    'Recommend platoons',
+    3,
+  );
 }

@@ -518,7 +518,7 @@ function sendTimedWebhook(): void {
 
   // reset the platoons if clear flag was set
   if (config.discord.resetPlatoons()) {
-    resetPlatoons();
+    resetPlatoonsNoUI();
   }
   allRareUnitsWebhook(); // call the webhook
   registerWebhookTimer(); // register the next timer

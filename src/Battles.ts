@@ -29,12 +29,10 @@ function populateEventTable_(
   }
 
   let total = 0;
-  // let phaseCount = 0;
   let requiredUnits = 0;
   let missingRequiredUnits = 0;
   let squadCount = 0;
   let lastSquad = 0;
-  // let lastRequired = false;
 
   const table: (string|number)[][] = [];
   table[0] = [];
@@ -58,7 +56,6 @@ function populateEventTable_(
           + Math.min(phaseUnits - requiredUnits, squadCount);
         table[r + 1][c] = readyUnits;
         total += readyUnits;
-        // phaseCount = 0;
         requiredUnits = 0;
         missingRequiredUnits = 0;
         squadCount = 0;
@@ -66,7 +63,6 @@ function populateEventTable_(
       } else if (curHero[0] === 'Total:') {
         table[r + 1][c] = total;
         total = 0;
-        // phaseCount = 0;
         requiredUnits = 0;
         missingRequiredUnits = 0;
         squadCount = 0;
@@ -113,19 +109,8 @@ function populateEventTable_(
         if (!requirementsMet) {
           missingRequiredUnits += 1;
         }
-      }
-      if (requirementsMet) {
-        if (!unitIsRequired) {
-          squadCount += 1;
-        }
-        // if (unitIsRequired && !lastRequired) {
-        //   squadCount = 0;
-        // }
-        // lastRequired = unitIsRequired;  // ????
-        // squadCount += 1;
-        // if (squadCount <= 5) {
-        //   phaseCount += 1;
-        // }
+      } else if (requirementsMet) {
+        squadCount += 1;
       }
       table[r + 1][c] = requirementsMet
         ? `${o.rarity}`
@@ -178,6 +163,7 @@ function updateGuildRoster_(
   sheet.getRange(1, 2, 60, result[0].length).clearContent();
   sheet.getRange(1, 2, header.length, header[0].length).setValues(header);
   sheet.getRange(2, 2, result.length, result[0].length).setValues(result);
+  SpreadsheetApp.getActive().toast('Roster data updated', 'Guild roster', 3);
 
   return members;
 }
@@ -214,7 +200,7 @@ function getSettingsHash_() {
   // SwgohGg settings
   const swgohGg = meta.getRange(2, 1).getValue();
   // SwgohGg settings
-  const swgohHelp = meta.getRange(20, 1, 5).getValues();
+  const swgohHelp = meta.getRange(16, 1, 5).getValues();
 
   const hash = String(Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
@@ -304,6 +290,8 @@ function normalizeRoster_(members: PlayerData[]): PlayerData[] {
 
 /** get a PlayerData array of members, from sheet if possible, else from data source */
 function getMembers_(): PlayerData[] {
+  const ss = SpreadsheetApp.getActive();
+  const cds = config.dataSource;
 
   let members: PlayerData[];
 
@@ -314,18 +302,29 @@ function getMembers_(): PlayerData[] {
   const cachedHash = cache.get(cacheId);
 
   if (cachedHash && cachedHash === settingsHash) {
+    ss.toast('Using cached roster data', 'Get guild members', 3);
     return Members.getFromSheet();
   }
   // Figure out which data source to use
-  if (config.dataSource.isSwgohHelp()) {
+  if (cds.isSwgohHelp()) {
+    ss.toast(
+      `Fetching roster data from ${cds.getDataSource()}`,
+      'Get guild members',
+      3,
+    );
     members = SwgohHelp.getGuildData();
-  } else if (config.dataSource.isSwgohGg()) {
+  } else if (cds.isSwgohGg()) {
+    ss.toast(
+      `Fetching roster data from ${cds.getDataSource()}`,
+      'Get guild members',
+      3,
+    );
     members = SwgohGg.getGuildData(config.SwgohGg.guild());
   }
   if (!members) {
     throw new Error('The datasource returned no data');
   }
-  config.dataSource.setGuildDataDate();
+  cds.setGuildDataDate();
 
   const definitions = Units.getDefinitions();
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
@@ -345,18 +344,17 @@ function getMembers_(): PlayerData[] {
 
   const seconds = 3600;  // 1 hour
   cache.put(cacheId, settingsHash, seconds);
-
   return normalizeRoster_(renameAddRemove_(members));
 }
 
 /** setup the current event */
 function setupEvent(): void {
+  const ss = SpreadsheetApp.getActive();
 
   // // make sure the roster is up-to-date
   const definitions = Units.getDefinitions();
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
 
-  // Figure out which data source to use
   let members = getMembers_();
 
   if (!members) {
@@ -379,9 +377,19 @@ function setupEvent(): void {
   heroesTable.setInstances(members);
   shipsTable.setInstances(members);
 
+  [
+    SHEETS.DSPLATOONAUDIT,
+    SHEETS.LSPLATOONAUDIT,
+    SHEETS.SQUADRONAUDIT,
+    SHEETS.DSMISSIONS,
+    SHEETS.LSMISSIONS,
+    SHEETS.ESTIMATE,
+  ].forEach(e => ss.getSheetByName(e).hideSheet());
+
   const spooler = new utils.Spooler();
 
   // clear the hero data
+  ss.toast('Rebuilding...', 'TB sheet', 3);
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
   spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS))
     .clearContent();
@@ -559,6 +567,7 @@ function setupEvent(): void {
   spooler.commit();
 
   // setup member columns
+  ss.toast('Populating...', 'TB sheet', 3);
   let table = populateEventTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
@@ -573,4 +582,28 @@ function setupEvent(): void {
   );
   tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
     .setValues(table);
+
+  const event = config.currentEvent();
+  if (isDark_(event)) {
+    [
+      SHEETS.DSPLATOONAUDIT,
+      SHEETS.SQUADRONAUDIT,
+      SHEETS.DSMISSIONS,
+      SHEETS.ESTIMATE,
+    ].forEach(e => ss.getSheetByName(e).showSheet());
+  } else if (isLight_(event)) {
+    [
+      SHEETS.LSPLATOONAUDIT,
+      SHEETS.SQUADRONAUDIT,
+      SHEETS.LSMISSIONS,
+      SHEETS.ESTIMATE,
+    ].forEach(e => ss.getSheetByName(e).showSheet());
+  } else if (isGeo_(event)) {
+    [
+      SHEETS.DSPLATOONAUDIT,
+      SHEETS.SQUADRONAUDIT,
+    ].forEach(e => ss.getSheetByName(e).showSheet());
+  }
+
+  ss.toast('Ready', 'TB sheet', 3);
 }
