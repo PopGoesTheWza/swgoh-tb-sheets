@@ -29,10 +29,12 @@ function populateEventTable_(
   }
 
   let total = 0;
-  let phaseCount = 0;
+  // let phaseCount = 0;
+  let requiredUnits = 0;
+  let missingRequiredUnits = 0;
   let squadCount = 0;
   let lastSquad = 0;
-  let lastRequired = false;
+  // let lastRequired = false;
 
   const table: (string|number)[][] = [];
   table[0] = [];
@@ -51,15 +53,22 @@ function populateEventTable_(
       }
 
       if (curHero[0] === 'Phase Count:') {
-        table[r + 1][c] = phaseCount;
-        total += phaseCount;
-        phaseCount = 0;
+        const phaseUnits = +curHero[1];
+        const readyUnits = requiredUnits - missingRequiredUnits
+          + Math.min(phaseUnits - requiredUnits, squadCount);
+        table[r + 1][c] = readyUnits;
+        total += readyUnits;
+        // phaseCount = 0;
+        requiredUnits = 0;
+        missingRequiredUnits = 0;
         squadCount = 0;
         continue;
       } else if (curHero[0] === 'Total:') {
         table[r + 1][c] = total;
         total = 0;
-        phaseCount = 0;
+        // phaseCount = 0;
+        requiredUnits = 0;
+        missingRequiredUnits = 0;
         squadCount = 0;
         continue;
       } else if (curHero[0].length === 0) {
@@ -70,6 +79,8 @@ function populateEventTable_(
       }
       const squad = +curHero[4];
       if (squad !== lastSquad) {
+        requiredUnits = 0;
+        missingRequiredUnits = 0;
         squadCount = 0;
       }
       lastSquad = squad;
@@ -96,15 +107,25 @@ function populateEventTable_(
         o.rarity >= +curHero[1] &&
         o.gearLevel >= +curHero[2] &&
         o.level >= +curHero[3];
+      const unitIsRequired = curHero[5] === 'R';
+      if (unitIsRequired) {
+        requiredUnits += 1;
+        if (!requirementsMet) {
+          missingRequiredUnits += 1;
+        }
+      }
       if (requirementsMet) {
-        if (curHero[5] === 'R' && !lastRequired) {
-          squadCount = 0;
+        if (!unitIsRequired) {
+          squadCount += 1;
         }
-        lastRequired = curHero[5] === 'R';
-        squadCount += 1;
-        if (squadCount <= 5) {
-          phaseCount += 1;
-        }
+        // if (unitIsRequired && !lastRequired) {
+        //   squadCount = 0;
+        // }
+        // lastRequired = unitIsRequired;  // ????
+        // squadCount += 1;
+        // if (squadCount <= 5) {
+        //   phaseCount += 1;
+        // }
       }
       table[r + 1][c] = requirementsMet
         ? `${o.rarity}`
