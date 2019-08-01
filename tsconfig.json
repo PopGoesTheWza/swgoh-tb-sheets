@@ -1,34 +1,28 @@
 {
-  // list all files to process for .d.ts declarations
-  // "files": [
-  //   "src/Code.ts",
-  //   "src/Settings.ts",
-  //   "src/Exclusions.ts",
-  //   "src/Units.ts",
-  //   "src/Battles.ts",
-  //   "src/Platoons.ts",
-  //   "src/Webhooks.ts",
-  //   "src/Micromanage.ts",
-  //   "src/SwgohGg.ts",
-  //   "src/SwgohHelp.ts",
-  //   "src/utils.ts",
-  //   "src/lib.ts",
-  // ],
+  "compileOnSave": true,
   "compilerOptions": {
-    "declaration": true,
-    
-    "noEmitOnError": true,
-    "outDir": "dist",
+    // "declaration": true,
+    "strict": true,
+    // "strictBindCallApply": false,
+    // "strictFunctionTypes": false,
+    // "strictNullChecks": false,
+    // "strictPropertyInitialization": false,
+    // "stripInternal": false,
+    // "suppressExcessPropertyErrors": false,
+    // "suppressImplicitAnyIndexErrors": true,
+
     // adapted from https://github.com/grant/ts2gas/blob/master/index.js
     "lib": ["es2015"],
     "target": "ES3",
-    "noImplicitUseStrict": true,
     "noLib": false,  // Note: true in ts2gas
     "experimentalDecorators": true,
     "noResolve": false,  // Note: true in ts2gas
-    "pretty": true,
     "module": "es2015",  // Note: "none" in ts2gas
     "moduleResolution": "node",
+    
+    "noEmitOnError": true,
+    "outDir": "dist",
+    "pretty": true,
   },
   // "include": ["src/**/*.ts"],
   "exclude": [
