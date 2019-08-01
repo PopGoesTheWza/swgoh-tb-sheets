@@ -1,10 +1,8 @@
 /** workaround to tslint issue of namespace scope after importingtype definitions */
 declare namespace SwgohHelp {
-
   function getGuildData(): PlayerData[];
   function getPlayerData(allyCode: number): PlayerData;
   function getUnitList(): UnitsDefinitions;
-
 }
 
 /** Shortcuts for Google Apps Script classes */
@@ -76,9 +74,9 @@ const WAIT_TIME = 2000;
 const MAX_PLATOON_UNITS = 15;
 const MAX_PLATOONS = 6;
 const MAX_PLATOON_ZONES = 3;
-const PLATOON_SLICE_ROW_OFFSET = 17;  // MAX_PLATOON_UNITS + 2;
-const PLATOON_SLICE_COLUMN_OFFSET = 7;  // MAX_PLATOONS + 1;
-const PLATOON_ZONE_ROW_OFFSET = 18;  // MAX_PLATOON_UNITS + 3;
+const PLATOON_SLICE_ROW_OFFSET = 17; // MAX_PLATOON_UNITS + 2;
+const PLATOON_SLICE_COLUMN_OFFSET = 7; // MAX_PLATOONS + 1;
+const PLATOON_ZONE_ROW_OFFSET = 18; // MAX_PLATOON_UNITS + 3;
 const PLATOON_ZONE_COLUMN_OFFSET = 4;
 
 const RARE_MAX = 15;
@@ -94,17 +92,16 @@ const WEBHOOK_DESC_ROW = 9;
 const WEBHOOK_CLEAR_ROW = 15;
 const WEBHOOK_DISPLAY_SLOT_ROW = 16;
 
-const META_UPDATETIME_COL = 1;  // ADDED FOR TIMESTAMP
-const META_UPDATETIME_ROW = 11;  // ADDED FOR TIMESTAMP
+const META_UPDATETIME_COL = 1; // ADDED FOR TIMESTAMP
+const META_UPDATETIME_ROW = 11; // ADDED FOR TIMESTAMP
 
-type KeyedType<T> = {
+interface KeyedType<T> {
   [key: string]: T;
-};
+}
 
 type KeyedBooleans = KeyedType<boolean>;
 type KeyedNumbers = KeyedType<number>;
 type KeyedStrings = KeyedType<string>;
-
 interface PlayerData {
   /** allycode */
   allyCode: number;
@@ -146,37 +143,37 @@ interface UnitInstance {
   tags?: string;
 }
 
-type MemberInstances = {
+interface MemberInstances {
   [key: string]: UnitInstance;
-};
+}
 
-type UnitInstances = {
+interface UnitInstances {
   [key: string]: UnitInstance;
-};
+}
 
-type MemberUnitBooleans = {
+interface MemberUnitBooleans {
   [key: string]: {
     [key: string]: boolean;
   };
-};
+}
 
-type MemberUnitInstances = {
+interface MemberUnitInstances {
   [key: string]: {
     [key: string]: UnitInstance;
   };
-};
+}
 
-type UnitMemberBooleans = {
+interface UnitMemberBooleans {
   [key: string]: {
     [key: string]: boolean;
   };
-};
+}
 
-type UnitMemberInstances = {
+interface UnitMemberInstances {
   [key: string]: {
     [key: string]: UnitInstance;
   };
-};
+}
 
 /** Constants for alignment */
 enum ALIGNMENT {
@@ -213,6 +210,7 @@ enum SHEETS {
   TB = 'TB',
   PLATOONS = 'Platoon',
   DSPLATOONAUDIT = 'DSPlatoonAudit',
+  GEODSPLATOONAUDIT = 'GeoDSPlatoonAudit',
   LSPLATOONAUDIT = 'LSPlatoonAudit',
   SQUADRONAUDIT = 'SquadronAudit',
   BREAKDOWN = 'Breakdown',
@@ -234,10 +232,8 @@ enum SHEETS {
 
 /** settings related functions */
 namespace config {
-
   /** get current Territory Battles phase */
   export function currentPhase(): TerritoryBattles.phaseIdx {
-
     const value = +SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
       .getRange(2, 1)
       .getValue() as TerritoryBattles.phaseIdx;
@@ -247,7 +243,6 @@ namespace config {
 
   /** get current event */
   export function currentEvent(): ALIGNMENT {
-
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_FILTER_ROW, META_FILTER_COL)
       .getValue() as ALIGNMENT;
@@ -257,7 +252,6 @@ namespace config {
 
   /** get the tag/faction of current event */
   export function tagFilter(): string {
-
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_TAG_ROW, META_TAG_COL)
       .getValue() as string;
@@ -267,7 +261,6 @@ namespace config {
 
   /** get required minimum player level */
   export function requiredHeroGp(): number {
-
     const value = +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_MIN_GP_ROW, META_MIN_GP_COL)
       .getValue();
@@ -277,7 +270,6 @@ namespace config {
 
   /** get required minimum player level */
   export function requiredMemberLevel(): number {
-
     const value = +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
       .getValue();
@@ -287,7 +279,6 @@ namespace config {
 
   /** get maximum allowed donation per territory */
   export function maxDonationsPerTerritory(): number {
-
     const value = +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_UNIT_PER_MEMBER_ROW, META_UNIT_PER_MEMBER_COL)
       .getValue();
@@ -297,7 +288,6 @@ namespace config {
 
   /** get roster sorting setting */
   export function sortRoster(): boolean {
-
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_SORT_ROSTER_ROW, META_SORT_ROSTER_COL)
       .getValue() as string;
@@ -307,7 +297,6 @@ namespace config {
 
   /** get Id of exclusions */
   export function exclusionId(): string {
-
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_EXCLUSSIONS_ROW, META_EXCLUSSIONS_COL)
       .getValue() as string;
@@ -317,7 +306,6 @@ namespace config {
 
   /** get count of members in the roster */
   export function memberCount(): number {
-
     const value = +SPREADSHEET.getSheetByName(SHEETS.ROSTER)
       .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
       .getValue();
@@ -327,7 +315,6 @@ namespace config {
 
   /** data source related settings */
   export namespace dataSource {
-
     /** should we use the SWGoH.help API? */
     export function isSwgohHelp(): boolean {
       return getDataSource() === DATASOURCES.SWGOH_HELP;
@@ -340,7 +327,6 @@ namespace config {
 
     /** get selected data source */
     export function getDataSource(): string {
-
       const value = SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
         .getValue() as string;
@@ -359,15 +345,12 @@ namespace config {
         .getRange(META_UNITDEFINITIONSDATE_ROW, META_UNITDEFINITIONSDATE_COL)
         .setValue(new Date());
     }
-
   }
 
   /** SwgohGg related settings */
-  export namespace SwgohGg {
-
+  export namespace SwgohGgApi {
     /** Get the guild id */
     export function guild(): number {
-
       const metaSWGOHLinkCol = 1;
       const metaSWGOHLinkRow = 2;
       const guildLink = SPREADSHEET.getSheetByName(SHEETS.META)
@@ -379,39 +362,27 @@ namespace config {
 
       return guildId;
     }
-
   }
 
   /** SwgohHelp related settings */
-  export namespace SwgohHelp {
+  export namespace SwgohHelpApi {
+    const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
+    function helper(row: number, col: number): string {
+      return metaSheet.getRange(row, col).getValue() as string;
+    }
 
     /** Get the SwgohHelp API username */
     export function username(): string {
-
-      const metaSWGOHLinkCol = 1;
-      const metaSWGOHLinkRow = 16;
-      const result = SPREADSHEET.getSheetByName(SHEETS.META)
-        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-        .getValue() as string;
-
-      return result;
+      return helper(1, 16);
     }
 
     /** Get the SwgohHelp API password */
     export function password(): string {
-
-      const metaSWGOHLinkCol = 1;
-      const metaSWGOHLinkRow = 18;
-      const result = SPREADSHEET.getSheetByName(SHEETS.META)
-        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
-        .getValue() as string;
-
-      return result;
+      return helper(1, 18);
     }
 
     /** Get the guild member ally code */
     export function allyCode(): number {
-
       const metaSWGOHLinkCol = 1;
       const metaSWGOHLinkRow = 20;
       const result = +SPREADSHEET.getSheetByName(SHEETS.META)
@@ -420,35 +391,28 @@ namespace config {
 
       return result;
     }
-
   }
 
   /** discord related settings */
   export namespace discord {
+    const discordSheet = SPREADSHEET.getSheetByName(SHEETS.DISCORD);
+
+    export function helper(row: number, col: number): string {
+      return discordSheet.getRange(row, col).getValue() as string;
+    }
 
     /** Get the webhook address */
     export function webhookUrl(): string {
-
-      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-        .getRange(1, DISCORD_WEBHOOK_COL)
-        .getValue() as string;
-
-      return value;
+      return helper(1, DISCORD_WEBHOOK_COL);
     }
 
     /** Get the role to mention */
     export function roleId(): string {
-
-      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-        .getRange(2, DISCORD_WEBHOOK_COL)
-        .getValue() as string;
-
-      return value;
+      return helper(2, DISCORD_WEBHOOK_COL);
     }
 
     /** Get the time and date when the TB started */
     export function startTime(): Date {
-
       const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_TB_START_ROW, DISCORD_WEBHOOK_COL)
         .getValue() as Date;
@@ -458,7 +422,6 @@ namespace config {
 
     /** Get the number of hours in each phase */
     export function phaseDuration(): number {
-
       const value = +SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
         .getValue();
@@ -467,19 +430,12 @@ namespace config {
     }
 
     /** Get the template for a webhooks */
-    export function webhookTemplate(
-      phase: TerritoryBattles.phaseIdx,
-      row: number,
-      defaultVal: string,
-    ): string {
-
+    export function webhookTemplate(phase: TerritoryBattles.phaseIdx, row: number, defaultVal: string): string {
       const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(row, DISCORD_WEBHOOK_COL)
         .getValue() as string;
 
-      return text.length > 0
-        ? text.replace('{0}', String(phase))
-        : defaultVal;
+      return text.length > 0 ? text.replace('{0}', String(phase)) : defaultVal;
     }
 
     /** Get the Description for the phase */
@@ -496,7 +452,6 @@ namespace config {
 
     /** See if the platoons should be cleared */
     export function resetPlatoons(): boolean {
-
       const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_CLEAR_ROW, DISCORD_WEBHOOK_COL)
         .getValue() as string;
@@ -506,14 +461,11 @@ namespace config {
 
     /** See if the slot number should be displayed */
     export function displaySlots(): string {
-
       const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_DISPLAY_SLOT_ROW, DISCORD_WEBHOOK_COL)
         .getValue() as string;
 
       return value;
     }
-
   }
-
 }

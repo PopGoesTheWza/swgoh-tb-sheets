@@ -4,7 +4,7 @@ declare interface Array<T> {
 
 // make the Array object smarter
 if (!Array.prototype.unique) {
-  Array.prototype.unique = function (): any[] {
+  Array.prototype.unique = function(): any[] {
     return this.filter((value, index: number, self: any[]) => self.indexOf(value) === index);
   };
 }
@@ -13,59 +13,74 @@ declare interface NumberConstructor {
   parseRoman(roman: string): number;
 }
 
-Number.parseRoman = Number.parseRoman || (() => {
-  const map = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
-  const charToInt = (char: string): number => (map.hasOwnProperty(char) ? map[char] : Number.NaN);
-  return (str: string): number => {
-    if (str) {
-      try {
-        let pre = null;
-        const value: number = str
-        .toUpperCase()
-        .split('')
-        .reduce((a: number, e: string) => {
-          const curr = charToInt(e);
-          let r = curr;
-          if (a > 0 && curr > pre) {
-            r = curr - pre * 2;
-          }
-          pre = curr;
-          return a + r;
-        },      0);
+Number.parseRoman =
+  Number.parseRoman ||
+  (() => {
+    const map = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+    const charToInt = (char: string): number => (map.hasOwnProperty(char) ? map[char] : Number.NaN);
+    return (str: string): number => {
+      if (str) {
+        try {
+          let pre = null;
+          const value: number = str
+            .toUpperCase()
+            .split('')
+            .reduce((a: number, e: string) => {
+              const curr = charToInt(e);
+              let r = curr;
+              if (a > 0 && curr > pre) {
+                r = curr - pre * 2;
+              }
+              pre = curr;
+              return a + r;
+            }, 0);
 
-        return value;
-      } catch (e) {
-        // return Number.NaN
+          return value;
+        } catch (e) {
+          // return Number.NaN
+        }
       }
-    }
 
-    return Number.NaN;
-  };
-})();
+      return Number.NaN;
+    };
+  })();
 
 declare interface Number {
   toRoman(): string;
 }
 
-Number.prototype.toRoman = Number.prototype.toRoman || (function () {
-  const decimal = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
-  const roman = {
-    1: 'I', 4: 'IV', 5: 'V', 9: 'IX', 10: 'X',
-    40: 'XL', 50: 'L', 90: 'XC', 100: 'C', 400:
-    'CD', 500: 'D', 900: 'CM', 1000: 'M' };
+Number.prototype.toRoman =
+  Number.prototype.toRoman ||
+  (function() {
+    const decimal = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+    const roman = {
+      1: 'I',
+      4: 'IV',
+      5: 'V',
+      9: 'IX',
+      10: 'X',
+      40: 'XL',
+      50: 'L',
+      90: 'XC',
+      100: 'C',
+      400: 'CD',
+      500: 'D',
+      900: 'CM',
+      1000: 'M',
+    };
 
-  return function (): string {
-    let int: number = this;
-    let str = '';
-    decimal.forEach((e) => {
-      while (int % e < int) {
-        str += roman[e];
-        int -= e;
-      }
-    });
-    return str;
-  };
-})();
+    return function(): string {
+      let int: number = this;
+      let str = '';
+      decimal.forEach((e) => {
+        while (int % e < int) {
+          str += roman[e];
+          int -= e;
+        }
+      });
+      return str;
+    };
+  })();
 
 /*
  * Polyfill(s)
@@ -73,7 +88,6 @@ Number.prototype.toRoman = Number.prototype.toRoman || (function () {
 if (!Array.prototype.fill) {
   Object.defineProperty(Array.prototype, 'fill', {
     value: function(value) {
-
       // Steps 1-2.
       if (this == null) {
         throw new TypeError('this is null or not defined');
@@ -89,19 +103,14 @@ if (!Array.prototype.fill) {
       var relativeStart = start >> 0;
 
       // Step 8.
-      var k = relativeStart < 0 ?
-        Math.max(len + relativeStart, 0) :
-        Math.min(relativeStart, len);
+      var k = relativeStart < 0 ? Math.max(len + relativeStart, 0) : Math.min(relativeStart, len);
 
       // Steps 9-10.
       var end = arguments[2];
-      var relativeEnd = end === undefined ?
-        len : end >> 0;
+      var relativeEnd = end === undefined ? len : end >> 0;
 
       // Step 11.
-      var final = relativeEnd < 0 ?
-        Math.max(len + relativeEnd, 0) :
-        Math.min(relativeEnd, len);
+      var final = relativeEnd < 0 ? Math.max(len + relativeEnd, 0) : Math.min(relativeEnd, len);
 
       // Step 12.
       while (k < final) {
@@ -111,7 +120,7 @@ if (!Array.prototype.fill) {
 
       // Step 13.
       return O;
-    }
+    },
   });
 }
 
@@ -123,7 +132,6 @@ if (!Array.prototype.fill) {
 if (!Array.prototype.includes) {
   Object.defineProperty(Array.prototype, 'includes', {
     value(searchElement, fromIndex) {
-
       if (this == null) {
         throw new TypeError('"this" is null or not defined');
       }
@@ -178,7 +186,7 @@ if (!Array.prototype.includes) {
 if (!Array.prototype.find) {
   Object.defineProperty(Array.prototype, 'find', {
     value: function(predicate) {
-     // 1. Let O be ? ToObject(this value).
+      // 1. Let O be ? ToObject(this value).
       if (this == null) {
         throw new TypeError('"this" is null or not defined');
       }
@@ -217,14 +225,14 @@ if (!Array.prototype.find) {
       return undefined;
     },
     configurable: true,
-    writable: true
+    writable: true,
   });
 }
 
 if (!Array.prototype.findIndex) {
   Object.defineProperty(Array.prototype, 'findIndex', {
     value: function(predicate) {
-     // 1. Let O be ? ToObject(this value).
+      // 1. Let O be ? ToObject(this value).
       if (this == null) {
         throw new TypeError('"this" is null or not defined');
       }
@@ -263,16 +271,18 @@ if (!Array.prototype.findIndex) {
       return -1;
     },
     configurable: true,
-    writable: true
+    writable: true,
   });
 }
 
 if (typeof Object.assign != 'function') {
   // Must be writable: true, enumerable: false, configurable: true
-  Object.defineProperty(Object, "assign", {
-    value: function assign(target, varArgs) { // .length of function is 2
+  Object.defineProperty(Object, 'assign', {
+    value: function assign(target, varArgs) {
+      // .length of function is 2
       'use strict';
-      if (target == null) { // TypeError if undefined or null
+      if (target == null) {
+        // TypeError if undefined or null
         throw new TypeError('Cannot convert undefined or null to object');
       }
 
@@ -281,7 +291,8 @@ if (typeof Object.assign != 'function') {
       for (var index = 1; index < arguments.length; index++) {
         var nextSource = arguments[index];
 
-        if (nextSource != null) { // Skip over if undefined or null
+        if (nextSource != null) {
+          // Skip over if undefined or null
           for (var nextKey in nextSource) {
             // Avoid bugs when hasOwnProperty is shadowed
             if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
@@ -293,6 +304,6 @@ if (typeof Object.assign != 'function') {
       return to;
     },
     writable: true,
-    configurable: true
+    configurable: true,
   });
 }

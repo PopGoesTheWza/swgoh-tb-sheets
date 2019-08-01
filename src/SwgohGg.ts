@@ -1,6 +1,5 @@
 /** API Functions to pull data from swgoh.gg */
 namespace SwgohGg {
-
   enum COMBAT_TYPE {
     HERO = 1,
     SHIP = 2,
@@ -10,11 +9,11 @@ namespace SwgohGg {
     data: {
       base_id: string;
       combat_type: COMBAT_TYPE;
-      gear: {
+      gear: Array<{
         base_id: string;
         is_obtained: boolean;
         slot: number;
-      }[];
+      }>;
       gear_level: number;
       level: number;
       power: number;
@@ -44,10 +43,10 @@ namespace SwgohGg {
     categories: string[];
     combat_type: COMBAT_TYPE;
     description: string;
-    gear_levels: {
+    gear_levels: Array<{
       tier: number;
       gear: string[];
-    }[];
+    }>;
     image: string;
     name: string;
     pk: number;
@@ -74,13 +73,11 @@ namespace SwgohGg {
   }
 
   const ggUnitRespToUnitDef = (e: SwgohGgUnitResponse) => {
-    const tags = [e.alignment, e.role, ...e.categories]
-      .join(' ')
-      .toLowerCase();
+    const tags = [e.alignment, e.role, ...e.categories].join(' ').toLowerCase();
     const unit: UnitDefinition = {
-      tags,
       baseId: e.base_id,
       name: e.name,
+      tags,
     };
     return unit;
   };
@@ -91,11 +88,7 @@ namespace SwgohGg {
    * param errorMsg Message to display on error
    * returns JSON object response
    */
-  function requestApi<T>(
-    link: string,
-    errorMsg: string = 'Error when retreiving data from swgoh.gg API',
-  ): T {
-
+  function requestApi<T>(link: string, errorMsg: string = 'Error when retreiving data from swgoh.gg API'): T {
     let json;
     try {
       const params: URL_Fetch.URLFetchRequestOptions = {
@@ -118,10 +111,7 @@ namespace SwgohGg {
    * returns Array of Characters with [tags, baseId, name]
    */
   export function getHeroList(): UnitDefinition[] {
-
-    const json = requestApi<SwgohGgUnitResponse[]>(
-      'https://swgoh.gg/api/characters/',
-    );
+    const json = requestApi<SwgohGgUnitResponse[]>('https://swgoh.gg/api/characters/');
     return json.map(ggUnitRespToUnitDef);
   }
 
@@ -130,16 +120,12 @@ namespace SwgohGg {
    * returns Array of Characters with [tags, baseId, name]
    */
   export function getShipList(): UnitDefinition[] {
-
-    const json = requestApi<SwgohGgUnitResponse[]>(
-      'https://swgoh.gg/api/ships/',
-    );
+    const json = requestApi<SwgohGgUnitResponse[]>('https://swgoh.gg/api/ships/');
     return json.map(ggUnitRespToUnitDef);
   }
 
   /** Create guild API link */
   function getGuildApiLink(guildId: number): string {
-
     const link = `https://swgoh.gg/api/guild/${guildId}/`;
 
     // TODO: data check
@@ -151,35 +137,30 @@ namespace SwgohGg {
    * Units name and tags are not populated
    * returns Array of Guild members and their units data
    */
-  export function getGuildData(guildId: number): PlayerData[] {
-
-    const json = requestApi<SwgohGgGuildResponse>(
-      getGuildApiLink(guildId),
-    );
+  export function getGuildData(guildId: number): PlayerData[] | undefined {
+    const json = requestApi<SwgohGgGuildResponse>(getGuildApiLink(guildId));
     if (json && json.players) {
       const members: PlayerData[] = [];
       for (const member of json.players) {
         const unitArray: UnitInstances = {};
         for (const e of member.units) {
           const d = e.data;
-          const type = d.combat_type === COMBAT_TYPE.HERO
-            ? Units.TYPES.HERO
-            : Units.TYPES.SHIP;
+          const type = d.combat_type === COMBAT_TYPE.HERO ? Units.TYPES.HERO : Units.TYPES.SHIP;
           const baseId = d.base_id;
           unitArray[baseId] = {
-            type,
             baseId,
             gearLevel: d.gear_level,
             level: d.level,
             power: d.power,
             rarity: d.rarity,
+            type,
           };
         }
         members.push({
+          allyCode: +member.data.url.match(/(\d+)/)![1],
           gp: member.data.galactic_power,
           heroesGp: member.data.character_galactic_power,
-          level: member.data.level,  // TODO: store and process member level minimun requirement
-          allyCode: +member.data.url.match(/(\d+)/)[1],
+          level: member.data.level, // TODO: store and process member level minimun requirement
           // link: member.data.url,
           name: member.data.name,
           shipsGp: member.data.ship_galactic_power,
@@ -195,7 +176,6 @@ namespace SwgohGg {
 
   /** Create player API link */
   function getPlayerApiLink(allyCode: number): string {
-
     const link = `https://swgoh.gg/api/player/${allyCode}/`;
 
     // TODO: data check
@@ -207,11 +187,8 @@ namespace SwgohGg {
    * Units name and tags are not populated
    * returns Player data, including its units data
    */
-  export function getPlayerData(allyCode: number): PlayerData {
-
-    const json = requestApi<SwgohGgPlayerResponse>(
-      getPlayerApiLink(allyCode),
-    );
+  export function getPlayerData(allyCode: number): PlayerData | undefined {
+    const json = requestApi<SwgohGgPlayerResponse>(getPlayerApiLink(allyCode));
 
     if (json && json.data) {
       const data = json.data;
@@ -228,17 +205,15 @@ namespace SwgohGg {
       const units = player.units;
       for (const o of json.units) {
         const d = o.data;
-        const type = d.combat_type === COMBAT_TYPE.HERO
-          ? Units.TYPES.HERO
-          : Units.TYPES.SHIP;
+        const type = d.combat_type === COMBAT_TYPE.HERO ? Units.TYPES.HERO : Units.TYPES.SHIP;
         const baseId = d.base_id;
         units[baseId] = {
-          type,
           baseId,
           gearLevel: d.gear_level,
           level: d.level,
           power: d.power,
           rarity: d.rarity,
+          type,
         };
       }
 
@@ -247,5 +222,4 @@ namespace SwgohGg {
 
     return undefined;
   }
-
 }

@@ -4,17 +4,13 @@
 
 /** add discord mention to the member label */
 function memberLabel_(member: string, mention: string) {
-
-  const value: string = (mention)
-    ? `Assignments for **${member}** (${mention})`
-    : `Assignments for **${member}**`;
+  const value: string = mention ? `Assignments for **${member}** (${mention})` : `Assignments for **${member}**`;
 
   return value;
 }
 
 /** output platoon numner as discord icon */
 function platoonAsIcon_(label: string, type: string, platoon: number) {
-
   const platoonIcon = [':one:', ':two:', ':three:', ':four:', ':five:', ':six:'][platoon];
 
   return `__${label}__ · ${type} ${platoonIcon}`;
@@ -22,20 +18,16 @@ function platoonAsIcon_(label: string, type: string, platoon: number) {
 
 /** check if the unit can be difficult to identify */
 function isUnitHardToRead_(unit: string): boolean {
-
-  return unit.search(
-      /X-wing|U-wing|ARC-170|Geonosian|CC-|CT-|Dathcha|Jawa|Hoth Rebel/,
-    ) > -1;
+  return unit.search(/X-wing|U-wing|ARC-170|Geonosian|CC-|CT-|Dathcha|Jawa|Hoth Rebel/) > -1;
 }
 
 /** convert an array index to uhman friendly string (0 => '1') */
-function arrayIndexToString_(index: string): string {
-  return (parseInt(index, 10) + 1).toString();
+function arrayIndexToString_(index: number | string): string {
+  return ((typeof index === 'string' ? parseInt(index, 10) : index) + 1).toString();
 }
 
 /** format the unit name */
-function unitLabel_(unit: string, slot: string, force: boolean = undefined): string {
-
+function unitLabel_(unit: string, slot: number | string, force?: boolean): string {
   if (force || isUnitHardToRead_(unit)) {
     return `[slot ${arrayIndexToString_(slot)}] ${unit}`;
   }
@@ -43,24 +35,35 @@ function unitLabel_(unit: string, slot: string, force: boolean = undefined): str
   return unit;
 }
 
-type DiscordEmbeddedField = {
+interface DiscordEmbeddedField {
   name?: string;
   value?: string;
-};
+}
 
-type DiscordEmbed = {
+interface DiscordEmbed {
   color?: number;
   fields?: DiscordEmbeddedField[];
-};
+}
 
-type DiscordPayload = {
+interface DiscordPayload {
   content?: string;
   embeds?: DiscordEmbed[];
-};
+}
+
+interface PlatoonAssignment {
+  member: string;
+  unit: string;
+  zone: {
+    label: string;
+    type: string;
+    index: number;
+  };
+  platoon: number;
+  slot: number;
+}
 
 /** Send a Webhook to Discord */
 function sendMicroByMemberWebhook(): void {
-
   const displaySetting = config.discord.displaySlots();
   const displaySlot = displaySetting !== DISPLAYSLOT.NEVER;
   const forceDisplay = displaySetting === DISPLAYSLOT.ALWAYS;
@@ -72,17 +75,13 @@ function sendMicroByMemberWebhook(): void {
   if (webhookURL.length === 0) {
     // we need a url to proceed
     const UI = SpreadsheetApp.getUi();
-    UI.alert(
-      'Configuration Error',
-      'Discord webhook not found (Discord!E1)',
-      UI.ButtonSet.OK,
-    );
+    UI.alert('Configuration Error', 'Discord webhook not found (Discord!E1)', UI.ButtonSet.OK);
 
     return;
   }
 
   // get data from the platoons
-  let entries = [];
+  let entries: PlatoonAssignment[] = [];
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
     if (z === 0 && phase < 3) {
       // skip this zone
@@ -96,15 +95,14 @@ function sendMicroByMemberWebhook(): void {
 
     // cycle throught the platoons in a zone
     for (let p = 0; p < MAX_PLATOONS; p += 1) {
-      const platoonData = sheet
-        .getRange(platoonRow, 4 + p * 4, MAX_PLATOON_UNITS, 2)
-        .getValues() as string[][];
+      const platoonData = sheet.getRange(platoonRow, 4 + p * 4, MAX_PLATOON_UNITS, 2).getValues() as string[][];
 
       // cycle through the heroes
-      platoonData.some((e, index) => {
+      for (let index = 0; index < platoonData.length; index += 1) {
+        const e = platoonData[index];
         let member = e[1];
         if (member.length === 0 || member === 'Skip') {
-          return true;
+          break;
         }
 
         // remove the gear
@@ -115,18 +113,17 @@ function sendMicroByMemberWebhook(): void {
         const unit = e[0];
         const entry = {
           member,
-          unit,
-          zone: {
-            label,
-            type,
-            index: z,
-          },
           platoon: p,
           slot: index,
+          unit,
+          zone: {
+            index: z,
+            label,
+            type,
+          },
         };
         entries.push(entry);
-        return false;
-      });
+      }
     }
   }
 
@@ -137,7 +134,7 @@ function sendMicroByMemberWebhook(): void {
   const memberMentions = discord.getMemberMentions();
   while (entries.length > 0) {
     const member = entries[0].member;
-    const bucket = entries.filter(e => e.member === member);
+    const bucket = entries.filter((e) => e.member === member);
 
     entries = entries.slice(bucket.length);
     const embeds: DiscordEmbed[] = [];
@@ -148,11 +145,7 @@ function sendMicroByMemberWebhook(): void {
     currentEmbed.fields = [];
     let currentField: DiscordEmbeddedField = {};
     currentEmbed.fields.push(currentField);
-    currentField.name = platoonAsIcon_(
-      currentZone.label,
-      currentZone.type,
-      currentPlatoon,
-    );
+    currentField.name = platoonAsIcon_(currentZone.label, currentZone.type, currentPlatoon);
     currentField.value = '';
     if (currentZone.label.indexOf('Top') !== -1) {
       currentEmbed.color = 3447003;
@@ -163,10 +156,7 @@ function sendMicroByMemberWebhook(): void {
     }
 
     for (const currentValue of bucket) {
-      if (
-        currentValue.zone.index !== currentZone.index ||
-        currentValue.platoon !== currentPlatoon
-      ) {
+      if (currentValue.zone.index !== currentZone.index || currentValue.platoon !== currentPlatoon) {
         currentEmbed = {};
         embeds.push(currentEmbed);
         currentEmbed.fields = [];
@@ -175,11 +165,7 @@ function sendMicroByMemberWebhook(): void {
         currentPlatoon = currentValue.platoon;
         currentField = {};
         currentEmbed.fields.push(currentField);
-        currentField.name = platoonAsIcon_(
-          currentZone.label,
-          currentZone.type,
-          currentPlatoon,
-        );
+        currentField.name = platoonAsIcon_(currentZone.label, currentZone.type, currentPlatoon);
         currentField.value = '';
         if (currentZone.label.indexOf('Top') !== -1) {
           currentEmbed.color = 3447003;
@@ -202,7 +188,7 @@ function sendMicroByMemberWebhook(): void {
     const jsonObject: DiscordPayload = {};
     jsonObject.content = content;
     jsonObject.embeds = embeds;
-    const options: URL_Fetch.URLFetchRequestOptions = urlFetchMakeParam_(jsonObject);
+    const options = urlFetchMakeParam_(jsonObject);
     urlFetchExecute_(webhookURL, options);
     Utilities.sleep(WAIT_TIME);
   }
@@ -211,13 +197,12 @@ function sendMicroByMemberWebhook(): void {
 /** Setup the fetch parameters */
 // TODO: Make generic for all Discord webhooks
 function urlFetchMakeParam_(jsonObject: DiscordPayload): URL_Fetch.URLFetchRequestOptions {
-
   const options: URL_Fetch.URLFetchRequestOptions = {
-    method: 'post',
     contentType: 'application/json',
+    method: 'post',
+    muteHttpExceptions: true,
     // Convert the JavaScript object to a JSON string.
     payload: JSON.stringify(jsonObject),
-    muteHttpExceptions: true,
   };
 
   return options;
@@ -225,8 +210,7 @@ function urlFetchMakeParam_(jsonObject: DiscordPayload): URL_Fetch.URLFetchReque
 
 /** Execute the fetch request */
 // TODO: Make generic for all UrlFetch calls
-function urlFetchExecute_(webhookURL, params) {
-
+function urlFetchExecute_(webhookURL: string, params: object) {
   // exectute the command
   try {
     UrlFetchApp.fetch(webhookURL, params);
@@ -236,10 +220,6 @@ function urlFetchExecute_(webhookURL, params) {
 
     // error sending to Discord
     const UI = SpreadsheetApp.getUi();
-    UI.alert(
-      'Connection Error',
-      'Error sending webhook to Discord.',
-      UI.ButtonSet.OK,
-    );
+    UI.alert('Connection Error', 'Error sending webhook to Discord.', UI.ButtonSet.OK);
   }
 }

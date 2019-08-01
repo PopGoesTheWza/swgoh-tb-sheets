@@ -1,7 +1,9 @@
-type UnitsDefinitions = {
+// tslint:disable: max-classes-per-file
+
+interface UnitsDefinitions {
   heroes: UnitDefinition[];
   ships: UnitDefinition[];
-};
+}
 
 /** forces reloading units definitions and guild roster from selected data source */
 function reloadUnitDefinitions() {
@@ -11,7 +13,6 @@ function reloadUnitDefinitions() {
 
 /** units related classes and functions */
 namespace Units {
-
   export enum TYPES {
     HERO = 1,
     SHIP = 2,
@@ -23,16 +24,18 @@ namespace Units {
 
   /** request units definitions from data source (and cache them for 6 hours) */
   export function getDefinitionsFromDataSource(): UnitsDefinitions {
-
     let definitions: UnitsDefinitions;
     const cacheId = 'cachedUnits';
-    const seconds = 21600;  // 6 hours (maximum value)
+    const seconds = 21600; // 6 hours (maximum value)
 
-    if (config.dataSource.isSwgohHelp()) {
-      definitions = SwgohHelp.getUnitList();
-    } else {
-      definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
-    }
+    definitions = config.dataSource.isSwgohHelp()
+      ? SwgohHelp.getUnitList()
+      : { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
+    // if (config.dataSource.isSwgohHelp()) {
+    //   definitions = SwgohHelp.getUnitList();
+    // } else {
+    //   definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
+    // }
     config.dataSource.setUnitDefinitionsDate();
     definitions.heroes.sort(sortUnits);
     definitions.ships.sort(sortUnits);
@@ -48,8 +51,7 @@ namespace Units {
   }
 
   /** retrieve units definition (name, baseId, tags) from cache */
-  function getDefinitionsFromCache(): UnitsDefinitions {
-
+  function getDefinitionsFromCache(): UnitsDefinitions | undefined {
     const cacheId = 'cachedUnits';
     const cachedUnits = CacheService.getScriptCache().get(cacheId);
 
@@ -62,160 +64,97 @@ namespace Units {
 
   /** return an array of all units definition (name, baseId, tags) */
   function getDefinitionsFromSheet(sheetName: string): UnitDefinition[] {
-
     const sheet = SPREADSHEET.getSheetByName(sheetName);
-    const data = sheet.getRange(2, 1, sheet.getMaxRows() - 1, 3)
-      .getValues() as string[][];
+    const data = sheet.getRange(2, 1, sheet.getMaxRows() - 1, 3).getValues() as string[][];
 
-    const definitions = data.reduce(
-      (acc: UnitDefinition[], e) => {
-        const name = e[0];
-        const baseId = e[1];
-        const tags = e[2];
-        if (typeof name === 'string' && typeof baseId === 'string'
-          && name.length > 0 && baseId.length > 0
-        ) {
-          acc.push({ name, baseId, tags });
-        }
-        return acc;
-      },
-      [],
-    );
+    const definitions = data.reduce((acc: UnitDefinition[], e) => {
+      const name = e[0];
+      const baseId = e[1];
+      const tags = e[2];
+      if (typeof name === 'string' && typeof baseId === 'string' && name.length > 0 && baseId.length > 0) {
+        acc.push({ name, baseId, tags });
+      }
+      return acc;
+    }, []);
 
     return definitions;
   }
 
   /** return an array of all units definition (name, baseId, tags) */
   export function getDefinitions(): UnitsDefinitions {
-
-    const definitions = getDefinitionsFromCache()
-      || {
-        heroes: getDefinitionsFromSheet(SHEETS.HEROES),
-        ships: getDefinitionsFromSheet(SHEETS.SHIPS),
-      };
+    const definitions = getDefinitionsFromCache() || {
+      heroes: getDefinitionsFromSheet(SHEETS.HEROES),
+      ships: getDefinitionsFromSheet(SHEETS.SHIPS),
+    };
 
     return definitions;
   }
 
   /** abstract class for unit sheets (Heroes & Ships) */
   abstract class UnitsTable {
-
-    /** column which holds units for the first member */
-    private columnOffset: number;
-    /** name of the sheet on which the units are stored */
-    protected sheet: Spreadsheet.Sheet;
-
-    constructor(offset: number, sheet: Spreadsheet.Sheet) {
-
-      this.columnOffset = offset;
-      this.sheet = sheet;
-    }
-
     /** zone: 0, 1 or 2 */
-    static getUniquePlatoonUnits(zone: number): string[] {
-
-      const platoonRow = (zone * 18) + 2;
+    public static getUniquePlatoonUnits(zone: number): string[] {
+      const platoonRow = zone * 18 + 2;
       const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
 
       let units: string[][] = [];
       for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
-        const range = sheet.getRange(platoonRow, (platoon * 4) + 4, MAX_PLATOON_UNITS, 1);
+        const range = sheet.getRange(platoonRow, platoon * 4 + 4, MAX_PLATOON_UNITS, 1);
         const values = range.getValues() as string[][];
         units = [...units, ...values];
       }
 
       // flatten the array and keep only unique values
-      return units
-        .map(e => e[0])
-        .unique();
+      return units.map((e) => e[0]).unique();
+    }
+    /** name of the sheet on which the units are stored */
+    protected sheet: Spreadsheet.Sheet;
+    /** column which holds units for the first member */
+    private columnOffset: number;
+
+    constructor(offset: number, sheet: Spreadsheet.Sheet) {
+      this.columnOffset = offset;
+      this.sheet = sheet;
     }
 
     /** return the number of units defined */
-    abstract getCount(): number;
-
-    /** return the UnitInstance object for the cell value */
-    protected abstract toUnitInstance(stats: string): UnitInstance;
+    public abstract getCount(): number;
 
     /** return a list of units that are required a high number of times (HIGH_MIN) */
-    getHighNeedList(): string[] {
-
-      const data = this.sheet.getRange(2, 1, this.getCount(), this.columnOffset - 1)
-        .getValues() as [string, number][];
+    public getHighNeedList(): string[] {
+      const data = this.sheet.getRange(2, 1, this.getCount(), this.columnOffset - 1).getValues() as Array<
+        [string, number]
+      >;
 
       const idx = this.columnOffset - 1;
-      const list: string[] = data.reduce(
-        (acc: string[], row) => {
-          const needed = row[idx];
-          if (needed >= HIGH_MIN) {
-            const name = row[0];
-            acc.push(`${name} (${needed})`);
-          }
-
-          return acc;
-        },
-        [],
-      );
-
-      return list;
-    }
-
-    /** return a list of Rare units for a phase */
-    protected getRareList(phase: TerritoryBattles.phaseIdx): string[] {
-
-      const data = this.sheet.getRange(2, 1, this.getCount() + 1, this.columnOffset - 2)
-        .getValues() as [string, number][];
-
-      const column = phase + 3;  // HEROES/SHIPS, column D to I
-
-      // cycle through each unit
-      const units: string[] = data.reduce(
-        (acc: [string], row) => {
+      const list: string[] = data.reduce((acc: string[], row) => {
+        const needed = row[idx];
+        if (needed >= HIGH_MIN) {
           const name = row[0];
-          const available = row[column];
-          if (name.length > 0 && available < RARE_MAX) {
-            acc.push(name);
-          }
-          return acc;
-        },
-        [])  // keep only the unit's name
-        .sort();  // sort the list of units
+          acc.push(`${name} (${needed})`);
+        }
 
-      return units;
-    }
-
-    /** return a list of Rare units needed for a phase */
-    protected getNeededRareList(
-      phase: TerritoryBattles.phaseIdx,
-      platoonUnits: string[],
-    ): string[] {
-
-      const units = this.getRareList(phase);
-
-      // filter out rare units that do not appear in platoons
-      const list = units.filter(u => platoonUnits.some(e => e === u));
+        return acc;
+      }, []);
 
       return list;
     }
 
     /** get the unit instances for all members */
-    getAllInstancesByMember(): MemberUnitInstances {
-
+    public getAllInstancesByMember(): MemberUnitInstances {
       const units: MemberUnitInstances = {};
       const rows = this.getCount() + 1;
       const cols = this.columnOffset + config.memberCount() - 1;
-      const data = this.sheet.getRange(1, 1, rows, cols)
-        .getValues() as string[][];
-      const members = data.shift().slice(this.columnOffset - 1);
+      const data = this.sheet.getRange(1, 1, rows, cols).getValues() as string[][];
+      const members = data.shift()!.slice(this.columnOffset - 1);
 
       for (const row of data) {
-
         const name = row[0];
         const baseId = row[1];
         const tags = row[2];
         const instances = row.slice(this.columnOffset - 1);
 
         instances.forEach((e, i) => {
-
           const u = this.toUnitInstance(e);
           if (u) {
             u.baseId = baseId;
@@ -237,24 +176,20 @@ namespace Units {
      * get all the unit instances for all members
      * keyed objects units[name][member] = UnitInstances
      */
-    getAllInstancesByUnits(): UnitMemberInstances {
-
+    public getAllInstancesByUnits(): UnitMemberInstances {
       const units: UnitMemberInstances = {};
       const rows = this.getCount() + 1;
       const cols = this.columnOffset + config.memberCount() - 1;
-      const data = this.sheet.getRange(1, 1, rows, cols)
-        .getValues() as string[][];
-      const members = data.shift().slice(this.columnOffset - 1);
+      const data = this.sheet.getRange(1, 1, rows, cols).getValues() as string[][];
+      const members = data.shift()!.slice(this.columnOffset - 1);
 
       for (const row of data) {
-
         const name = row[0];
         const baseId = row[1];
         const tags = row[2];
         const instances = row.slice(this.columnOffset - 1);
 
         instances.forEach((e, i) => {
-
           const u = this.toUnitInstance(e);
           if (u) {
             u.baseId = baseId;
@@ -273,19 +208,15 @@ namespace Units {
     }
 
     /** get the unit instances for all members */
-    getMemberInstances(member: string): UnitInstances {
-
+    public getMemberInstances(member: string): UnitInstances {
       const units: UnitInstances = {};
       const rows = this.getCount() + 1;
       const cols = this.columnOffset + config.memberCount() - 1;
-      const data = this.sheet.getRange(1, 1, rows, cols)
-        .getValues() as string[][];
-      const members = data.shift().slice(this.columnOffset - 1);
+      const data = this.sheet.getRange(1, 1, rows, cols).getValues() as string[][];
+      const members = data.shift()!.slice(this.columnOffset - 1);
       const column = members.indexOf(member);
       if (column !== -1) {
-
         for (const row of data) {
-
           const name = row[0];
           const baseId = row[1];
           const tags = row[2];
@@ -303,25 +234,60 @@ namespace Units {
       return units;
     }
 
+    /** return the UnitInstance object for the cell value */
+    protected abstract toUnitInstance(stats: string): UnitInstance | undefined;
+
+    /** return a list of Rare units for a phase */
+    protected getRareList(phase: TerritoryBattles.phaseIdx): string[] {
+      const data = this.sheet.getRange(2, 1, this.getCount() + 1, this.columnOffset - 2).getValues() as Array<
+        [string, number]
+      >;
+
+      const column = phase + 3; // HEROES/SHIPS, column D to I
+
+      // cycle through each unit
+      const units: string[] = data
+        .reduce((acc: string[], row) => {
+          const name = row[0];
+          const available = row[column];
+          if (name.length > 0 && available < RARE_MAX) {
+            acc.push(name);
+          }
+          return acc;
+        }, []) // keep only the unit's name
+        .sort(); // sort the list of units
+
+      return units;
+    }
+
+    /** return a list of Rare units needed for a phase */
+    protected getNeededRareList(phase: TerritoryBattles.phaseIdx, platoonUnits: string[]): string[] {
+      const units = this.getRareList(phase);
+
+      // filter out rare units that do not appear in platoons
+      const list = units.filter((u) => platoonUnits.some((e) => e === u));
+
+      return list;
+    }
+
     /** set the unit instances for all members */
     protected setInstances(
       members: PlayerData[],
       definitions: UnitDefinition[],
       toString: (u: UnitInstance) => string,
     ): void {
-
       // Build a Member index by Name
       const memberList = Members.getNames();
 
       // This will hold all our data
-      const data = definitions.map(e => Array(memberList.length).fill(null));
+      const data = definitions.map((e) => Array(memberList.length).fill(null));
 
       const headers: string[] = [];
       const nameIndex: KeyedNumbers = {};
-      definitions.forEach((e, i) => nameIndex[e.baseId] = i);
+      definitions.forEach((e, i) => (nameIndex[e.baseId] = i));
 
       const memberIndex: KeyedNumbers = {};
-      memberList.forEach((e, i) => memberIndex[e[0]] = i);
+      memberList.forEach((e, i) => (memberIndex[e[0]] = i));
 
       for (const m of members) {
         headers.push(m.name);
@@ -334,17 +300,16 @@ namespace Units {
       }
 
       // Clear out our old data, if any, including names as order may have changed
-      this.sheet.getRange(1, this.columnOffset, definitions.length, MAX_MEMBERS)
-        .clearContent();
+      this.sheet.getRange(1, this.columnOffset, definitions.length, MAX_MEMBERS).clearContent();
 
       // Write our data
-      this.sheet.getRange(1, this.columnOffset, definitions.length + 1, memberList.length)
+      this.sheet
+        .getRange(1, this.columnOffset, definitions.length + 1, memberList.length)
         .setValues([...[headers], ...data]);
     }
 
     /** set the unit definitions and phase count formulas */
     protected setDefinitions(units: UnitDefinition[], formula: (u: number) => string): void {
-
       // update the sheet
       const result = units.map((e, i) => {
         const cells = [e.name, e.baseId, e.tags];
@@ -378,22 +343,19 @@ namespace Units {
         '=CONCAT("# Needed P",Platoon!A2)',
       ];
 
-      this.sheet.getRange(1, 1, result.length + 1, headers.length)
-        .setValues([...[headers], ...result]);
+      this.sheet.getRange(1, 1, result.length + 1, headers.length).setValues([...[headers], ...result]);
       return;
     }
   }
 
   /** class to interact with Heroes sheet */
   export class Heroes extends UnitsTable {
-
     constructor() {
       super(HERO_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.HEROES));
     }
 
     /** return the number of heroes defined */
-    getCount(): number {
-
+    public getCount(): number {
       const value = +SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_HEROES_COUNT_ROW, META_HEROES_COUNT_COL)
         .getValue();
@@ -401,44 +363,24 @@ namespace Units {
       return value;
     }
 
-    /** return the UnitInstance object for the cell value */
-    protected toUnitInstance(stats: string): UnitInstance {
-      let result: UnitInstance;
-      const m = stats.match(/(\d+)\*L(\d+)G(\d+)P(\d+)/);
-      if (m) {
-        const rarity = +m[1];
-        const level = +m[2];
-        const gearLevel = +m[3];
-        const power = +m[4];
-        result = { gearLevel, level, power, rarity, stats, type: Units.TYPES.HERO };
-      }
-
-      return result;
-    }
-
     /** return a list of Rare heroes needed for a phase */
-    getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
+    public getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
       const event = config.currentEvent();
       const hgupu = Heroes.getUniquePlatoonUnits;
 
-      const platoonUnits: string[] = (!isLight_(event) || phase > 1)
-        ? [...hgupu(1), ...hgupu(2)]
-        : hgupu(1);
+      const platoonUnits: string[] = !isLight_(event) || phase > 1 ? [...hgupu(1), ...hgupu(2)] : hgupu(1);
 
       return super.getNeededRareList(phase, platoonUnits);
     }
 
     /** set the hero instances for all members */
-    setInstances(members: PlayerData[]): void {
-
-      const toString = (u: UnitInstance) =>
-        (u && `${u.rarity}*L${u.level}G${u.gearLevel}P${u.power}`) || '';
+    public setInstances(members: PlayerData[]): void {
+      const toString = (u: UnitInstance) => (u && `${u.rarity}*L${u.level}G${u.gearLevel}P${u.power}`) || '';
 
       const definitions = Units.getDefinitions().heroes;
 
-      const baseIDs = this.sheet.getRange(2, 2, this.getCount(), 1)
-        .getValues() as string[][];
-      const missingUnit = definitions.some(e => baseIDs.findIndex(b => b[0] === e.baseId) === -1);
+      const baseIDs = this.sheet.getRange(2, 2, this.getCount(), 1).getValues() as string[][];
+      const missingUnit = definitions.some((e) => baseIDs.findIndex((b) => b[0] === e.baseId) === -1);
 
       if (missingUnit) {
         this.setDefinitions(definitions);
@@ -448,25 +390,35 @@ namespace Units {
     }
 
     /** set the hero definitions and phase count formulas */
-    setDefinitions(units: UnitDefinition[]): void {
-
+    public setDefinitions(units: UnitDefinition[]): void {
       // tslint:disable-next-line:max-line-length
-      const formula = row => `=COUNTIF({${SHEETS.PLATOONS}!$D$20:$D$34,${SHEETS.PLATOONS}!$H$20:$H$34,${SHEETS.PLATOONS}!$L$20:$L$34,${SHEETS.PLATOONS}!$P$20:$P$34,${SHEETS.PLATOONS}!$T$20:$T$34,${SHEETS.PLATOONS}!$X$20:$X$34,${SHEETS.PLATOONS}!$D$38:$D$52,${SHEETS.PLATOONS}!$H$38:$H$52,${SHEETS.PLATOONS}!$L$38:$L$52,${SHEETS.PLATOONS}!$P$38:$P$52,${SHEETS.PLATOONS}!$T$38:$T$52,${SHEETS.PLATOONS}!$X$38:$X$52},A${row})`;
+      const formula = (row: number) =>
+        `=COUNTIF({${SHEETS.PLATOONS}!$D$20:$D$34,${SHEETS.PLATOONS}!$H$20:$H$34,${SHEETS.PLATOONS}!$L$20:$L$34,${SHEETS.PLATOONS}!$P$20:$P$34,${SHEETS.PLATOONS}!$T$20:$T$34,${SHEETS.PLATOONS}!$X$20:$X$34,${SHEETS.PLATOONS}!$D$38:$D$52,${SHEETS.PLATOONS}!$H$38:$H$52,${SHEETS.PLATOONS}!$L$38:$L$52,${SHEETS.PLATOONS}!$P$38:$P$52,${SHEETS.PLATOONS}!$T$38:$T$52,${SHEETS.PLATOONS}!$X$38:$X$52},A${row})`;
 
       return super.setDefinitions(units, formula);
+    }
+
+    /** return the UnitInstance object for the cell value */
+    protected toUnitInstance(stats: string): UnitInstance | undefined {
+      const m = stats.match(/(\d+)\*L(\d+)G(\d+)P(\d+)/);
+      if (m) {
+        const rarity = +m[1];
+        const level = +m[2];
+        const gearLevel = +m[3];
+        const power = +m[4];
+        return { gearLevel, level, power, rarity, stats, type: Units.TYPES.HERO };
+      }
     }
   }
 
   /** class to interact with Ships sheet */
   export class Ships extends UnitsTable {
-
     constructor() {
       super(SHIP_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.SHIPS));
     }
 
     /** return the number of ships defined */
-    getCount(): number {
-
+    public getCount(): number {
       const value = +SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
         .getValue();
@@ -474,38 +426,21 @@ namespace Units {
       return value;
     }
 
-    /** return the UnitInstance object for the cell value */
-    protected toUnitInstance(stats: string): UnitInstance {
-      let result: UnitInstance;
-      const m = stats.match(/(\d+)\*L(\d+)P(\d+)/);
-      if (m) {
-        const rarity = +m[1];
-        const level = +m[2];
-        const power = +m[3];
-        result = { level, power, rarity, stats, type: Units.TYPES.SHIP };
-      }
-
-      return result;
-    }
-
     /** return a list of Rare ships needed for a phase */
-    getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
-
+    public getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
       const platoonUnits: string[] = Ships.getUniquePlatoonUnits(0);
 
       return super.getNeededRareList(phase, platoonUnits);
     }
 
     /** set the ship instances for all members */
-    setInstances(members: PlayerData[]): void {
-
+    public setInstances(members: PlayerData[]): void {
       const toString = (u: UnitInstance) => (u && `${u.rarity}*L${u.level}P${u.power}`) || '';
 
       const definitions = Units.getDefinitions().ships;
 
-      const baseIDs = this.sheet.getRange(2, 2, this.getCount(), 1)
-        .getValues() as string[][];
-      const missingUnit = definitions.some(e => baseIDs.findIndex(b => b[0] === e.baseId) === -1);
+      const baseIDs = this.sheet.getRange(2, 2, this.getCount(), 1).getValues() as string[][];
+      const missingUnit = definitions.some((e) => baseIDs.findIndex((b) => b[0] === e.baseId) === -1);
 
       if (missingUnit) {
         this.setDefinitions(definitions);
@@ -515,13 +450,23 @@ namespace Units {
     }
 
     /** set the ship definitions and phase count formulas */
-    setDefinitions(units: UnitDefinition[]): void {
-
+    public setDefinitions(units: UnitDefinition[]): void {
       // tslint:disable-next-line:max-line-length
-      const formula = row => `=COUNTIF({${SHEETS.PLATOONS}!$D$2:$D$16,${SHEETS.PLATOONS}!$H$2:$H$16,${SHEETS.PLATOONS}!$L$2:$L$16,${SHEETS.PLATOONS}!$P$2:$P$16,${SHEETS.PLATOONS}!$T$2:$T$16,${SHEETS.PLATOONS}!$X$2:$X$16},A${row})`;
+      const formula = (row: number) =>
+        `=COUNTIF({${SHEETS.PLATOONS}!$D$2:$D$16,${SHEETS.PLATOONS}!$H$2:$H$16,${SHEETS.PLATOONS}!$L$2:$L$16,${SHEETS.PLATOONS}!$P$2:$P$16,${SHEETS.PLATOONS}!$T$2:$T$16,${SHEETS.PLATOONS}!$X$2:$X$16},A${row})`;
 
       return super.setDefinitions(units, formula);
     }
-  }
 
+    /** return the UnitInstance object for the cell value */
+    protected toUnitInstance(stats: string): UnitInstance | undefined {
+      const m = stats.match(/(\d+)\*L(\d+)P(\d+)/);
+      if (m) {
+        const rarity = +m[1];
+        const level = +m[2];
+        const power = +m[3];
+        return { level, power, rarity, stats, type: Units.TYPES.SHIP };
+      }
+    }
+  }
 }

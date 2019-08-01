@@ -2,7 +2,6 @@ import { swgohhelpapi } from '../lib';
 
 /** API Functions to pull data from swgoh.help */
 namespace SwgohHelp {
-
   /** Constants to translate categoryId into SwgohGg tags */
   enum categoryId {
     alignment_dark = 'dark side',
@@ -45,7 +44,6 @@ namespace SwgohHelp {
 
   /** check if swgohhelpapi api is installed */
   function checkLibrary(): boolean {
-
     const result = !!swgohhelpapi;
     if (!result) {
       const UI = SpreadsheetApp.getUi();
@@ -60,24 +58,23 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
     return result;
   }
 
-  type UnitsList = {
-    nameKey: string,
-    forceAlignment: number,
-    combatType: swgohhelpapi.COMBAT_TYPE,
-    baseId: string,
-    categoryIdList: [string],
-  };
+  interface UnitsList {
+    nameKey: string;
+    forceAlignment: number;
+    combatType: swgohhelpapi.COMBAT_TYPE;
+    baseId: string;
+    categoryIdList: [string];
+  }
 
   /** Pull Units definitions from SwgohHelp */
-  export function getUnitList(): UnitsDefinitions {
-
+  export function getUnitList(): UnitsDefinitions | undefined {
     if (!checkLibrary()) {
       return undefined;
     }
 
     const settings: swgohhelpapi.exports.Settings = {
-      username: config.SwgohHelp.username(),
-      password: config.SwgohHelp.password(),
+      password: config.SwgohHelpApi.password(),
+      username: config.SwgohHelpApi.username(),
     };
     const client = new swgohhelpapi.exports.Client(settings);
 
@@ -85,43 +82,37 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
       collection: swgohhelpapi.Collections.unitsList,
       language: swgohhelpapi.Languages.eng_us,
       match: {
-        rarity: 7,
         obtainable: true,
         obtainableTime: 0,
+        rarity: 7,
       },
       project: {
-        nameKey: true,
-        forceAlignment: true,
-        combatType: true,
-        categoryIdList: true,
         baseId: true,
+        categoryIdList: true,
+        combatType: true,
+        forceAlignment: true,
+        nameKey: true,
       },
     });
 
     if (units && units.length && units.length > 0) {
       return units.reduce(
         (acc: UnitsDefinitions, e) => {
-          const bucket = e.combatType === swgohhelpapi.COMBAT_TYPE.HERO
-            ? acc.heroes
-            : acc.ships;
+          const bucket = e.combatType === swgohhelpapi.COMBAT_TYPE.HERO ? acc.heroes : acc.ships;
 
-          const tags = e.categoryIdList.reduce(
-            (a: [string], c) => {
-              const tag = categoryId[c];
-              if (tag) {
-                a.push(tag);
-              }
-              return a;
-            },
-            [],
-          );
-          const alignment = e.forceAlignment === 2
-            ? categoryId.alignment_light
-            : (
-              e.forceAlignment === 3
-                ? categoryId.alignment_dark
-                : undefined
-            );
+          const tags = e.categoryIdList.reduce((a: string[], c) => {
+            const tag = categoryId[c as keyof typeof categoryId];
+            if (tag) {
+              a.push(tag);
+            }
+            return a;
+          }, []);
+          const alignment =
+            e.forceAlignment === 2
+              ? categoryId.alignment_light
+              : e.forceAlignment === 3
+              ? categoryId.alignment_dark
+              : undefined;
 
           if (alignment) {
             tags.unshift(alignment);
@@ -134,62 +125,59 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           bucket.push(definition);
           return acc;
         },
-        { heroes: [], ships: [] });
-
+        { heroes: [], ships: [] },
+      );
     }
 
     return undefined;
   }
 
   /** Pull Guild data from SwgohHelp */
-  export function getGuildData(): PlayerData[] {
-
+  export function getGuildData(): PlayerData[] | undefined {
     if (!checkLibrary()) {
       return undefined;
     }
 
     const settings: swgohhelpapi.exports.Settings = {
-      username: config.SwgohHelp.username(),
-      password: config.SwgohHelp.password(),
+      password: config.SwgohHelpApi.password(),
+      username: config.SwgohHelpApi.username(),
     };
     const client = new swgohhelpapi.exports.Client(settings);
 
-    const allycode = config.SwgohHelp.allyCode();
+    const allycode = config.SwgohHelpApi.allyCode();
     const guild: swgohhelpapi.exports.GuildResponse[] = client.fetchGuild({
       allycode,
       language: swgohhelpapi.Languages.eng_us,
       project: {
-        name: true,
         members: true,
-        updated: true,
+        name: true,
         roster: {
           allyCode: true,
           gp: true,
           gpChar: true,
           gpShip: true,
-          level: true,  // TODO: store and process member level minimun requirement
+          level: true, // TODO: store and process member level minimun requirement
           name: true,
           updated: true,
         },
+        updated: true,
       },
     });
 
     if (guild && guild.length && guild.length === 1) {
-
       const roster = guild[0].roster as swgohhelpapi.exports.PlayerResponse[];
 
       const red = roster.reduce(
-        (acc: {allyCodes: number[]; membersData: PlayerData[]}, r) => {
-
+        (acc: { allyCodes: number[]; membersData: PlayerData[] }, r) => {
           const allyCode = r.allyCode;
           if (allyCode) {
             const p: PlayerData = {
               allyCode,
-              gp: r.gp,
-              heroesGp: r.gpChar,
+              gp: r.gp!,
+              heroesGp: r.gpChar!,
               level: r.level,
-              name: r.name,
-              shipsGp: r.gpShip,
+              name: r.name!,
+              shipsGp: r.gpShip!,
               units: {},
             };
             acc.allyCodes.push(allyCode);
@@ -199,9 +187,9 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           return acc;
         },
         {
-          membersData: [],
           allyCodes: [],
-        } as {allyCodes: number[]; membersData: PlayerData[]},
+          membersData: [],
+        },
       );
 
       if (red.allyCodes.length > 0) {
@@ -210,36 +198,34 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           language: swgohhelpapi.Languages.eng_us,
           project: {
             allyCode: true,
-            type: true,
-            gp: true,
-            starLevel: true,
-            level: true,
             gearLevel: true,
+            gp: true,
+            level: true,
+            starLevel: true,
+            type: true,
           },
         });
 
         if (units && typeof units === 'object') {
           const membersData = red.membersData;
-          for (const baseId in units) {
+          for (const baseId of Object.keys(units)) {
             const u = units[baseId];
             for (const i of u) {
               const allyCode = i.allyCode;
-              const index = membersData.findIndex(e => e.allyCode === allyCode);
+              const index = membersData.findIndex((e) => e.allyCode === allyCode);
               if (index > -1) {
-                const type = i.type === swgohhelpapi.COMBAT_TYPE.HERO
-                  ? Units.TYPES.HERO
-                  : Units.TYPES.SHIP;
+                const type = i.type === swgohhelpapi.COMBAT_TYPE.HERO ? Units.TYPES.HERO : Units.TYPES.SHIP;
 
                 membersData[index].units[baseId] = {
-                  type,
                   baseId,
                   gearLevel: i.gearLevel,
-                  level: i.level,
+                  level: i.level!,
                   // name: i.???,
-                  power: i.gp,
-                  rarity: i.starLevel,
+                  power: i.gp!,
+                  rarity: i.starLevel!,
                   // stats: i.???,
                   // tags: i.???,
+                  type,
                 };
               }
             }
@@ -258,15 +244,14 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
    * Units name and tags are not populated
    * returns Player data, including its units data
    */
-  export function getPlayerData(allyCode: number): PlayerData {
-
+  export function getPlayerData(allyCode: number): PlayerData | undefined {
     if (!checkLibrary()) {
       return undefined;
     }
 
     const settings = {
-      username: config.SwgohHelp.username(),
-      password: config.SwgohHelp.password(),
+      password: config.SwgohHelpApi.password(),
+      username: config.SwgohHelpApi.username(),
     };
     const client = new swgohhelpapi.exports.Client(settings);
 
@@ -281,8 +266,8 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
         roster: {
           combatType: true,
           defId: true,
-          gp: true,
           gear: true,
+          gp: true,
           level: true,
           nameKey: true,
           rarity: true,
@@ -294,28 +279,25 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
 
     if (json && json.length && json.length === 1 && !json[0].hasOwnProperty('error')) {
       const e = json[0];
-      const getStats = (i) => {
-        const s = e.stats.find(o => o.index === i);
+      const getStats = (i: number) => {
+        const s = e.stats!.find((o) => o.index === i);
         return s && s.value;
       };
       const player: PlayerData = {
-        allyCode: e.allyCode,
-        gp: getStats(1),
-        heroesGp: getStats(2),
+        allyCode: e.allyCode!,
+        gp: getStats(1)!,
+        heroesGp: getStats(2)!,
         level: e.level,
         // link: e.url,
-        name: e.name,
-        shipsGp: getStats(3),
+        name: e.name!,
+        shipsGp: getStats(3)!,
         units: {},
       };
-      for (const u of e.roster) {
+      for (const u of e.roster!) {
         const baseId = u.defId;
-        const type = u.combatType === swgohhelpapi.COMBAT_TYPE.HERO
-          ? Units.TYPES.HERO
-          : Units.TYPES.SHIP;
+        const type = u.combatType === swgohhelpapi.COMBAT_TYPE.HERO ? Units.TYPES.HERO : Units.TYPES.SHIP;
 
         player.units[baseId] = {
-          type,
           baseId: u.defId,
           gearLevel: u.gear,
           level: u.level,
@@ -324,6 +306,7 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           rarity: u.rarity,
           // stats: u.???,
           // tags: u.???,
+          type,
         };
       }
       return player;
@@ -331,5 +314,4 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
 
     return undefined;
   }
-
 }
