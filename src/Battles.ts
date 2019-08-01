@@ -2,16 +2,14 @@
 function spooledSetCellValue_(
   spooler: utils.Spooler,
   range: Spreadsheet.Range | utils.SpooledRange,
-  value: boolean|number|string|Date,
+  value: boolean | number | string | Date,
   bold: boolean,
-  align?: 'left' | 'center' | 'right',
+  align: 'left' | 'center' | 'right' = 'left',
 ): utils.SpooledRange {
+  const spooled = range instanceof utils.SpooledRange ? range : spooler.attach(range);
 
-  const spooled = range instanceof utils.SpooledRange
-    ? range
-    : spooler.attach(range);
-
-  spooled.setFontWeight(bold ? 'bold' : 'normal')
+  spooled
+    .setFontWeight(bold ? 'bold' : 'normal')
     .setHorizontalAlignment(align)
     .setValue(value);
 
@@ -23,8 +21,7 @@ function populateEventTable_(
   data: string[][],
   members: PlayerData[],
   unitsIndex: UnitDefinition[],
-): (string|number)[][] {
-
+): Array<Array<string | number>> {
   const memberNames = Members.getNames();
   const nameToBaseId: KeyedStrings = {};
   for (const e of unitsIndex) {
@@ -37,16 +34,14 @@ function populateEventTable_(
   let squadCount = 0;
   let lastSquad = 0;
 
-  const table: (string|number)[][] = [];
+  const table: Array<Array<string | number>> = [];
   table[0] = [];
 
   for (let c = 0; c < memberNames.length; c += 1) {
-
     const m = members[c]; // weak
     table[0][c] = m.name;
 
     for (let r = 0; r < data.length; r += 1) {
-
       const curHero = data[r];
 
       if (table[r + 1] == null) {
@@ -55,9 +50,10 @@ function populateEventTable_(
 
       if (curHero[0] === 'Phase Count:') {
         const phaseUnits = +curHero[1];
-        const readyUnits = requiredUnits - missingRequiredUnits
+        const readyUnits = (requiredUnits - missingRequiredUnits)
           + Math.min(phaseUnits - requiredUnits, squadCount);
         table[r + 1][c] = readyUnits;
+        // table[r + 1][c] = requiredUnits;
         total += readyUnits;
         requiredUnits = 0;
         missingRequiredUnits = 0;
@@ -98,14 +94,8 @@ function populateEventTable_(
         // try again... once
         baseId = nameToBaseId[curHero[0]];
       }
-      const o = m['units'][baseId];
-      if (o == null) {
-        continue;
-      }
-      const requirementsMet =
-        o.rarity >= +curHero[1] &&
-        o.gearLevel >= +curHero[2] &&
-        o.level >= +curHero[3];
+      const o = m.units[baseId];
+      const requirementsMet = o && (o.rarity >= +curHero[1] && o.gearLevel! >= +curHero[2] && o.level >= +curHero[3]);
       const unitIsRequired = curHero[5] === 'R';
       if (unitIsRequired) {
         requiredUnits += 1;
@@ -115,9 +105,9 @@ function populateEventTable_(
       } else if (requirementsMet) {
         squadCount += 1;
       }
-      table[r + 1][c] = requirementsMet
-        ? `${o.rarity}`
-        : `${o.rarity}*L${o.level}G${o.gearLevel}`;
+      if (o) {
+        table[r + 1][c] = requirementsMet ? `${o.rarity}` : `${o.rarity}*L${o.level}G${o.gearLevel}`;
+      }
     }
   }
   return table;
@@ -129,17 +119,14 @@ function populateEventTable_(
  * @param members - array of members
  * @returns array of PlayerData
  */
-function updateGuildRoster_(
-  members: PlayerData[],
-): PlayerData[] {
-
+function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
 
   const sortFunction = config.sortRoster()
-    // sort roster by member name
-    ? (a, b) => utils.caseInsensitive(a.name, b.name)
-    // sort roster by GP
-    : (a, b) => b.gp - a.gp;
+    ? // sort roster by member name
+      (a: PlayerData, b: PlayerData) => utils.caseInsensitive(a.name, b.name)
+    : // sort roster by GP
+      (a: PlayerData, b: PlayerData) => b.gp - a.gp;
 
   members.sort(sortFunction);
 
@@ -154,13 +141,7 @@ function updateGuildRoster_(
   // cleanup the header
   const header = [['Name', 'Ally Code', 'GP', 'GP Heroes', 'GP Ships']];
 
-  const result = members.map(e => [
-    [e.name],
-    [e.allyCode],
-    [e.gp],
-    [e.heroesGp],
-    [e.shipsGp],
-  ]);
+  const result = members.map((e) => [[e.name], [e.allyCode], [e.gp], [e.heroesGp], [e.shipsGp]]);
 
   // write the roster
   sheet.getRange(1, 2, 60, result[0].length).clearContent();
@@ -177,26 +158,24 @@ function getSettingsHash_() {
   const meta = SPREADSHEET.getSheetByName(SHEETS.META);
 
   // members name & ally code
-  const members = (roster.getRange(2, 2, 50, 2)
-    .getValues() as [string, number][])
-    .reduce(
-      (acc: [string, number][], e) => {
-        if (e[1] > 0) acc.push(e);
-        return acc;
-      },
-      [],
-    ).sort((a, b) => a[1] - b[1]);
+  const members = (roster.getRange(2, 2, 50, 2).getValues() as Array<[string, number]>)
+    .reduce((acc: Array<[string, number]>, e) => {
+      if (e[1] > 0) {
+        acc.push(e);
+      }
+      return acc;
+    }, [])
+    .sort((a, b) => a[1] - b[1]);
 
   // rename/add/remove settings
-  const rar = (roster.getRange(2, 16, roster.getMaxRows(), 3)
-    .getValues() as [string, number, number][])
-    .reduce(
-      (acc: [string, number, number][], e) => {
-        if (e[1] > 0 || e[2] > 0) acc.push(e);
-        return acc;
-      },
-      [],
-    ).sort((a, b) => a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]);
+  const rar = (roster.getRange(2, 16, roster.getMaxRows(), 3).getValues() as Array<[string, number, number]>)
+    .reduce((acc: Array<[string, number, number]>, e) => {
+      if (e[1] > 0 || e[2] > 0) {
+        acc.push(e);
+      }
+      return acc;
+    }, [])
+    .sort((a, b) => (a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]));
 
   // data source
   const dataSource = meta.getRange(14, 4).getValue();
@@ -205,22 +184,23 @@ function getSettingsHash_() {
   // SwgohGg settings
   const swgohHelp = meta.getRange(16, 1, 5).getValues();
 
-  const hash = String(Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256,
-    JSON.stringify({ members, rar, dataSource, swgohGg, swgohHelp }),
-  ));
+  const hash = String(
+    Utilities.computeDigest(
+      Utilities.DigestAlgorithm.SHA_256,
+      JSON.stringify({ members, rar, dataSource, swgohGg, swgohHelp }),
+    ),
+  );
 
   return hash;
 }
 
 /** process the Rename, Add and Remove columns */
 function renameAddRemove_(members: PlayerData[]): PlayerData[] {
-
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  const add = sheet.getRange(2, META_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2)
-    .getValues() as [string, number][];
-  const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
-    .getValues() as number[][];
+  const add = sheet.getRange(2, META_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2).getValues() as Array<
+    [string, number]
+  >;
+  const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1).getValues() as number[][];
 
   const definitions = Units.getDefinitions();
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
@@ -229,16 +209,12 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   for (const e of add) {
     const allyCode = e[1];
     if (allyCode && allyCode > 0) {
-      const name = (
-        (typeof e[0] === 'string')
-        ? e[0]
-        : `${e[0]}`
-      ).trim();
+      const name = (typeof e[0] === 'string' ? e[0] : `${e[0]}`).trim();
 
-      const index = members.findIndex(m => m.allyCode === allyCode);
+      const index = members.findIndex((m) => m.allyCode === allyCode);
       if (index === -1) {
         // get PlayerData and update members
-        const member = (Player.getFromDataSource(allyCode, unitsIndex));
+        const member = Player.getFromDataSource(allyCode, unitsIndex);
         if (member) {
           members.push(member);
         } else {
@@ -246,18 +222,18 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
         }
       }
       if (index !== -1 && name.length > 0 && members[index].name !== name) {
-        members[index].name = name;  // rename member
+        members[index].name = name; // rename member
       }
     }
   }
 
   // remove
   for (const e of remove) {
-    const allyCode = e && +e[0] || 0;
+    const allyCode = (e && +e[0]) || 0;
     if (allyCode > 0) {
-      const index = members.findIndex(m => m.allyCode === allyCode);
+      const index = members.findIndex((m) => m.allyCode === allyCode);
       if (index > -1) {
-        members.splice(index, 1);  // remove member
+        members.splice(index, 1); // remove member
       }
     }
   }
@@ -267,10 +243,9 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
 
 /** fix members name */
 function normalizeRoster_(members: PlayerData[]): PlayerData[] {
-
   // fix name starting with single quote
   for (const e of members) {
-    if (e.name[0] === '\'') {
+    if (e.name[0] === "'") {
       e.name = ` ${e.name}`;
     }
   }
@@ -284,7 +259,7 @@ function normalizeRoster_(members: PlayerData[]): PlayerData[] {
       index[e.name] = [i];
     }
   });
-  for (const key in index) {
+  for (const key of Object.keys(index)) {
     const a = index[key];
     if (a.length > 1) {
       for (const i of a) {
@@ -301,9 +276,9 @@ function getMembers_(): PlayerData[] {
   const ss = SpreadsheetApp.getActive();
   const cds = config.dataSource;
 
-  let members: PlayerData[];
+  let members: PlayerData[] | undefined;
 
-  const settingsHash =  getSettingsHash_();
+  const settingsHash = getSettingsHash_();
 
   const cacheId = SPREADSHEET.getId();
   const cache = CacheService.getScriptCache();
@@ -315,19 +290,11 @@ function getMembers_(): PlayerData[] {
   }
   // Figure out which data source to use
   if (cds.isSwgohHelp()) {
-    ss.toast(
-      `Fetching roster data from ${cds.getDataSource()}`,
-      'Get guild members',
-      3,
-    );
+    ss.toast(`Fetching roster data from ${cds.getDataSource()}`, 'Get guild members', 3);
     members = SwgohHelp.getGuildData();
   } else if (cds.isSwgohGg()) {
-    ss.toast(
-      `Fetching roster data from ${cds.getDataSource()}`,
-      'Get guild members',
-      3,
-    );
-    members = SwgohGg.getGuildData(config.SwgohGg.guild());
+    ss.toast(`Fetching roster data from ${cds.getDataSource()}`, 'Get guild members', 3);
+    members = SwgohGg.getGuildData(config.SwgohGgApi.guild());
   }
   if (!members) {
     throw new Error('The datasource returned no data');
@@ -338,7 +305,7 @@ function getMembers_(): PlayerData[] {
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
   const missingUnit = members.some((m: PlayerData) => {
     for (const baseId in m.units) {
-      if (unitsIndex.findIndex(e => e.baseId === baseId) === -1) {
+      if (unitsIndex.findIndex((e) => e.baseId === baseId) === -1) {
         return true;
       }
     }
@@ -350,7 +317,7 @@ function getMembers_(): PlayerData[] {
     Units.getDefinitionsFromDataSource();
   }
 
-  const seconds = 3600;  // 1 hour
+  const seconds = 3600; // 1 hour
   cache.put(cacheId, settingsHash, seconds);
   return normalizeRoster_(renameAddRemove_(members));
 }
@@ -369,11 +336,7 @@ function setupEvent(): void {
 
   if (!members) {
     const UI = SpreadsheetApp.getUi();
-    UI.alert(
-      'Parsing Error',
-      'Unable to parse guild data. Check source links in Meta Tab',
-      UI.ButtonSet.OK,
-    );
+    UI.alert('Parsing Error', 'Unable to parse guild data. Check source links in Meta Tab', UI.ButtonSet.OK);
 
     return;
   }
@@ -389,105 +352,94 @@ function setupEvent(): void {
 
   [
     SHEETS.DSPLATOONAUDIT,
+    SHEETS.GEODSPLATOONAUDIT,
     SHEETS.LSPLATOONAUDIT,
     SHEETS.SQUADRONAUDIT,
     SHEETS.DSMISSIONS,
     SHEETS.LSMISSIONS,
     SHEETS.ESTIMATE,
-  ].forEach(e => ss.getSheetByName(e).hideSheet());
+  ].forEach((e) => ss.getSheetByName(e).hideSheet());
 
   const spooler = new utils.Spooler();
 
   // clear the hero data
   ss.toast('Rebuilding...', 'TB sheet', 3);
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
-  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS))
-    .clearContent();
-  spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_MEMBERS))
-    .clearContent();
+  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS)).clearContent();
+  spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_MEMBERS)).clearContent();
 
-  type eventData = [
-    string,  // eventType
-    string,  // phase
-    string,  // unit
-    number,  // rarity
-    number,  // gearLevel
-    number,  // level
-    string,  // squad
-    string  // required
+  type EventData = [
+    string, // eventType
+    string, // phase
+    string, // unit
+    number, // rarity
+    number, // gearLevel
+    number, // level
+    string, // squad
+    string, // required
   ];
 
   // collect the meta data for the heroes
   const row = 2;
-  const col = isLight_(event) ? META_HEROES_COL :
-    isDark_(event) ? META_HEROES_DS_COL :
-    META_HEROES_GEO_DS_COL;
+  const col = isLight_(event) ? META_HEROES_COL : isDark_(event) ? META_HEROES_DS_COL : META_HEROES_GEO_DS_COL;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
-  const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8)
-    .getValues() as eventData[];
+  const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8).getValues() as EventData[];
 
-  type eventUnit = {
-    name: string,
-    rarity: number,
-    gearLevel: number,
-    level: number,
-    required: string,
-  };
+  interface EventUnit {
+    name: string;
+    rarity: number;
+    gearLevel: number;
+    level: number;
+    required: string;
+  }
 
-  type eventObject = {
-    squad: string,
-    eventType: string,
-    phase: string,
-    units: eventUnit[],
-  };
+  interface EventObject {
+    squad: string;
+    eventType: string;
+    phase: string;
+    units: EventUnit[];
+  }
 
-  const events = eventDefinition.reduce(
-    (acc: eventObject[], e) => {
-      const phase = e[1];
-      const squad = e[6];
-      if (
-        typeof phase === 'string'
-        && typeof squad === 'string'
-        && phase.length > 0
-        && squad.length > 0
-      ) {
-        let o = acc.find(e => e.phase === phase && e.squad === squad);
-        if (!o) {
-          o = {
+  const events = eventDefinition
+    .reduce((acc: EventObject[], def) => {
+      const phase = def[1];
+      const squad = def[6];
+      if (typeof phase === 'string' && typeof squad === 'string' && phase.length > 0 && squad.length > 0) {
+        let obj = acc.find((o) => o.phase === phase && o.squad === squad);
+        if (!obj) {
+          obj = {
+            eventType: def[0],
             phase,
             squad,
-            eventType: e[0],
             units: [],
           };
-          acc.push(o);
+          acc.push(obj);
         }
-        o.units.push({
-          name: e[2],
-          rarity: e[3],
-          gearLevel: e[4],
-          level: e[5],
-          required: e[7],
+        obj.units.push({
+          gearLevel: def[4],
+          level: def[5],
+          name: def[2],
+          rarity: def[3],
+          required: def[7],
         });
       }
       return acc;
-    },
-    [],
-  )
-  .sort((a, b) => {
-    if (a.phase < b.phase) {
-      return -1;
-    }
-    if (a.phase > b.phase) {
-      return 1;
-    }
-    if (a.squad < b.squad) {
-      return -1;
-    }
-    if (a.squad > b.squad) {
-      return 1;
-    }
-    return 0;
-  });
+    }, [])
+    .sort((a, b) => {
+      if (a.phase < b.phase) {
+        return -1;
+      }
+      if (a.phase > b.phase) {
+        return 1;
+      }
+      if (a.squad < b.squad) {
+        return -1;
+      }
+      if (a.squad > b.squad) {
+        return 1;
+      }
+      return 0;
+    });
 
   let tbRow = 2;
   const phaseList = [];
@@ -502,7 +454,7 @@ function setupEvent(): void {
       const data = [
         e.eventType,
         e.phase,
-        u.name,  // see following setCellValue_
+        u.name, // see following setCellValue_
         u.rarity,
         u.gearLevel,
         u.level,
@@ -510,8 +462,7 @@ function setupEvent(): void {
         u.required,
         `=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`,
       ];
-      spooler.attach(tbSheet.getRange(tbRow, 1, 1, 9))
-        .setValues([data]);
+      spooler.attach(tbSheet.getRange(tbRow, 1, 1, 9)).setValues([data]);
       spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), u.name, false, 'left');
       tbRow += 1;
       squadCount += 1;
@@ -521,12 +472,16 @@ function setupEvent(): void {
       }
     }
 
-    const curTb = tbSheet.getRange(tbRow, 3);
-    spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), 'Phase Count:', true, 'right');
-    spooler.attach(curTb.offset(0, 1))
-      .setValue(Math.min(phaseCount, 5));
-    spooler.attach(curTb.offset(0, 6))
+    spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), 'Phase Count:', true, 'right')
+      .offset(0, 1)
+      .setValue(Math.min(phaseCount, 5))
+      .offset(0, 5)
       .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+
+    // const curTb = tbSheet.getRange(tbRow, 3);
+    // spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), 'Phase Count:', true, 'right');
+    // spooler.attach(curTb.offset(0, 1)).setValue(Math.min(phaseCount, 5));
+    // spooler.attach(curTb.offset(0, 6)).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
     phaseList.push([e.phase, tbRow]);
     tbRow += 2;
@@ -541,10 +496,8 @@ function setupEvent(): void {
   // add the total
   let curTb = tbSheet.getRange(tbRow, 3);
   spooledSetCellValue_(spooler, curTb, 'Total:', true, 'right');
-  spooler.attach(curTb.offset(0, 1))
-    .setValue(total);
-  spooler.attach(curTb.offset(0, 6))
-    .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+  spooler.attach(curTb.offset(0, 1)).setValue(total);
+  spooler.attach(curTb.offset(0, 6)).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
   // add the readiness chart
   spooledSetCellValue_(
@@ -559,8 +512,7 @@ function setupEvent(): void {
   // list the phases
   phaseList.forEach((e, i) => {
     curTb = tbSheet.getRange(tbRow + i, 2);
-    spooler.attach(curTb)
-      .setValue(e[0]);
+    spooler.attach(curTb).setValue(e[0]);
     spooledSetCellValue_(spooler, curTb.offset(0, 1), `=I${e[1]}`, true, 'center');
   });
 
@@ -586,32 +538,19 @@ function setupEvent(): void {
 
   // store the table of member data
   const width = table.reduce((a: number, e) => Math.max(a, e.length), 0);
-  table = table.map(
-    e =>
-      e.length !== width ? [...e, ...Array(width).fill(null)].slice(0, width) : e,
-  );
-  tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length)
-    .setValues(table);
+  table = table.map((e) => (e.length !== width ? [...e, ...Array(width).fill(null)].slice(0, width) : e));
+  tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length).setValues(table);
 
   if (isDark_(event)) {
-    [
-      SHEETS.DSPLATOONAUDIT,
-      SHEETS.SQUADRONAUDIT,
-      SHEETS.DSMISSIONS,
-      SHEETS.ESTIMATE,
-    ].forEach(e => ss.getSheetByName(e).showSheet());
+    [SHEETS.DSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.DSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
+      ss.getSheetByName(e).showSheet(),
+    );
   } else if (isLight_(event)) {
-    [
-      SHEETS.LSPLATOONAUDIT,
-      SHEETS.SQUADRONAUDIT,
-      SHEETS.LSMISSIONS,
-      SHEETS.ESTIMATE,
-    ].forEach(e => ss.getSheetByName(e).showSheet());
+    [SHEETS.LSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.LSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
+      ss.getSheetByName(e).showSheet(),
+    );
   } else if (isGeo_(event)) {
-    [
-      SHEETS.DSPLATOONAUDIT,
-      SHEETS.SQUADRONAUDIT,
-    ].forEach(e => ss.getSheetByName(e).showSheet());
+    [SHEETS.GEODSPLATOONAUDIT, SHEETS.SQUADRONAUDIT].forEach((e) => ss.getSheetByName(e).showSheet());
   }
 
   ss.toast('Ready', 'TB sheet', 3);
