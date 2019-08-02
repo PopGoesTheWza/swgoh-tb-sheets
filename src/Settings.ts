@@ -213,10 +213,13 @@ enum SHEETS {
   GEODSPLATOONAUDIT = 'GeoDSPlatoonAudit',
   LSPLATOONAUDIT = 'LSPlatoonAudit',
   SQUADRONAUDIT = 'SquadronAudit',
+  NEEDEDUNITS = 'NeededUnits',
+  GEONEEDEDUNITS = 'GeoNeededUnits',
   BREAKDOWN = 'Breakdown',
   ESTIMATE = 'Estimate',
-  LSMISSIONS = 'LS Missions',
   DSMISSIONS = 'DS Missions',
+  GEODSMISSIONS = 'Geo DS Missions',
+  LSMISSIONS = 'LS Missions',
   SNAPSHOT = 'Snapshot',
   EXCLUSIONS = 'Exclusions',
   HEROES = 'Heroes',
@@ -373,12 +376,12 @@ namespace config {
 
     /** Get the SwgohHelp API username */
     export function username(): string {
-      return helper(1, 16);
+      return helper(16, 1);
     }
 
     /** Get the SwgohHelp API password */
     export function password(): string {
-      return helper(1, 18);
+      return helper(18, 1);
     }
 
     /** Get the guild member ally code */
