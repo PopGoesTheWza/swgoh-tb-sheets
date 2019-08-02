@@ -147,7 +147,7 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   sheet.getRange(1, 2, 60, result[0].length).clearContent();
   sheet.getRange(1, 2, header.length, header[0].length).setValues(header);
   sheet.getRange(2, 2, result.length, result[0].length).setValues(result);
-  SpreadsheetApp.getActive().toast('Roster data updated', 'Guild roster', 3);
+  SPREADSHEET.toast('Roster data updated', 'Guild roster', 3);
 
   return members;
 }
@@ -273,7 +273,6 @@ function normalizeRoster_(members: PlayerData[]): PlayerData[] {
 
 /** get a PlayerData array of members, from sheet if possible, else from data source */
 function getMembers_(): PlayerData[] {
-  const ss = SpreadsheetApp.getActive();
   const cds = config.dataSource;
 
   let members: PlayerData[] | undefined;
@@ -285,15 +284,15 @@ function getMembers_(): PlayerData[] {
   const cachedHash = cache.get(cacheId);
 
   if (cachedHash && cachedHash === settingsHash) {
-    ss.toast('Using cached roster data', 'Get guild members', 3);
+    SPREADSHEET.toast('Using cached roster data', 'Get guild members', 3);
     return Members.getFromSheet();
   }
   // Figure out which data source to use
   if (cds.isSwgohHelp()) {
-    ss.toast(`Fetching roster data from ${cds.getDataSource()}`, 'Get guild members', 3);
+    SPREADSHEET.toast(`Fetching roster data from ${cds.getDataSource()}`, 'Get guild members', 3);
     members = SwgohHelp.getGuildData();
   } else if (cds.isSwgohGg()) {
-    ss.toast(`Fetching roster data from ${cds.getDataSource()}`, 'Get guild members', 3);
+    SPREADSHEET.toast(`Fetching roster data from ${cds.getDataSource()}`, 'Get guild members', 3);
     members = SwgohGg.getGuildData(config.SwgohGgApi.guild());
   }
   if (!members) {
@@ -326,7 +325,18 @@ function getMembers_(): PlayerData[] {
 function setupEvent(): void {
   const event = config.currentEvent();
 
-  const ss = SpreadsheetApp.getActive();
+
+  [
+    SHEETS.DSPLATOONAUDIT,
+    SHEETS.GEODSPLATOONAUDIT,
+    SHEETS.LSPLATOONAUDIT,
+    SHEETS.SQUADRONAUDIT,
+    SHEETS.NEEDEDUNITS,
+    SHEETS.GEONEEDEDUNITS,
+    SHEETS.DSMISSIONS,
+    SHEETS.LSMISSIONS,
+    SHEETS.ESTIMATE,
+  ].forEach((e) => SPREADSHEET.getSheetByName(e).hideSheet());
 
   // // make sure the roster is up-to-date
   const definitions = Units.getDefinitions();
@@ -350,20 +360,10 @@ function setupEvent(): void {
   heroesTable.setInstances(members);
   shipsTable.setInstances(members);
 
-  [
-    SHEETS.DSPLATOONAUDIT,
-    SHEETS.GEODSPLATOONAUDIT,
-    SHEETS.LSPLATOONAUDIT,
-    SHEETS.SQUADRONAUDIT,
-    SHEETS.DSMISSIONS,
-    SHEETS.LSMISSIONS,
-    SHEETS.ESTIMATE,
-  ].forEach((e) => ss.getSheetByName(e).hideSheet());
-
   const spooler = new utils.Spooler();
 
   // clear the hero data
-  ss.toast('Rebuilding...', 'TB sheet', 3);
+  SPREADSHEET.toast('Rebuilding...', 'TB sheet', 3);
   const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
   spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS)).clearContent();
   spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_MEMBERS)).clearContent();
@@ -529,7 +529,7 @@ function setupEvent(): void {
   spooler.commit();
 
   // setup member columns
-  ss.toast('Populating...', 'TB sheet', 3);
+  SPREADSHEET.toast('Populating...', 'TB sheet', 3);
   let table = populateEventTable_(
     tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
     members,
@@ -542,16 +542,16 @@ function setupEvent(): void {
   tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length).setValues(table);
 
   if (isDark_(event)) {
-    [SHEETS.DSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.DSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
-      ss.getSheetByName(e).showSheet(),
+    [SHEETS.DSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.NEEDEDUNITS, SHEETS.DSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
+      SPREADSHEET.getSheetByName(e).showSheet(),
     );
   } else if (isLight_(event)) {
-    [SHEETS.LSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.LSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
-      ss.getSheetByName(e).showSheet(),
+    [SHEETS.LSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.NEEDEDUNITS, SHEETS.LSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
+      SPREADSHEET.getSheetByName(e).showSheet(),
     );
   } else if (isGeo_(event)) {
-    [SHEETS.GEODSPLATOONAUDIT, SHEETS.SQUADRONAUDIT].forEach((e) => ss.getSheetByName(e).showSheet());
+    [SHEETS.GEODSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.GEONEEDEDUNITS].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
   }
 
-  ss.toast('Ready', 'TB sheet', 3);
+  SPREADSHEET.toast('Ready', 'TB sheet', 3);
 }
