@@ -34,8 +34,7 @@ function populateEventTable_(
   let squadCount = 0;
   let lastSquad = 0;
 
-  const table: Array<Array<string | number>> = [];
-  table[0] = [];
+  const table: Array<Array<string | number>> = [[]];
 
   for (let c = 0; c < memberNames.length; c += 1) {
     const m = members[c]; // weak
@@ -50,10 +49,8 @@ function populateEventTable_(
 
       if (curHero[0] === 'Phase Count:') {
         const phaseUnits = +curHero[1];
-        const readyUnits = (requiredUnits - missingRequiredUnits)
-          + Math.min(phaseUnits - requiredUnits, squadCount);
+        const readyUnits = requiredUnits - missingRequiredUnits + Math.min(phaseUnits - requiredUnits, squadCount);
         table[r + 1][c] = readyUnits;
-        // table[r + 1][c] = requiredUnits;
         total += readyUnits;
         requiredUnits = 0;
         missingRequiredUnits = 0;
@@ -325,7 +322,6 @@ function getMembers_(): PlayerData[] {
 function setupEvent(): void {
   const event = config.currentEvent();
 
-
   [
     SHEETS.DSPLATOONAUDIT,
     SHEETS.GEODSPLATOONAUDIT,
@@ -478,11 +474,6 @@ function setupEvent(): void {
       .offset(0, 5)
       .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
 
-    // const curTb = tbSheet.getRange(tbRow, 3);
-    // spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), 'Phase Count:', true, 'right');
-    // spooler.attach(curTb.offset(0, 1)).setValue(Math.min(phaseCount, 5));
-    // spooler.attach(curTb.offset(0, 6)).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
-
     phaseList.push([e.phase, tbRow]);
     tbRow += 2;
 
@@ -550,7 +541,9 @@ function setupEvent(): void {
       SPREADSHEET.getSheetByName(e).showSheet(),
     );
   } else if (isGeo_(event)) {
-    [SHEETS.GEODSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.GEONEEDEDUNITS].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
+    [SHEETS.GEODSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.GEONEEDEDUNITS].forEach((e) =>
+      SPREADSHEET.getSheetByName(e).showSheet(),
+    );
   }
 
   SPREADSHEET.toast('Ready', 'TB sheet', 3);
