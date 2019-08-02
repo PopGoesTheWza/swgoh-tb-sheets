@@ -95,7 +95,7 @@ namespace Player {
         }
         if (d && d.tags.indexOf(filter) > -1) {
           u.name = d.name;
-          u.stats = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
+          u.stats = `${u.rarity}⭐ G${u.gearLevel} L${u.level} P${u.power}`;
           u.tags = d.tags;
           filteredUnits[baseId] = u;
         }
@@ -177,7 +177,7 @@ function getEventDefinition_(filter: string): Array<[string, string]> {
       return acc;
     }, [])
     .unique()
-    .map((e) => [e, 'n/a']);
+    .map((e) => [e, '🔒 (locked)']);
 
   return meta;
 }
@@ -263,7 +263,7 @@ function playerSnapshot(): void {
       // store hero if required
       const heroListIdx = meta.findIndex((e) => name === e[0]);
       if (heroListIdx >= 0) {
-        meta[heroListIdx][1] = `${u.rarity}* G${u.gearLevel} L${u.level} P${u.power}`;
+        meta[heroListIdx][1] = `${u.rarity}⭐ G${u.gearLevel} L${u.level} P${u.power}`;
       }
     }
 
@@ -273,13 +273,14 @@ function playerSnapshot(): void {
       ['GP', `${playerData.gp}`],
       ['GP Heroes', `${playerData.heroesGp}`],
       ['GP Ships', `${playerData.shipsGp}`],
-      [`${event} 7* P${powerTarget}+`, `${countFiltered}`],
-      [`${characterTag} 7* P${powerTarget}+`, `${countTagged}`],
+      [`${event} 7⭐ P${powerTarget}+`, `${countFiltered}`],
+      [`${characterTag} 7⭐ P${powerTarget}+`, `${countTagged}`],
     );
 
     const rowGp = 1;
     const rowHeroes = 6;
     // output the results
+    meta.sort((a, b) => a[0].localeCompare(b[0]));
     Snapshot.output(sheet, rowGp, baseData, rowHeroes, meta);
   } else {
     SpreadsheetApp.getUi().alert("ERROR: Failed to retrieve player's data.");
