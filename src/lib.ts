@@ -1,3 +1,12 @@
+// tslint:disable: no-this-assignment
+// tslint:disable: only-arrow-functions
+// tslint:disable: object-literal-shorthand
+// tslint:disable: no-bitwise
+// tslint:disable: triple-equals
+// tslint:disable: prefer-const
+// tslint:disable: no-var-keyword
+// tslint:disable: object-literal-sort-keys
+
 declare interface Array<T> {
   unique(): T[];
 }
