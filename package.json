@@ -30,7 +30,7 @@
     "typescript": "^3.5.3"
   },
   "devDependencies": {
-    "@types/google-apps-script": "^0.0.54",
+    "@types/google-apps-script": "^0.0.55",
     "prettier": "^1.18.2",
     "tslint": "^5.18.0",
     "tslint-config-airbnb": "^5.11.1",
