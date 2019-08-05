@@ -215,7 +215,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
         if (member) {
           members.push(member);
         } else {
-          // TODO: UI message, AC not found
+          SPREADSHEET.toast(`Player allycode ${allyCode} not found`, 'Rename/Add/Remove', 3)
         }
       }
       if (index !== -1 && name.length > 0 && members[index].name !== name) {
@@ -323,15 +323,28 @@ function setupEvent(): void {
   const event = config.currentEvent();
 
   [
-    SHEETS.DSPLATOONAUDIT,
+    SHEETS.ASSIGNMENTS,
     SHEETS.GEODSPLATOONAUDIT,
+    SHEETS.GEOSQUADRONAUDIT,
+    SHEETS.GEONEEDEDUNITS,
+    SHEETS.DSPLATOONAUDIT,
     SHEETS.LSPLATOONAUDIT,
     SHEETS.SQUADRONAUDIT,
     SHEETS.NEEDEDUNITS,
-    SHEETS.GEONEEDEDUNITS,
+    SHEETS.BREAKDOWN,
+    // SHEETS.ESTIMATE,
+    SHEETS.GEODSMISSIONS,
     SHEETS.DSMISSIONS,
     SHEETS.LSMISSIONS,
-    SHEETS.ESTIMATE,
+    SHEETS.HEROES,
+    SHEETS.SHIPS,
+    SHEETS.SLICES,
+    SHEETS.STATICSLICES,
+    SHEETS.GEODSPLATOON,
+    SHEETS.GEOSQUADRON,
+    SHEETS.HOTHDSPLATOON,
+    SHEETS.HOTHLSPLATOON,
+    SHEETS.HOTHSQUADRON,
   ].forEach((e) => SPREADSHEET.getSheetByName(e).hideSheet());
 
   // // make sure the roster is up-to-date
@@ -377,7 +390,7 @@ function setupEvent(): void {
 
   // collect the meta data for the heroes
   const row = 2;
-  const col = isLight_(event) ? META_HEROES_COL : isDark_(event) ? META_HEROES_DS_COL : META_HEROES_GEO_DS_COL;
+  const col = isHothLS_(event) ? META_HEROES_COL : isHothDS_(event) ? META_HEROES_DS_COL : META_HEROES_GEO_DS_COL;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8).getValues() as EventData[];
 
@@ -532,18 +545,35 @@ function setupEvent(): void {
   table = table.map((e) => (e.length !== width ? [...e, ...Array(width).fill(null)].slice(0, width) : e));
   tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length).setValues(table);
 
-  if (isDark_(event)) {
-    [SHEETS.DSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.NEEDEDUNITS, SHEETS.DSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
-      SPREADSHEET.getSheetByName(e).showSheet(),
-    );
-  } else if (isLight_(event)) {
-    [SHEETS.LSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.NEEDEDUNITS, SHEETS.LSMISSIONS, SHEETS.ESTIMATE].forEach((e) =>
-      SPREADSHEET.getSheetByName(e).showSheet(),
-    );
-  } else if (isGeo_(event)) {
-    [SHEETS.GEODSPLATOONAUDIT, SHEETS.SQUADRONAUDIT, SHEETS.GEONEEDEDUNITS].forEach((e) =>
-      SPREADSHEET.getSheetByName(e).showSheet(),
-    );
+  if (isHothDS_(event)) {
+    [
+      SHEETS.DSPLATOONAUDIT,
+      SHEETS.SQUADRONAUDIT,
+      SHEETS.NEEDEDUNITS,
+      SHEETS.DSMISSIONS,
+      SHEETS.ESTIMATE,
+      SHEETS.HEROES,
+      SHEETS.SHIPS,
+    ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
+  } else if (isHothLS_(event)) {
+    [
+      SHEETS.LSPLATOONAUDIT,
+      SHEETS.SQUADRONAUDIT,
+      SHEETS.NEEDEDUNITS,
+      SHEETS.LSMISSIONS,
+      SHEETS.ESTIMATE,
+      SHEETS.HEROES,
+      SHEETS.SHIPS,
+    ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
+  } else if (isGeoDS_(event)) {
+    [
+      SHEETS.GEODSPLATOONAUDIT,
+      SHEETS.GEOSQUADRONAUDIT,
+      SHEETS.GEONEEDEDUNITS,
+      SHEETS.GEODSMISSIONS,
+      SHEETS.HEROES,
+      SHEETS.SHIPS,
+    ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
   }
 
   SPREADSHEET.toast('Ready', 'TB sheet', 3);
