@@ -175,18 +175,39 @@ interface UnitMemberInstances {
   };
 }
 
+/** Constants for event */
+enum EVENT {
+  GEONOSISDS = 'Geo Dark',
+  HOTHDS = 'Dark Side',
+  HOTHLS = 'Light Side',
+}
+
 /** Constants for alignment */
 enum ALIGNMENT {
-  DARKGEONOSIS = 'Geo Dark',
   DARKSIDE = 'Dark Side',
   LIGHTSIDE = 'Light Side',
+  UNSPECIFIED = '(unspecified)',
 }
 
 /** Constants for background colors */
 enum COLOR {
-  BLACK = 'Black',
-  BLUE = 'Blue',
+  MAROON = 'Maroon',
   RED = 'Red',
+  ORANGE = 'Orange',
+  YELLOW = 'Yellow',
+  OLIVE = 'Olive',
+  GREEN = 'Green',
+  PURPLE = 'Purple',
+  FUCHSIA = 'Fuchsia',
+  LIME = 'Lime',
+  TEAL = 'Teal',
+  AQUA = 'Aqua',
+  BLUE = 'Blue',
+  NAVY = 'Navy',
+  BLACK = 'Black',
+  GRAY = 'Gray',
+  SILVER = 'Silver',
+  WHITE = 'White',
 }
 
 /** Constants for data source */
@@ -209,28 +230,41 @@ enum SHEETS {
   ROSTER = 'Roster',
   TB = 'TB',
   PLATOONS = 'Platoon',
-  DSPLATOONAUDIT = 'DSPlatoonAudit',
+  ASSIGNMENTS = 'Assignments',
   GEODSPLATOONAUDIT = 'GeoDSPlatoonAudit',
-  LSPLATOONAUDIT = 'LSPlatoonAudit',
-  SQUADRONAUDIT = 'SquadronAudit',
-  NEEDEDUNITS = 'NeededUnits',
+  GEOSQUADRONAUDIT = 'GeoSquadronAudit',
   GEONEEDEDUNITS = 'GeoNeededUnits',
+  DSPLATOONAUDIT = 'HothDSPlatoonAudit',
+  // DSPLATOONAUDIT = 'DSPlatoonAudit',
+  LSPLATOONAUDIT = 'HothLSPlatoonAudit',
+  // LSPLATOONAUDIT = 'LSPlatoonAudit',
+  SQUADRONAUDIT = 'HothSquadronAudit',
+  // SQUADRONAUDIT = 'SquadronAudit',
+  NEEDEDUNITS = 'HothNeededUnits',
+  // NEEDEDUNITS = 'NeededUnits',
   BREAKDOWN = 'Breakdown',
   ESTIMATE = 'Estimate',
-  DSMISSIONS = 'DS Missions',
-  GEODSMISSIONS = 'Geo DS Missions',
-  LSMISSIONS = 'LS Missions',
+  GEODSMISSIONS = 'GeoDSMissions',
+  DSMISSIONS = 'HothDSMissions',
+  // DSMISSIONS = 'DS Missions',
+  LSMISSIONS = 'HothLSMissions',
+  // LSMISSIONS = 'LS Missions',
   SNAPSHOT = 'Snapshot',
   EXCLUSIONS = 'Exclusions',
   HEROES = 'Heroes',
   SHIPS = 'Ships',
   RAREUNITS = 'Rare Units',
   SEARCHUNITS = 'Search Units',
-  SLICES = 'Slices',
-  MAP = 'map',
   DISCORD = 'Discord',
   META = 'Meta',
   INSTRUCTIONS = 'Instructions',
+  SLICES = 'Slices',
+  STATICSLICES = 'StaticSlices',
+  GEODSPLATOON = 'GeoDSPlatoon',
+  GEOSQUADRON = 'GeoSquadron',
+  HOTHDSPLATOON = 'HothDSPlatoon',
+  HOTHLSPLATOON = 'HothLSPlatoon',
+  HOTHSQUADRON = 'HothSquadron',
 }
 
 /** settings related functions */
@@ -245,10 +279,19 @@ namespace config {
   }
 
   /** get current event */
-  export function currentEvent(): ALIGNMENT {
+  export function currentAlignment(): ALIGNMENT {
+    const event = SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_FILTER_ROW, META_FILTER_COL)
+      .getValue() as EVENT;
+
+    return isDarkSide_(event) ? ALIGNMENT.DARKSIDE : isLightSide_(event) ? ALIGNMENT.DARKSIDE : ALIGNMENT.UNSPECIFIED;
+  }
+
+  /** get current event */
+  export function currentEvent(): EVENT {
     const value = SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_FILTER_ROW, META_FILTER_COL)
-      .getValue() as ALIGNMENT;
+      .getValue() as EVENT;
 
     return value;
   }
@@ -445,7 +488,7 @@ namespace config {
     export function webhookDescription(phase: TerritoryBattles.phaseIdx): string {
       const event = config.currentEvent();
 
-      const columnOffset = isLight_(event) ? 0 : 1;
+      const columnOffset = isHothLS_(event) ? 0 : 1;
       const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
         .getValue() as string;

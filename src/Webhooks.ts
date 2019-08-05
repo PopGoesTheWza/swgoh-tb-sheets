@@ -411,7 +411,7 @@ function allRareUnitsWebhook(): void {
   const fields: discord.RichEmbedOptionsField[] = [];
 
   // TODO: regroup phases and zones management
-  if (phase > (isGeo_(event) ? 1 : 2)) {
+  if (phase > (isGeoDS_(event) ? 1 : 2)) {
     // get the ships list
     const shipsTable = new Units.Ships();
     const ships = shipsTable.getNeededRareList(phase);

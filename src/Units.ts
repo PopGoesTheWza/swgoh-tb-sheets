@@ -368,7 +368,7 @@ namespace Units {
       const event = config.currentEvent();
       const hgupu = Heroes.getUniquePlatoonUnits;
 
-      const platoonUnits: string[] = !isLight_(event) || phase > 1 ? [...hgupu(1), ...hgupu(2)] : hgupu(1);
+      const platoonUnits: string[] = isHothLS_(event) && phase === 1 ? hgupu(1) : [...hgupu(1), ...hgupu(2)];
 
       return super.getNeededRareList(phase, platoonUnits);
     }
