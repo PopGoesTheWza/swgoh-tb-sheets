@@ -144,26 +144,34 @@ namespace Player {
   }
 }
 
-/** is alignment 'Light Side' */
-function isLight_(filter: string): boolean {
-  return filter === ALIGNMENT.LIGHTSIDE;
+/** is alignment 'Dark Side' */
+function isDarkSide_(filter: string): boolean {
+  return filter === ALIGNMENT.DARKSIDE || filter === EVENT.HOTHDS || filter === EVENT.GEONOSISDS;
 }
 
 /** is alignment 'Light Side' */
-function isDark_(filter: string): boolean {
-  return filter === ALIGNMENT.DARKSIDE;
+function isLightSide_(filter: string): boolean {
+  return filter === ALIGNMENT.LIGHTSIDE || filter === EVENT.HOTHLS;
 }
 
-/** is alignment 'Light Side' */
-function isGeo_(filter: string): boolean {
-  return filter === ALIGNMENT.DARKGEONOSIS;
+function isGeoDS_(filter: string): boolean {
+  return filter === EVENT.GEONOSISDS;
+}
+
+function isHothDS_(filter: string): boolean {
+  return filter === EVENT.HOTHDS;
+}
+
+function isHothLS_(filter: string): boolean {
+  return filter === EVENT.HOTHLS;
 }
 
 /** get the current event definition */
 function getEventDefinition_(filter: string): Array<[string, string]> {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
-  const col = 2 + (isLight_(filter) ? META_HEROES_COL : isDark_(filter) ? META_HEROES_DS_COL : META_HEROES_GEO_DS_COL);
+  const col =
+    2 + (isHothLS_(filter) ? META_HEROES_COL : isHothDS_(filter) ? META_HEROES_DS_COL : META_HEROES_GEO_DS_COL);
 
   const numRows = sheet.getLastRow() - row + 1;
   const values = sheet.getRange(row, col, numRows).getValues() as Array<[string]>;
@@ -187,7 +195,7 @@ namespace Snapshot {
   /** retrieve player's data from tabs if avaialble or from a data source */
   export function getData(
     sheet: Spreadsheet.Sheet,
-    filter: string,
+    alignment: string,
     unitsIndex: UnitDefinition[],
   ): PlayerData | undefined {
     const members = Members.getAllycodes();
@@ -195,7 +203,8 @@ namespace Snapshot {
 
     // get the player's link from the Roster
     if (memberName.length > 0 && members.find((e) => e[0] === memberName)) {
-      return Player.getFromSheet(memberName, filter.toLowerCase());
+      SPREADSHEET.toast(`Focus on guild member ${memberName}`, 'Player Snapshot', 3)
+      return Player.getFromSheet(memberName, alignment.toLowerCase());
     }
 
     // check if ally code
@@ -205,10 +214,12 @@ namespace Snapshot {
       // check if ally code exist in roster
       const member = members.find((e) => e[1] === allyCode);
       if (member) {
-        return Player.getFromSheet(member[0], filter.toLowerCase());
+        SPREADSHEET.toast(`Focus on guild member ${member[0]}`, 'Player Snapshot', 3)
+        return Player.getFromSheet(member[0], alignment.toLowerCase());
       }
 
-      return Player.getFromDataSource(allyCode, unitsIndex, filter);
+      SPREADSHEET.toast(`Search for allycode ${allyCode}`, 'Player Snapshot', 3)
+      return Player.getFromDataSource(allyCode, unitsIndex, alignment);
     }
 
     return undefined;
@@ -230,7 +241,6 @@ namespace Snapshot {
 
 /** create a snapshot of a player or guild member */
 function playerSnapshot(): void {
-  // TODO: add toast
   const event = config.currentEvent();
 
   const definitions = Units.getDefinitions();
@@ -244,7 +254,7 @@ function playerSnapshot(): void {
   const characterTag = config.tagFilter(); // TODO: potentially broken if TB not sync
   const powerTarget = config.requiredHeroGp();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
-  const playerData = Snapshot.getData(sheet, isGeo_(event) ? ALIGNMENT.DARKSIDE : event, unitsIndex);
+  const playerData = Snapshot.getData(sheet, config.currentAlignment(), unitsIndex);
   if (playerData) {
     for (const baseId of Object.keys(playerData.units)) {
       const u = playerData.units[baseId];
