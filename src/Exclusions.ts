@@ -10,6 +10,10 @@ namespace Exclusions {
       .getValues() as string[][];
     const filtered = data.reduce((acc: string[][], e) => {
       const value = e[0]; // `${e[0]}`;
+      // const geoMatch = value.match(/(\d*)g(\d*)/i);
+      // if (geoMatch) {
+      //   //
+      // }
       const m = value.match(/^[1-6]+$/);
       if (m) {
         if (value.indexOf(`${phase}`) !== -1) {
@@ -50,9 +54,9 @@ namespace Exclusions {
   export function process(
     data: UnitMemberInstances,
     exclusions: MemberUnitBooleans,
-    event?: string, // used to validate ship alignment
+    alignment?: string, // used to validate ship alignment
   ) {
-    const filter = event ? event.trim().toLowerCase() : undefined;
+    const filter = alignment ? alignment.trim().toLowerCase() : undefined;
 
     for (const member of Object.keys(exclusions)) {
       const units = exclusions[member];
