@@ -18,7 +18,7 @@ class PlatoonDetails {
     this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
-    this.exist = zone !== 0 || phase > (isGeo_(config.currentEvent()) ? 1 : 2);
+    this.exist = zone !== 0 || (isGeoDS_(config.currentEvent()) ? phase > 1 : phase > 2);
   }
 
   public getOffset() {
@@ -54,10 +54,10 @@ class PlatoonUnit {
 
 /** Initialize the list of Territory names */
 function initPlatoonPhases_(): void {
-  const filter = config.currentEvent();
+  const event = config.currentEvent();
 
   // Names of Territories, # of Platoons
-  if (isLight_(filter)) {
+  if (isHothLS_(event)) {
     PLATOON_PHASES = [
       ['', 'Rebel Base', ''],
       ['', 'Ion Cannon', 'Overlook'],
@@ -66,7 +66,7 @@ function initPlatoonPhases_(): void {
       ['Contested Airspace', 'Snowfields', 'Forward Stronghold'],
       ['Imperial Fleet Staging Area', 'Imperial Flank', 'Imperial Landing'],
     ];
-  } else if (isDark_(filter)) {
+  } else if (isHothDS_(event)) {
     PLATOON_PHASES = [
       ['', 'Imperial Flank', 'Imperial Landing'],
       ['', 'Snowfields', 'Forward Stronghold'],
@@ -75,7 +75,7 @@ function initPlatoonPhases_(): void {
       ['Forward Airspace', 'Forward Trenches', 'Overlook'],
       ['Rear Airspace', 'Rebel Base Main Entrance', 'Rebel Base South Entrance'],
     ];
-  } else if (isGeo_(filter)) {
+  } else if (isGeoDS_(event)) {
     PLATOON_PHASES = [
       ['', 'Droid Factory', 'Canyons'],
       ['Core Ship Yards', 'Separatist Command', 'Petranaki Arena'],
@@ -116,7 +116,7 @@ function resetPlatoons(): void {
   const event = config.currentEvent();
   const phase = config.currentPhase();
 
-  SPREADSHEET.toast(`Platoons for ${event} phase ${phase} reseted.`, 'Reset platoons', 3);
+  SPREADSHEET.toast(`Platoons for ${event} phase ${phase} reset.`, 'Reset platoons', 3);
   resetPlatoonsNoUI();
 }
 
@@ -139,7 +139,7 @@ function getRecommendedMembers_(
   const event = config.currentEvent();
 
   // see how many stars are needed
-  const minRarity = isGeo_(event) ? (phase < 3 ? 6 : 7) : phase + 1;
+  const minRarity = isGeoDS_(event) ? (phase < 3 ? 6 : 7) : phase + 1;
 
   const rec: Array<[string, number]> = [];
 
@@ -204,7 +204,7 @@ function filterUnits_(data: UnitMemberInstances, filter: (member: string, u: Uni
 /** Territory Battles related classes and functions */
 namespace TerritoryBattles {
   /** supported events for TB */
-  export type event = ALIGNMENT.DARKGEONOSIS | ALIGNMENT.DARKSIDE | ALIGNMENT.LIGHTSIDE;
+  export type event = EVENT.GEONOSISDS | EVENT.HOTHDS | EVENT.HOTHLS;
   /** TB phases */
   export type phaseIdx = 1 | 2 | 3 | 4 | 5 | 6;
   /** TB territories (zero-based) */
@@ -354,7 +354,7 @@ namespace TerritoryBattles {
     public readSlices(): void {
       const def = Units.getDefinitions();
       const unitsIndex = [...def.heroes, ...def.ships];
-      const rowOffset = isLight_(this.phase.event) ? 56 : isDark_(this.phase.event) ? 2 : 110;
+      const rowOffset = isHothDS_(this.phase.event) ? 2 : isHothLS_(this.phase.event) ? 56 : 110;
 
       const row = this.index * PLATOON_SLICE_ROW_OFFSET + rowOffset;
       const column = (this.phase.index - 1) * PLATOON_SLICE_COLUMN_OFFSET + 2;
@@ -591,6 +591,7 @@ namespace TerritoryBattles {
   }
   const definitions: Definitions = {
     'Dark Side': {
+      // EVENT.HOTHDS
       1: [
         closed,
         ground('Imperial Flank', [102, 102, 102, 102, 153, 153]),
@@ -623,6 +624,7 @@ namespace TerritoryBattles {
       ],
     },
     'Geo Dark': {
+      // EVENT.GEONOSISDS
       1: [
         closed,
         ground('Droid Factory', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
@@ -645,6 +647,7 @@ namespace TerritoryBattles {
       ],
     },
     'Light Side': {
+      // EVENT.HOTHLS
       1: [closed, ground('Rebel Base', [100, 100, 100, 100, 150, 150]), closed],
       2: [
         closed,
@@ -764,13 +767,13 @@ namespace TerritoryBattles {
 
     protected filter() {
       const ev = config.currentEvent();
-      const rarityThreshold = isGeo_(ev) ? (this.phase.index < 3 ? 5 : 6) : this.phase.index;
+      const rarityThreshold = isGeoDS_(ev) ? (this.phase.index < 3 ? 6 : 7) : this.phase.index + 1;
 
-      const alignment = (isLight_(ev) ? ev : ALIGNMENT.DARKSIDE).toLowerCase();
+      const alignment = config.currentAlignment().toLowerCase();
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
-        u.rarity > rarityThreshold && u.tags!.indexOf(alignment) !== -1;
+        u.rarity >= rarityThreshold && u.tags!.indexOf(alignment) !== -1;
       // && this.notAvailable.findIndex(e => e[0] === member) === -1
 
       super.filter(filter);
@@ -852,6 +855,7 @@ function loop1_(
 
       platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
 
+      // TODO: investigate bad color
       if (rec.length > 0) {
         dropdowns.push([buildDropdown_(rec)]);
 
@@ -861,7 +865,7 @@ function loop1_(
         dropdowns.push([(null as unknown) as Spreadsheet.DataValidation]);
         // impossible to fill the platoon if no one can donate
         cur.possible = false;
-        spooler.attach(sheet.getRange(row + h, column)).setFontColor(COLOR.RED);
+        spooler.attach(sheet.getRange(row + h, column)).setFontColor(COLOR.RED); // Impossible to fill
       }
     }
     spooler.attach(dropdownsRange).setDataValidations(dropdowns);
@@ -879,7 +883,7 @@ function loop2_(spooler: utils.Spooler, cur: PlatoonDetails, sheet: Spreadsheet.
       .attach(sheet.getRange(row, column + 1, MAX_PLATOON_UNITS))
       .setValue('Skip')
       .clearDataValidations()
-      .setFontColor(COLOR.RED);
+      .setFontColor(COLOR.RED); // Recommended is 'Skip'
   }
 }
 
@@ -931,7 +935,7 @@ function loop3_(
 
         // see if we should highlight rare units
         if (platoonMatrix[matrixIdx].isMissing()) {
-          colors.push([COLOR.RED, COLOR.RED]);
+          colors.push([COLOR.RED, COLOR.RED]); // More needed than ready unit
         } else if (defaultValue && platoonMatrix[matrixIdx].isRare()) {
           colors.push([COLOR.BLUE, COLOR.BLUE]);
         } else {
@@ -960,14 +964,14 @@ function recommendPlatoons() {
   // setup platoon phases
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = config.currentPhase();
-  const rarityThreshold = isGeo_(event) ? (phase < 3 ? 5 : 6) : phase;
+  const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
 
-  const alignment = (isLight_(event) ? event : ALIGNMENT.DARKSIDE).toLowerCase();
+  const alignment = config.currentAlignment().toLowerCase();
 
   const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as Array<[string]>;
 
   SPREADSHEET.toast(
-    `Using units above ${rarityThreshold}⭐ rarity for ${event} phase ${phase} ready.`,
+    `Using units of rarity ${rarityThreshold + 1}⭐ for ${event} phase ${phase} ready.`,
     'Recommend platoons',
     3,
   );
@@ -980,8 +984,8 @@ function recommendPlatoons() {
 
   filterUnits_(allHeroes, (member: string, u: UnitInstance) => {
     return (
-      u.rarity > rarityThreshold &&
       u.tags!.indexOf(alignment) !== -1 &&
+      u.rarity > rarityThreshold &&
       notAvailable.findIndex((e) => e[0] === member) === -1
     );
   });
@@ -993,8 +997,8 @@ function recommendPlatoons() {
   const exclusionsId = config.exclusionId();
   if (exclusionsId.length > 0) {
     const exclusions = Exclusions.getList(phase);
-    Exclusions.process(allHeroes, exclusions);
-    Exclusions.process(allShips, exclusions, event);
+    Exclusions.process(allHeroes, exclusions, alignment);
+    Exclusions.process(allShips, exclusions);
   }
 
   initPlatoonPhases_();
