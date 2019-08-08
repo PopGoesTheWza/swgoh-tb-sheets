@@ -5,25 +5,31 @@ namespace Exclusions {
    * exclusions[member][unit] = boolean
    */
   export function getList(phase: TerritoryBattles.phaseIdx): MemberUnitBooleans {
+    const anyTerritory = /^(\d+)/;
+    const territoryRegEx = isGeonosis_() ? /g(\d+)/i : isHoth_() ? /h(\d+)/i : undefined;
+    const hasPhase = (s: string) => s.indexOf(`${phase}`) !== -1;
+    const hasPhaseRE = (s: string, re: RegExp) => {
+      const m = s.match(re);
+      return m && hasPhase(m[1]);
+    };
     const data = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS)
       .getDataRange()
       .getValues() as string[][];
-    const filtered = data.reduce((acc: string[][], e) => {
-      const value = e[0]; // `${e[0]}`;
-      // const geoMatch = value.match(/(\d*)g(\d*)/i);
-      // if (geoMatch) {
-      //   //
-      // }
-      const m = value.match(/^[1-6]+$/);
-      if (m) {
-        if (value.indexOf(`${phase}`) !== -1) {
-          acc.push(e.slice(0, MAX_MEMBERS + 1));
-        }
-      } else if (value.length > 0) {
-        acc.push(e.slice(0, MAX_MEMBERS + 1));
-      }
-      return acc;
-    }, []);
+    const filtered = data.map((row, rowIndex) => {
+      return rowIndex > 0
+        ? row.map((column, columnIndex) => {
+            if (columnIndex > 0 && column.match(/\d/)) {
+              if (hasPhase(column)) {
+                if (hasPhaseRE(column, anyTerritory) || (territoryRegEx && hasPhaseRE(column, territoryRegEx))) {
+                  return 'x';
+                }
+              }
+              return '';
+            }
+            return column;
+          })
+        : row;
+    });
 
     const exclusions: MemberUnitBooleans = {};
 
