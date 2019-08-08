@@ -136,10 +136,8 @@ function getRecommendedMembers_(
   phase: TerritoryBattles.phaseIdx,
   data: UnitMemberInstances,
 ): Array<[string, number]> {
-  const event = config.currentEvent();
-
   // see how many stars are needed
-  const minRarity = isGeoDS_(event) ? (phase < 3 ? 6 : 7) : phase + 1;
+  const minRarity = isGeoDS_() ? (phase < 3 ? 6 : 7) : phase + 1;
 
   const rec: Array<[string, number]> = [];
 
@@ -204,7 +202,7 @@ function filterUnits_(data: UnitMemberInstances, filter: (member: string, u: Uni
 /** Territory Battles related classes and functions */
 namespace TerritoryBattles {
   /** supported events for TB */
-  export type event = EVENT.GEONOSISDS | EVENT.HOTHDS | EVENT.HOTHLS;
+  export type event = EVENT.GEONOSISDS | EVENT.GEONOSISLS | EVENT.HOTHDS | EVENT.HOTHLS;
   /** TB phases */
   export type phaseIdx = 1 | 2 | 3 | 4 | 5 | 6;
   /** TB territories (zero-based) */
@@ -352,22 +350,22 @@ namespace TerritoryBattles {
     }
 
     public readSlices(): void {
+      const ev = this.phase.event;
       const def = Units.getDefinitions();
       const unitsIndex = [...def.heroes, ...def.ships];
-      const rowOffset = isHothDS_(this.phase.event) ? 2 : isHothLS_(this.phase.event) ? 56 : 110;
 
-      const row = this.index * PLATOON_SLICE_ROW_OFFSET + rowOffset;
-      const column = (this.phase.index - 1) * PLATOON_SLICE_COLUMN_OFFSET + 2;
-      const data = SPREADSHEET.getSheetByName(SHEETS.SLICES)
-        .getRange(row, column, MAX_PLATOON_UNITS, MAX_PLATOONS)
+      const row = 3 + this.index * MAX_PLATOON_UNITS * MAX_PLATOONS;
+      const column = (isHothDS_(ev) ? 2 : isHothLS_(ev) ? 8 : isGeoDS_(ev) ? 14 : -1) + this.phase.index;
+      const data = SPREADSHEET.getSheetByName(SHEETS.STATICSLICES)
+        .getRange(row, column, MAX_PLATOON_UNITS * MAX_PLATOONS, 1)
         .getValues() as string[][];
       const result: slices = [[], [], [], [], [], []];
-      for (const r of data) {
-        r.forEach((e, i) => {
-          const match = unitsIndex.find((u) => u.baseId === e);
-          result[i].push(match ? match.name : e);
-        });
-      }
+      data.forEach((cell, i) => {
+        const e = cell[0];
+        const match = unitsIndex.find((u) => u.baseId === e);
+        const pool = Math.floor(i / MAX_PLATOON_UNITS);
+        result[pool].push(match ? match.name : e);
+      });
       result.forEach((e, i) => {
         this.platoons[i].setSlice(e);
       });
@@ -590,7 +588,30 @@ namespace TerritoryBattles {
     };
   }
   const definitions: Definitions = {
-    'Dark Side': {
+    'Geo DS': {
+      // EVENT.GEONOSISDS
+      1: [
+        closed,
+        ground('Droid Factory', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+        ground('Canyons', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+      ],
+      2: [
+        airspace('Core Ship Yards', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+        ground('Separatist Command', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+        ground('Patranaki Arena', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
+      ],
+      3: [
+        airspace('Contested Airspace', [250, 250, 250, 250, 250, 250]),
+        ground('Battleground', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+        ground('Sand Dunes', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+      ],
+      4: [
+        airspace('Republic Fleet', [333.3, 333.3, 333.3, 333.3, 333.3, 333.3]),
+        ground('Count Dookus Hangar', [250, 250, 250, 250, 250, 250]),
+        ground('Rear Flank', [250, 250, 250, 250, 250, 250]),
+      ],
+    },
+    'Hoth DS': {
       // EVENT.HOTHDS
       1: [
         closed,
@@ -623,30 +644,7 @@ namespace TerritoryBattles {
         ground('Rebel Base South Entrance', [260, 260, 260, 260, 260, 260]),
       ],
     },
-    'Geo Dark': {
-      // EVENT.GEONOSISDS
-      1: [
-        closed,
-        ground('Droid Factory', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
-        ground('Canyons', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
-      ],
-      2: [
-        airspace('Core Ship Yards', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
-        ground('Separatist Command', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
-        ground('Patranaki Arena', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
-      ],
-      3: [
-        airspace('Contested Airspace', [250, 250, 250, 250, 250, 250]),
-        ground('Battleground', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
-        ground('Sand Dunes', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
-      ],
-      4: [
-        airspace('Republic Fleet', [333.3, 333.3, 333.3, 333.3, 333.3, 333.3]),
-        ground('Count Dookus Hangar', [250, 250, 250, 250, 250, 250]),
-        ground('Rear Flank', [250, 250, 250, 250, 250, 250]),
-      ],
-    },
-    'Light Side': {
+    'Hoth LS': {
       // EVENT.HOTHLS
       1: [closed, ground('Rebel Base', [100, 100, 100, 100, 150, 150]), closed],
       2: [
@@ -766,10 +764,8 @@ namespace TerritoryBattles {
     }
 
     protected filter() {
-      const ev = config.currentEvent();
-      const rarityThreshold = isGeoDS_(ev) ? (this.phase.index < 3 ? 6 : 7) : this.phase.index + 1;
-
       const alignment = config.currentAlignment().toLowerCase();
+      const rarityThreshold = isGeoDS_() ? (this.phase.index < 3 ? 6 : 7) : this.phase.index + 1;
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
@@ -956,6 +952,7 @@ function loop3_(
 /** Recommend members for each Platoon */
 function recommendPlatoons() {
   const event = config.currentEvent();
+  const alignment = config.currentAlignment(event).toLowerCase();
 
   // const p = new TerritoryBattles.Phase(event(), config.currentPhase());
 
@@ -965,8 +962,6 @@ function recommendPlatoons() {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
   const phase = config.currentPhase();
   const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
-
-  const alignment = config.currentAlignment().toLowerCase();
 
   const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as Array<[string]>;
 

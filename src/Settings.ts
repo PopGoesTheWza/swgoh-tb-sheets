@@ -47,9 +47,9 @@ const META_GUILDDATADATE_COL = 1;
 const META_UNITDEFINITIONSDATE_ROW = 26;
 const META_UNITDEFINITIONSDATE_COL = 1;
 
-const META_HEROES_COL = 7;
-const META_HEROES_DS_COL = 16;
-const META_HEROES_GEO_DS_COL = 25;
+const META_SQUADS_HOTHLS_COL = 7;
+const META_SQUADS_HOTHDS_COL = 16;
+const META_SQUADS_GEODS_COL = 25;
 
 const META_HEROES_COUNT_ROW = 5;
 const META_HEROES_COUNT_COL = 5;
@@ -177,9 +177,10 @@ interface UnitMemberInstances {
 
 /** Constants for event */
 enum EVENT {
-  GEONOSISDS = 'Geo Dark',
-  HOTHDS = 'Dark Side',
-  HOTHLS = 'Light Side',
+  GEONOSISDS = 'Geo DS',
+  GEONOSISLS = 'Geo LS',
+  HOTHDS = 'Hoth DS',
+  HOTHLS = 'Hoth LS',
 }
 
 /** Constants for alignment */
@@ -258,7 +259,6 @@ enum SHEETS {
   DISCORD = 'Discord',
   META = 'Meta',
   INSTRUCTIONS = 'Instructions',
-  SLICES = 'Slices',
   STATICSLICES = 'StaticSlices',
   GEODSPLATOON = 'GeoDSPlatoon',
   GEOSQUADRON = 'GeoSquadron',
@@ -279,12 +279,12 @@ namespace config {
   }
 
   /** get current event */
-  export function currentAlignment(): ALIGNMENT {
-    const event = SPREADSHEET.getSheetByName(SHEETS.META)
+  export function currentAlignment(
+    event: EVENT = SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_FILTER_ROW, META_FILTER_COL)
-      .getValue() as EVENT;
-
-    return isDarkSide_(event) ? ALIGNMENT.DARKSIDE : isLightSide_(event) ? ALIGNMENT.DARKSIDE : ALIGNMENT.UNSPECIFIED;
+      .getValue(),
+  ): ALIGNMENT {
+    return isDarkSide_(event) ? ALIGNMENT.DARKSIDE : isLightSide_(event) ? ALIGNMENT.LIGHTSIDE : ALIGNMENT.UNSPECIFIED;
   }
 
   /** get current event */
@@ -486,9 +486,7 @@ namespace config {
 
     /** Get the Description for the phase */
     export function webhookDescription(phase: TerritoryBattles.phaseIdx): string {
-      const event = config.currentEvent();
-
-      const columnOffset = isHothLS_(event) ? 0 : 1;
+      const columnOffset = isHothLS_() ? 0 : 1;
       const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
         .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
         .getValue() as string;

@@ -215,7 +215,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
         if (member) {
           members.push(member);
         } else {
-          SPREADSHEET.toast(`Player allycode ${allyCode} not found`, 'Rename/Add/Remove', 3)
+          SPREADSHEET.toast(`Player allycode ${allyCode} not found`, 'Rename/Add/Remove', 3);
         }
       }
       if (index !== -1 && name.length > 0 && members[index].name !== name) {
@@ -338,7 +338,6 @@ function setupEvent(): void {
     SHEETS.LSMISSIONS,
     SHEETS.HEROES,
     SHEETS.SHIPS,
-    SHEETS.SLICES,
     SHEETS.STATICSLICES,
     SHEETS.GEODSPLATOON,
     SHEETS.GEOSQUADRON,
@@ -390,7 +389,11 @@ function setupEvent(): void {
 
   // collect the meta data for the heroes
   const row = 2;
-  const col = isHothLS_(event) ? META_HEROES_COL : isHothDS_(event) ? META_HEROES_DS_COL : META_HEROES_GEO_DS_COL;
+  const col = isHothLS_(event)
+    ? META_SQUADS_HOTHLS_COL
+    : isHothDS_(event)
+    ? META_SQUADS_HOTHDS_COL
+    : META_SQUADS_GEODS_COL;
   const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8).getValues() as EventData[];
 
