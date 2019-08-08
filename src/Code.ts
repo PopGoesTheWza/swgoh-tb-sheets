@@ -145,33 +145,45 @@ namespace Player {
 }
 
 /** is alignment 'Dark Side' */
-function isDarkSide_(filter: string): boolean {
+function isDarkSide_(filter: string = config.currentAlignment()): boolean {
   return filter === ALIGNMENT.DARKSIDE || filter === EVENT.HOTHDS || filter === EVENT.GEONOSISDS;
 }
 
 /** is alignment 'Light Side' */
-function isLightSide_(filter: string): boolean {
+function isLightSide_(filter: string = config.currentAlignment()): boolean {
   return filter === ALIGNMENT.LIGHTSIDE || filter === EVENT.HOTHLS;
 }
 
-function isGeoDS_(filter: string): boolean {
+function isGeonosis_(filter: string = config.currentEvent()): boolean {
+  return filter === EVENT.GEONOSISDS || filter === EVENT.GEONOSISLS;
+}
+
+function isGeoDS_(filter: string = config.currentEvent()): boolean {
   return filter === EVENT.GEONOSISDS;
 }
 
-function isHothDS_(filter: string): boolean {
+function isGeoLS_(filter: string = config.currentEvent()): boolean {
+  return filter === EVENT.GEONOSISLS;
+}
+
+function isHoth_(filter: string = config.currentEvent()): boolean {
+  return filter === EVENT.HOTHDS || filter === EVENT.HOTHLS;
+}
+
+function isHothDS_(filter: string = config.currentEvent()): boolean {
   return filter === EVENT.HOTHDS;
 }
 
-function isHothLS_(filter: string): boolean {
+function isHothLS_(filter: string = config.currentEvent()): boolean {
   return filter === EVENT.HOTHLS;
 }
 
 /** get the current event definition */
-function getEventDefinition_(filter: string): Array<[string, string]> {
+function getEventDefinition_(event: string = config.currentEvent()): Array<[string, string]> {
   const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
   const row = 2;
   const col =
-    2 + (isHothLS_(filter) ? META_HEROES_COL : isHothDS_(filter) ? META_HEROES_DS_COL : META_HEROES_GEO_DS_COL);
+    2 + (isHothLS_(event) ? META_SQUADS_HOTHLS_COL : isHothDS_(event) ? META_SQUADS_HOTHDS_COL : META_SQUADS_GEODS_COL);
 
   const numRows = sheet.getLastRow() - row + 1;
   const values = sheet.getRange(row, col, numRows).getValues() as Array<[string]>;
@@ -203,7 +215,8 @@ namespace Snapshot {
 
     // get the player's link from the Roster
     if (memberName.length > 0 && members.find((e) => e[0] === memberName)) {
-      SPREADSHEET.toast(`Focus on guild member ${memberName}`, 'Player Snapshot', 3)
+      SPREADSHEET.toast(`Focus on guild member ${memberName}`, 'Player Snapshot', 3);
+
       return Player.getFromSheet(memberName, alignment.toLowerCase());
     }
 
@@ -214,11 +227,13 @@ namespace Snapshot {
       // check if ally code exist in roster
       const member = members.find((e) => e[1] === allyCode);
       if (member) {
-        SPREADSHEET.toast(`Focus on guild member ${member[0]}`, 'Player Snapshot', 3)
+        SPREADSHEET.toast(`Focus on guild member ${member[0]}`, 'Player Snapshot', 3);
+
         return Player.getFromSheet(member[0], alignment.toLowerCase());
       }
 
-      SPREADSHEET.toast(`Search for allycode ${allyCode}`, 'Player Snapshot', 3)
+      SPREADSHEET.toast(`Search for allycode ${allyCode}`, 'Player Snapshot', 3);
+
       return Player.getFromDataSource(allyCode, unitsIndex, alignment);
     }
 
@@ -242,6 +257,7 @@ namespace Snapshot {
 /** create a snapshot of a player or guild member */
 function playerSnapshot(): void {
   const event = config.currentEvent();
+  const alignment = config.currentAlignment(event);
 
   const definitions = Units.getDefinitions();
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
@@ -254,7 +270,7 @@ function playerSnapshot(): void {
   const characterTag = config.tagFilter(); // TODO: potentially broken if TB not sync
   const powerTarget = config.requiredHeroGp();
   const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
-  const playerData = Snapshot.getData(sheet, config.currentAlignment(), unitsIndex);
+  const playerData = Snapshot.getData(sheet, alignment, unitsIndex);
   if (playerData) {
     for (const baseId of Object.keys(playerData.units)) {
       const u = playerData.units[baseId];
@@ -283,7 +299,7 @@ function playerSnapshot(): void {
       ['GP', `${playerData.gp}`],
       ['GP Heroes', `${playerData.heroesGp}`],
       ['GP Ships', `${playerData.shipsGp}`],
-      [`${event} 7⭐ P${powerTarget}+`, `${countFiltered}`],
+      [`${alignment} 7⭐ P${powerTarget}+`, `${countFiltered}`],
       [`${characterTag} 7⭐ P${powerTarget}+`, `${countTagged}`],
     );
 
