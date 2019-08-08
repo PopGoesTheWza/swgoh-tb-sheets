@@ -365,10 +365,8 @@ namespace Units {
 
     /** return a list of Rare heroes needed for a phase */
     public getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
-      const event = config.currentEvent();
       const hgupu = Heroes.getUniquePlatoonUnits;
-
-      const platoonUnits: string[] = isHothLS_(event) && phase === 1 ? hgupu(1) : [...hgupu(1), ...hgupu(2)];
+      const platoonUnits: string[] = isHothLS_() && phase === 1 ? hgupu(1) : [...hgupu(1), ...hgupu(2)];
 
       return super.getNeededRareList(phase, platoonUnits);
     }
