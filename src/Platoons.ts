@@ -18,7 +18,7 @@ class PlatoonDetails {
     this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
-    this.exist = zone !== 0 || (isGeoDS_(config.currentEvent()) ? phase > 1 : phase > 2);
+    this.exist = discord.isTerritory(zone, phase as TerritoryBattles.phaseIdx);
   }
 
   public getOffset() {
@@ -47,6 +47,7 @@ class PlatoonUnit {
     return this.count > this.pCount;
   }
 
+  // TODO: define RARE
   public isRare(): boolean {
     return this.count + 3 > this.pCount;
   }
@@ -248,7 +249,7 @@ namespace TerritoryBattles {
       // }
 
       const notAvailable: string[] = [];
-      const data = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+      const data = SPREADSHEET.getSheetByName(SHEETS.PLATOON)
         .getRange(56, 4, MAX_MEMBERS)
         .getValues() as Array<[string]>;
       for (const e of data) {
@@ -291,8 +292,6 @@ namespace TerritoryBattles {
 
       // define platoonOrder(?)
 
-      //
-
       for (const territory of territories) {
         spooler.add(territory.writerName());
         territory.showHide();
@@ -324,7 +323,7 @@ namespace TerritoryBattles {
   abstract class Territory {
     public readonly index: territoryIdx;
     public platoons: Platoon[] = [];
-    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
     protected readonly phase: Phase;
     protected readonly name: string;
 
@@ -459,7 +458,7 @@ namespace TerritoryBattles {
       this.territory = territory;
       const row = territory.index * PLATOON_ZONE_ROW_OFFSET + 2;
       const column = index * PLATOON_ZONE_COLUMN_OFFSET + 4;
-      const range = SPREADSHEET.getSheetByName(SHEETS.PLATOONS).getRange(row, column, MAX_PLATOON_UNITS);
+      const range = SPREADSHEET.getSheetByName(SHEETS.PLATOON).getRange(row, column, MAX_PLATOON_UNITS);
       this.unitsRange = range;
       this.donorsRange = range.offset(0, 1);
       this.skipButtonRange = range.offset(MAX_PLATOON_UNITS, 1, 1, 1);
@@ -588,8 +587,7 @@ namespace TerritoryBattles {
     };
   }
   const definitions: Definitions = {
-    'Geo DS': {
-      // EVENT.GEONOSISDS
+    /** EVENT.GEONOSISDS */ 'Geo DS': {
       1: [
         closed,
         ground('Droid Factory', [166.7, 166.7, 166.7, 166.7, 166.7, 166.7]),
@@ -611,8 +609,7 @@ namespace TerritoryBattles {
         ground('Rear Flank', [250, 250, 250, 250, 250, 250]),
       ],
     },
-    'Hoth DS': {
-      // EVENT.HOTHDS
+    /** EVENT.HOTHDS */ 'Hoth DS': {
       1: [
         closed,
         ground('Imperial Flank', [102, 102, 102, 102, 153, 153]),
@@ -644,8 +641,7 @@ namespace TerritoryBattles {
         ground('Rebel Base South Entrance', [260, 260, 260, 260, 260, 260]),
       ],
     },
-    'Hoth LS': {
-      // EVENT.HOTHLS
+    /** EVENT.HOTHLS */ 'Hoth LS': {
       1: [closed, ground('Rebel Base', [100, 100, 100, 100, 150, 150]), closed],
       2: [
         closed,
@@ -810,7 +806,6 @@ function loop1_(
   const range = sheet.getRange(row, column, MAX_PLATOON_UNITS);
 
   // clear previous contents
-  // sheet.getRange(row, column + 1, MAX_PLATOON_UNITS)
   spooler
     .attach(range.offset(0, 1))
     .clearContent()
@@ -820,7 +815,6 @@ function loop1_(
 
   if (cur.exist) {
     /** skip this checkbox */
-    // sheet.getRange(row + 15, column + 1)
     const skip = range.offset(15, 1, 1, 1).getValue() === 'SKIP';
     if (skip) {
       cur.possible = false;
@@ -831,7 +825,6 @@ function loop1_(
     const units = range.getValues() as string[][];
 
     const dropdowns: Array<[Spreadsheet.DataValidation]> = [];
-    // sheet.getRange(row, column + 1, MAX_PLATOON_UNITS)
     const dropdownsRange = range.offset(0, 1);
     for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
       const unitName = units[h][0];
@@ -959,11 +952,22 @@ function recommendPlatoons() {
   const spooler = new utils.Spooler();
 
   // setup platoon phases
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+  const PLATOON_NOTAVAILABLE_ROW = 56;
+  const PLATOON_NOTAVAILABLE_COL = 4;
+  const PLATOON_NOTAVAILABLE_NUMROWS = MAX_MEMBERS;
+  const PLATOON_NOTAVAILABLE_NUMCOLS = 1;
   const phase = config.currentPhase();
   const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
 
-  const notAvailable = sheet.getRange(56, 4, MAX_MEMBERS, 1).getValues() as Array<[string]>;
+  const notAvailable = sheet
+    .getRange(
+      PLATOON_NOTAVAILABLE_ROW,
+      PLATOON_NOTAVAILABLE_COL,
+      PLATOON_NOTAVAILABLE_NUMROWS,
+      PLATOON_NOTAVAILABLE_NUMCOLS,
+    )
+    .getValues() as Array<[string]>;
 
   SPREADSHEET.toast(
     `Using units of rarity ${rarityThreshold + 1}⭐ for ${event} phase ${phase} ready.`,

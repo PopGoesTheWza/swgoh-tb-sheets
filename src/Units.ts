@@ -31,11 +31,7 @@ namespace Units {
     definitions = config.dataSource.isSwgohHelp()
       ? SwgohHelp.getUnitList()
       : { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
-    // if (config.dataSource.isSwgohHelp()) {
-    //   definitions = SwgohHelp.getUnitList();
-    // } else {
-    //   definitions = { heroes: SwgohGg.getHeroList(), ships: SwgohGg.getShipList() };
-    // }
+
     config.dataSource.setUnitDefinitionsDate();
     definitions.heroes.sort(sortUnits);
     definitions.ships.sort(sortUnits);
@@ -65,7 +61,13 @@ namespace Units {
   /** return an array of all units definition (name, baseId, tags) */
   function getDefinitionsFromSheet(sheetName: string): UnitDefinition[] {
     const sheet = SPREADSHEET.getSheetByName(sheetName);
-    const data = sheet.getRange(2, 1, sheet.getMaxRows() - 1, 3).getValues() as string[][];
+    const UNITS_DEFINITIONS_ROW = 2;
+    const UNITS_DEFINITIONS_COL = 1;
+    const UNITS_DEFINITIONS_NUMROWS = sheet.getMaxRows() - 1;
+    const UNITS_DEFINITIONS_NUMCOLS = 3;
+    const data = sheet
+      .getRange(UNITS_DEFINITIONS_ROW, UNITS_DEFINITIONS_COL, UNITS_DEFINITIONS_NUMROWS, UNITS_DEFINITIONS_NUMCOLS)
+      .getValues() as string[][];
 
     const definitions = data.reduce((acc: UnitDefinition[], e) => {
       const name = e[0];
@@ -95,11 +97,20 @@ namespace Units {
     /** zone: 0, 1 or 2 */
     public static getUniquePlatoonUnits(zone: number): string[] {
       const platoonRow = zone * 18 + 2;
-      const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+      const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+      const PLATOON_UNITS_ROW = platoonRow;
+      const PLATOON_UNITS_NUMROWS = MAX_PLATOON_UNITS;
+      const PLATOON_UNITS_NUMCOLS = 1;
 
       let units: string[][] = [];
       for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
-        const range = sheet.getRange(platoonRow, platoon * 4 + 4, MAX_PLATOON_UNITS, 1);
+        const PLATOON_UNITS_COL = platoon * 4 + 4;
+        const range = sheet.getRange(
+          PLATOON_UNITS_ROW,
+          PLATOON_UNITS_COL,
+          PLATOON_UNITS_NUMROWS,
+          PLATOON_UNITS_NUMCOLS,
+        );
         const values = range.getValues() as string[][];
         units = [...units, ...values];
       }
@@ -120,16 +131,20 @@ namespace Units {
     /** return the number of units defined */
     public abstract getCount(): number;
 
-    /** return a list of units that are required a high number of times (HIGH_MIN) */
+    /** return a list of units that are required a high number of times (HIGHLY_NEEDED) */
     public getHighNeedList(): string[] {
-      const data = this.sheet.getRange(2, 1, this.getCount(), this.columnOffset - 1).getValues() as Array<
-        [string, number]
-      >;
+      const UNITS_DATA_ROW = 2;
+      const UNITS_DATA_COL = 1;
+      const UNITS_DATA_NUMROWS = this.getCount();
+      const UNITS_DATA_NUMCOLS = this.columnOffset - 1;
+      const data = this.sheet
+        .getRange(UNITS_DATA_ROW, UNITS_DATA_COL, UNITS_DATA_NUMROWS, UNITS_DATA_NUMCOLS)
+        .getValues() as Array<[string, number]>;
 
       const idx = this.columnOffset - 1;
       const list: string[] = data.reduce((acc: string[], row) => {
         const needed = row[idx];
-        if (needed >= HIGH_MIN) {
+        if (needed >= HIGHLY_NEEDED) {
           const name = row[0];
           acc.push(`${name} (${needed})`);
         }
@@ -243,13 +258,14 @@ namespace Units {
         [string, number]
       >;
 
-      const column = phase + 3; // HEROES/SHIPS, column D to I
+      const column = discord.requiredRarity(1, phase) + 2; // HEROES/SHIPS, column D to I
 
       // cycle through each unit
       const units: string[] = data
         .reduce((acc: string[], row) => {
           const name = row[0];
           const available = row[column];
+          // TODO: define RARE
           if (name.length > 0 && available < RARE_MAX) {
             acc.push(name);
           }
@@ -351,21 +367,23 @@ namespace Units {
   /** class to interact with Heroes sheet */
   export class Heroes extends UnitsTable {
     constructor() {
+      const HERO_MEMBER_COL_OFFSET = 11;
       super(HERO_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.HEROES));
     }
 
     /** return the number of heroes defined */
     public getCount(): number {
-      const value = +SPREADSHEET.getSheetByName(SHEETS.META)
+      const META_HEROES_COUNT_ROW = 5;
+      const META_HEROES_COUNT_COL = 5;
+      return +SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_HEROES_COUNT_ROW, META_HEROES_COUNT_COL)
         .getValue();
-
-      return value;
     }
 
     /** return a list of Rare heroes needed for a phase */
     public getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
       const hgupu = Heroes.getUniquePlatoonUnits;
+      // if Hoth LS phase 1: only Middle territory
       const platoonUnits: string[] = isHothLS_() && phase === 1 ? hgupu(1) : [...hgupu(1), ...hgupu(2)];
 
       return super.getNeededRareList(phase, platoonUnits);
@@ -391,7 +409,7 @@ namespace Units {
     public setDefinitions(units: UnitDefinition[]): void {
       // tslint:disable-next-line:max-line-length
       const formula = (row: number) =>
-        `=COUNTIF({${SHEETS.PLATOONS}!$D$20:$D$34,${SHEETS.PLATOONS}!$H$20:$H$34,${SHEETS.PLATOONS}!$L$20:$L$34,${SHEETS.PLATOONS}!$P$20:$P$34,${SHEETS.PLATOONS}!$T$20:$T$34,${SHEETS.PLATOONS}!$X$20:$X$34,${SHEETS.PLATOONS}!$D$38:$D$52,${SHEETS.PLATOONS}!$H$38:$H$52,${SHEETS.PLATOONS}!$L$38:$L$52,${SHEETS.PLATOONS}!$P$38:$P$52,${SHEETS.PLATOONS}!$T$38:$T$52,${SHEETS.PLATOONS}!$X$38:$X$52},A${row})`;
+        `=COUNTIF({${SHEETS.PLATOON}!$D$20:$D$34,${SHEETS.PLATOON}!$H$20:$H$34,${SHEETS.PLATOON}!$L$20:$L$34,${SHEETS.PLATOON}!$P$20:$P$34,${SHEETS.PLATOON}!$T$20:$T$34,${SHEETS.PLATOON}!$X$20:$X$34,${SHEETS.PLATOON}!$D$38:$D$52,${SHEETS.PLATOON}!$H$38:$H$52,${SHEETS.PLATOON}!$L$38:$L$52,${SHEETS.PLATOON}!$P$38:$P$52,${SHEETS.PLATOON}!$T$38:$T$52,${SHEETS.PLATOON}!$X$38:$X$52},A${row})`;
 
       return super.setDefinitions(units, formula);
     }
@@ -412,16 +430,17 @@ namespace Units {
   /** class to interact with Ships sheet */
   export class Ships extends UnitsTable {
     constructor() {
+      const SHIP_MEMBER_COL_OFFSET = 11;
       super(SHIP_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.SHIPS));
     }
 
     /** return the number of ships defined */
     public getCount(): number {
-      const value = +SPREADSHEET.getSheetByName(SHEETS.META)
+      const META_SHIPS_COUNT_ROW = 8;
+      const META_SHIPS_COUNT_COL = 5;
+      return +SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
         .getValue();
-
-      return value;
     }
 
     /** return a list of Rare ships needed for a phase */
@@ -451,7 +470,7 @@ namespace Units {
     public setDefinitions(units: UnitDefinition[]): void {
       // tslint:disable-next-line:max-line-length
       const formula = (row: number) =>
-        `=COUNTIF({${SHEETS.PLATOONS}!$D$2:$D$16,${SHEETS.PLATOONS}!$H$2:$H$16,${SHEETS.PLATOONS}!$L$2:$L$16,${SHEETS.PLATOONS}!$P$2:$P$16,${SHEETS.PLATOONS}!$T$2:$T$16,${SHEETS.PLATOONS}!$X$2:$X$16},A${row})`;
+        `=COUNTIF({${SHEETS.PLATOON}!$D$2:$D$16,${SHEETS.PLATOON}!$H$2:$H$16,${SHEETS.PLATOON}!$L$2:$L$16,${SHEETS.PLATOON}!$P$2:$P$16,${SHEETS.PLATOON}!$T$2:$T$16,${SHEETS.PLATOON}!$X$2:$X$16},A${row})`;
 
       return super.setDefinitions(units, formula);
     }

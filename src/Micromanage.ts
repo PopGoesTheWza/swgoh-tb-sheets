@@ -11,7 +11,7 @@ function memberLabel_(member: string, mention: string) {
 
 /** output platoon numner as discord icon */
 function platoonAsIcon_(label: string, type: string, platoon: number) {
-  const platoonIcon = [':one:', ':two:', ':three:', ':four:', ':five:', ':six:'][platoon];
+  const platoonIcon = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'][platoon];
 
   return `__${label}__ · ${type} ${platoonIcon}`;
 }
@@ -64,10 +64,12 @@ interface PlatoonAssignment {
 
 /** Send a Webhook to Discord */
 function sendMicroByMemberWebhook(): void {
+  const WAIT_TIME = 2000;
   const displaySetting = config.discord.displaySlots();
   const displaySlot = displaySetting !== DISPLAYSLOT.NEVER;
   const forceDisplay = displaySetting === DISPLAYSLOT.ALWAYS;
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+  const event = config.currentEvent();
   const phase = config.currentPhase();
 
   // get the webhook
@@ -75,7 +77,7 @@ function sendMicroByMemberWebhook(): void {
   if (webhookURL.length === 0) {
     // we need a url to proceed
     const UI = SpreadsheetApp.getUi();
-    UI.alert('Configuration Error', 'Discord webhook not found (Discord!E1)', UI.ButtonSet.OK);
+    UI.alert('Configuration Error', 'Discord webhook not found (on Discord sheet)', UI.ButtonSet.OK);
 
     return;
   }
@@ -83,7 +85,7 @@ function sendMicroByMemberWebhook(): void {
   // get data from the platoons
   let entries: PlatoonAssignment[] = [];
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-    if (z === 0 && phase < 3) {
+    if (!discord.isTerritory(z, phase, event)) {
       // skip this zone
       continue;
     }

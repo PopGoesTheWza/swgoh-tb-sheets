@@ -7,15 +7,61 @@ namespace discord {
 
   /** Get the title for the webhooks */
   export function getTitle(phase: TerritoryBattles.phaseIdx): string {
+    const WEBHOOK_TITLE_ROW = 5;
     const defaultVal = `__**Territory Battle: Phase ${phase}**__`;
 
     return `${config.discord.webhookTemplate(phase, WEBHOOK_TITLE_ROW, defaultVal)}`;
   }
 
+  export function isTerritory(
+    territory: number,
+    phase = config.currentPhase(),
+    event = config.currentEvent(),
+  ): boolean {
+    return isGeoDS_(event)
+      ? territory !== 0 || phase > 1
+      : isHothDS_()
+      ? territory !== 0 || phase > 2
+      : isHothLS_()
+      ? (territory !== 0 || phase > 2) && (territory !== 2 || phase > 1)
+      : false;
+  }
+
+  export function requiredRarity(
+    territory: number,
+    phase = config.currentPhase(),
+    event = config.currentEvent(),
+  ): number {
+    return isGeoDS_(event) ? (phase < 3 ? 6 : 7) : isHothDS_() ? phase + 1 : isHothLS_() ? phase + 1 : NaN;
+  }
+
+  // export function getSimplifiedPlatoons(phase: TerritoryBattles.phaseIdx) {
+  //   const UNAVAILABLE = '⛔';
+  //   const CLOSED = '🚫';
+  //   const OPEN = '✅';
+  //   const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+  //   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
+  //     const zone = getZoneName(phase, z, true);
+  //     if (zone.length > 0) {
+  //       // for each zone
+  //       const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
+  //       const type = z === 0 ? 'squadron' : 'platoon';
+  //       for (let p = 0; p < MAX_PLATOONS; p += 1) {
+  //         const platoonData = sheet.getRange(platoonRow, 4 + p * 4, MAX_PLATOON_UNITS, 2).getValues() as string[][];
+  //         // const status = platoonData.map((e, i) => {
+  //         //   e[0].length > 0 && e[1].length > 0 && e[1].length !== 'Skip'
+  //         // });
+  //       }
+  //     }
+  //   }
+  // }
+
   /** Get the formatted zone name with location descriptor */
   export function getZoneName(phase: TerritoryBattles.phaseIdx, zoneNum: number, full: boolean): string {
-    const zone = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
-      .getRange(zoneNum * PLATOON_ZONE_ROW_OFFSET + 4, 1)
+    const PLATOON_ZONE_ROW = zoneNum * PLATOON_ZONE_ROW_OFFSET + 4;
+    const PLATOON_ZONE_COL = 1;
+    const zone = SPREADSHEET.getSheetByName(SHEETS.PLATOON)
+      .getRange(PLATOON_ZONE_ROW, PLATOON_ZONE_COL)
       .getValue() as string;
     let loc: string;
 
@@ -28,10 +74,14 @@ namespace discord {
         break;
       case 1:
       default:
-        loc = phase === 2 ? '(Top)' : '(Middle)';
+        loc = /** phase === 2 ? '(Top)' : */ '(Middle)';
     }
     const result =
-      full && phase !== 1 ? `${zone} ${loc} ${zoneNum === 0 ? 'Squadrons' : 'Platoons'}` : `${loc} ${zone}`;
+      `${zone}`.length === 0
+        ? ''
+        : full /** && phase !== 1 */
+        ? `${zone} ${loc} ${zoneNum === 0 ? 'Squadrons' : 'Platoons'}`
+        : `${loc} ${zone}`;
 
     return result;
   }
@@ -43,8 +93,7 @@ namespace discord {
     // cycle through the heroes
     for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
       if (platoon[h][1].length === 0 || platoon[h][1] === 'Skip') {
-        // impossible platoon
-        return undefined;
+        return undefined; // impossible platoon
       }
 
       // remove the gear
@@ -64,7 +113,18 @@ namespace discord {
   /** Get the member Discord IDs for mentions */
   export function getMemberMentions(): KeyedStrings {
     const sheet = SPREADSHEET.getSheetByName(SHEETS.DISCORD);
-    const data = sheet.getRange(2, 1, sheet.getLastRow(), 2).getValues() as string[][];
+    const DISCORD_MEMBERMENTIONS_ROW = 2;
+    const DISCORD_MEMBERMENTIONS_COL = 1;
+    const DISCORD_MEMBERMENTIONS_NUMROWS = sheet.getLastRow();
+    const DISCORD_MEMBERMENTIONS_NUMCOLS = 2;
+    const data = sheet
+      .getRange(
+        DISCORD_MEMBERMENTIONS_ROW,
+        DISCORD_MEMBERMENTIONS_COL,
+        DISCORD_MEMBERMENTIONS_NUMROWS,
+        DISCORD_MEMBERMENTIONS_NUMCOLS,
+      )
+      .getValues() as string[][];
 
     const result: KeyedStrings = {};
 
@@ -111,6 +171,7 @@ namespace discord {
         const criteria = rules[h][0].getCriteriaValues() as RequireValueInListCriteria;
 
         // only add rare donations
+        // TODO: define RARE
         if (criteria[0].length < RARE_MAX) {
           const sorted = criteria[0].sort(utils.caseInsensitive);
           const names: string[] = [];
@@ -129,6 +190,7 @@ namespace discord {
 
   /** Get the intro for the depth webhook */
   export function getDepthIntro(phase: TerritoryBattles.phaseIdx, mention: string): string {
+    const WEBHOOK_DEPTH_ROW = 8;
     const defaultVal = `Here are the Platoon assignments for __Phase ${phase}__.
   **Do not donate heroes to the other Platoons.**`;
 
@@ -137,6 +199,7 @@ namespace discord {
 
   /** Get the intro for the rare by webhook */
   function getRareIntro(phase: TerritoryBattles.phaseIdx, mention: string): string {
+    const WEBHOOK_RARE_ROW = 7;
     const defaultVal = `Here are the Safe Platoons and the Rare Platoon donations for __Phase ${phase}__.
 **Do not donate heroes to the other Platoons.**`;
 
@@ -145,6 +208,7 @@ namespace discord {
 
   /** Get the intro for the warning webhook */
   export function getWarnIntro(phase: TerritoryBattles.phaseIdx, mention: string): string {
+    const WEBHOOK_WARN_ROW = 6;
     const defaultVal = `Here are the __Rare Units__ to watch out for in __Phase ${phase}__.
   **Check with an officer before donating to Platoons/Squadrons that require them.**`;
 
@@ -189,19 +253,20 @@ namespace discord {
 
   /** Send a Webhook to Discord */
   export function sendPlatoonSimplified(byType: 'Player' | 'Unit'): void {
-    const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-    const phase = config.currentPhase();
-    let platoons: string;
-
     // get the webhook
     const webhookURL = config.discord.webhookUrl();
     if (webhookURL.length === 0) {
       // we need a url to proceed
       const UI = SpreadsheetApp.getUi();
-      UI.alert('Configuration Error', 'Discord webhook not found (Discord!E1)', UI.ButtonSet.OK);
+      UI.alert('Configuration Error', 'Discord webhook not found (see Discord sheet)', UI.ButtonSet.OK);
 
       return;
     }
+
+    const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+    const event = config.currentEvent();
+    const phase = config.currentPhase();
+    let platoons: string;
 
     // mentions only works if you get the ID
     // on your Discord server, type: \@rolename, copy the value <@#######>
@@ -225,11 +290,23 @@ namespace discord {
         groundStart = donations.length;
       }
 
-      if (z !== 0 || phase > 2) {
+      if (discord.isTerritory(z, phase, event)) {
         // cycle throught the platoons in a zone
         for (let p = 0; p < MAX_PLATOONS; p += 1) {
-          const platoonData = sheet.getRange(platoonRow, p * 4 + 4, MAX_PLATOON_UNITS, 2).getValues() as string[][];
-          const rules = sheet.getRange(platoonRow, p * 4 + 5, MAX_PLATOON_UNITS, 1).getDataValidations();
+          const PLATOON_SLOTS_ROW = platoonRow;
+          const PLATOON_SLOTS_COL = p * 4 + 4;
+          const PLATOON_SLOTS_NUMROWS = MAX_PLATOON_UNITS;
+          const PLATOON_SLOTS_NUMCOLS = 2;
+          const platoonData = sheet
+            .getRange(PLATOON_SLOTS_ROW, PLATOON_SLOTS_COL, PLATOON_SLOTS_NUMROWS, PLATOON_SLOTS_NUMCOLS)
+            .getValues() as string[][];
+          const PLATOON_RULES_ROW = PLATOON_SLOTS_ROW;
+          const PLATOON_RULES_COL = PLATOON_SLOTS_COL + 1;
+          const PLATOON_RULES_NUMROWS = PLATOON_SLOTS_NUMROWS;
+          const PLATOON_RULES_NUMCOLS = 1;
+          const rules = sheet
+            .getRange(PLATOON_RULES_ROW, PLATOON_RULES_COL, PLATOON_RULES_NUMROWS, PLATOON_RULES_NUMCOLS)
+            .getDataValidations();
           const platoon = getPlatoonDonations(platoonData, donations, rules, memberMentions);
 
           if (platoon) {
@@ -321,8 +398,8 @@ namespace discord {
 
       // set the phase in Platoons tab
       if (phase <= maxPhases) {
-        SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
-          .getRange(2, 1)
+        SPREADSHEET.getSheetByName(SHEETS.PLATOON)
+          .getRange(PLATOON_CURRENTPHASE_ROW, PLATOON_CURRENTPHASE_COL)
           .setValue(phase);
       }
     }
@@ -331,18 +408,19 @@ namespace discord {
 
 /** Send a Webhook to Discord */
 function sendPlatoonDepthWebhook(): void {
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
-  const phase = config.currentPhase();
-
   // get the webhook
   const webhookURL = config.discord.webhookUrl();
   if (webhookURL.length === 0) {
     // we need a url to proceed
     const UI = SpreadsheetApp.getUi();
-    UI.alert('Configuration Error', 'Discord webhook not found (Discord!E1)', UI.ButtonSet.OK);
+    UI.alert('Configuration Error', 'Discord webhook not found (see Discord sheet)', UI.ButtonSet.OK);
 
     return;
   }
+
+  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+  const event = config.currentEvent();
+  const phase = config.currentPhase();
 
   // mentions only works if you get the id
   // in Settings - Appearance - Enable Developer Mode, type: \@rolename, copy the value <@$####>
@@ -351,7 +429,7 @@ function sendPlatoonDepthWebhook(): void {
   // get data from the platoons
   const fields: discord.RichEmbedOptionsField[] = [];
   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-    if (z === 0 && phase < 3) {
+    if (!discord.isTerritory(z, phase, event)) {
       continue; // skip this zone
     }
 
@@ -361,7 +439,13 @@ function sendPlatoonDepthWebhook(): void {
 
     // cycle throught the platoons in a zone
     for (let p = 0; p < MAX_PLATOONS; p += 1) {
-      const platoonData = sheet.getRange(platoonRow, p * 4 + 4, MAX_PLATOON_UNITS, 2).getValues() as string[][];
+      const PLATOON_SLOTS_ROW = platoonRow;
+      const PLATOON_SLOTS_COL = p * 4 + 4;
+      const PLATOON_SLOTS_NUMROWS = MAX_PLATOON_UNITS;
+      const PLATOON_SLOTS_NUMCOLS = 2;
+      const platoonData = sheet
+        .getRange(PLATOON_SLOTS_ROW, PLATOON_SLOTS_COL, PLATOON_SLOTS_NUMROWS, PLATOON_SLOTS_NUMCOLS)
+        .getValues() as string[][];
       const platoon = discord.getPlatoonString(platoonData);
 
       if (platoon && platoon.length > 0) {
@@ -396,21 +480,20 @@ function sendPlatoonSimplifiedByMemberWebhook(): void {
 
 /** Send a message to Discord that lists all units to watch out for in the current phase */
 function allRareUnitsWebhook(): void {
-  const phase = config.currentPhase();
-
   const webhookURL = config.discord.webhookUrl(); // get the webhook
   if (webhookURL.length === 0) {
     // we need a url to proceed
     const UI = SpreadsheetApp.getUi();
-    UI.alert('Configuration Error', 'Discord webhook not found (Discord!E1)', UI.ButtonSet.OK);
+    UI.alert('Configuration Error', 'Discord webhook not found (see Discord sheet)', UI.ButtonSet.OK);
 
     return;
   }
 
+  const event = config.currentEvent();
+  const phase = config.currentPhase();
   const fields: discord.RichEmbedOptionsField[] = [];
 
-  // TODO: regroup phases and zones management
-  if (phase > (isGeoDS_() ? 1 : 2)) {
+  if (discord.isTerritory(0, phase, event)) {
     // get the ships list
     const shipsTable = new Units.Ships();
     const ships = shipsTable.getNeededRareList(phase);
@@ -439,7 +522,7 @@ function allRareUnitsWebhook(): void {
     // no data to send
     fields.push({
       inline: true,
-      name: 'Rare Heroes',
+      name: 'Rare Units',
       value: 'There Are No Rare Units For This Phase.',
     });
   }
