@@ -1,3 +1,4 @@
+/// <reference types="google-apps-script" />
 /** workaround to tslint issue of namespace scope after importingtype definitions */
 declare namespace SwgohHelp {
   function getGuildData(): PlayerData[];
@@ -10,90 +11,33 @@ const SPREADSHEET = SpreadsheetApp.getActive();
 // const UI = SpreadsheetApp.getUi();
 
 import Spreadsheet = GoogleAppsScript.Spreadsheet;
-// type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation;
-// type Range = GoogleAppsScript.Spreadsheet.Range;
-// type Sheet = GoogleAppsScript.Spreadsheet.Sheet;
 import URL_Fetch = GoogleAppsScript.URL_Fetch;
-// type URLFetchRequestOptions = GoogleAppsScript.URL_Fetch.URLFetchRequestOptions;
 
 /** Global constants */
 const MAX_MEMBERS = 50;
-// const MIN_PLAYER_LEVEL = 65
-// const POWER_TARGET = 14000
+
+const PLATOON_CURRENTPHASE_ROW = 2;
+const PLATOON_CURRENTPHASE_COL = 1;
 
 // Meta tab columns
-const META_FILTER_ROW = 2;
-const META_FILTER_COL = 2;
-const META_TAG_ROW = 2;
-const META_TAG_COL = 3;
-const META_UNDERGEAR_ROW = 2;
-const META_UNDERGEAR_COL = 4;
-const META_SORT_ROSTER_ROW = 2;
-const META_SORT_ROSTER_COL = 5;
-const META_EXCLUSSIONS_ROW = 7;
-const META_EXCLUSSIONS_COL = 1;
-const META_MIN_LEVEL_ROW = 5;
-const META_MIN_LEVEL_COL = 4;
-const META_MIN_GP_ROW = 8;
-const META_MIN_GP_COL = 4;
-const META_UNIT_PER_MEMBER_ROW = 11;
-const META_UNIT_PER_MEMBER_COL = 4;
+// TODO: use this meta setting
+// const META_UNDERGEAR_ROW = 2;
+// const META_UNDERGEAR_COL = 4;
 
-const META_DATASOURCE_ROW = 14;
-const META_DATASOURCE_COL = 4;
-
-const META_GUILDDATADATE_ROW = 24;
-const META_GUILDDATADATE_COL = 1;
-const META_UNITDEFINITIONSDATE_ROW = 26;
-const META_UNITDEFINITIONSDATE_COL = 1;
-
-const META_SQUADS_HOTHLS_COL = 7;
-const META_SQUADS_HOTHDS_COL = 16;
 const META_SQUADS_GEODS_COL = 25;
-
-const META_HEROES_COUNT_ROW = 5;
-const META_HEROES_COUNT_COL = 5;
-const META_SHIPS_COUNT_ROW = 8;
-const META_SHIPS_COUNT_COL = 5;
-
-const META_RENAME_ADD_PLAYER_COL = 16;
-const META_REMOVE_PLAYER_COL = 18;
-
-// Hero/Ship tab columns
-const HERO_MEMBER_COL_OFFSET = 11;
-const SHIP_MEMBER_COL_OFFSET = 11;
-
-// Roster Size info
-const META_GUILD_SIZE_ROW = 5;
-const META_GUILD_SIZE_COL = 12;
-
-const META_TB_COL_OFFSET = 10;
-
-const WAIT_TIME = 2000;
+const META_SQUADS_HOTHDS_COL = 16;
+const META_SQUADS_HOTHLS_COL = 7;
 
 const MAX_PLATOON_UNITS = 15;
 const MAX_PLATOONS = 6;
 const MAX_PLATOON_ZONES = 3;
-const PLATOON_SLICE_ROW_OFFSET = 17; // MAX_PLATOON_UNITS + 2;
-const PLATOON_SLICE_COLUMN_OFFSET = 7; // MAX_PLATOONS + 1;
 const PLATOON_ZONE_ROW_OFFSET = 18; // MAX_PLATOON_UNITS + 3;
 const PLATOON_ZONE_COLUMN_OFFSET = 4;
 
+// TODO: define RARE
 const RARE_MAX = 15;
-const HIGH_MIN = 10;
+const HIGHLY_NEEDED = 8;
 const DISCORD_WEBHOOK_COL = 5;
-const WEBHOOK_TB_START_ROW = 3;
-const WEBHOOK_PHASE_HOURS_ROW = 4;
-const WEBHOOK_TITLE_ROW = 5;
-const WEBHOOK_WARN_ROW = 6;
-const WEBHOOK_RARE_ROW = 7;
-const WEBHOOK_DEPTH_ROW = 8;
-const WEBHOOK_DESC_ROW = 9;
-const WEBHOOK_CLEAR_ROW = 15;
-const WEBHOOK_DISPLAY_SLOT_ROW = 16;
-
-const META_UPDATETIME_COL = 1; // ADDED FOR TIMESTAMP
-const META_UPDATETIME_ROW = 11; // ADDED FOR TIMESTAMP
 
 interface KeyedType<T> {
   [key: string]: T;
@@ -230,26 +174,20 @@ enum DISPLAYSLOT {
 enum SHEETS {
   ROSTER = 'Roster',
   TB = 'TB',
-  PLATOONS = 'Platoon',
+  PLATOON = 'Platoon',
   ASSIGNMENTS = 'Assignments',
   GEODSPLATOONAUDIT = 'GeoDSPlatoonAudit',
   GEOSQUADRONAUDIT = 'GeoSquadronAudit',
   GEONEEDEDUNITS = 'GeoNeededUnits',
   DSPLATOONAUDIT = 'HothDSPlatoonAudit',
-  // DSPLATOONAUDIT = 'DSPlatoonAudit',
   LSPLATOONAUDIT = 'HothLSPlatoonAudit',
-  // LSPLATOONAUDIT = 'LSPlatoonAudit',
   SQUADRONAUDIT = 'HothSquadronAudit',
-  // SQUADRONAUDIT = 'SquadronAudit',
   NEEDEDUNITS = 'HothNeededUnits',
-  // NEEDEDUNITS = 'NeededUnits',
   BREAKDOWN = 'Breakdown',
   ESTIMATE = 'Estimate',
   GEODSMISSIONS = 'GeoDSMissions',
   DSMISSIONS = 'HothDSMissions',
-  // DSMISSIONS = 'DS Missions',
   LSMISSIONS = 'HothLSMissions',
-  // LSMISSIONS = 'LS Missions',
   SNAPSHOT = 'Snapshot',
   EXCLUSIONS = 'Exclusions',
   HEROES = 'Heroes',
@@ -269,94 +207,90 @@ enum SHEETS {
 
 /** settings related functions */
 namespace config {
-  /** get current Territory Battles phase */
-  export function currentPhase(): TerritoryBattles.phaseIdx {
-    const value = +SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
-      .getRange(2, 1)
-      .getValue() as TerritoryBattles.phaseIdx;
-
-    return value;
-  }
-
   /** get current event */
-  export function currentAlignment(
-    event: EVENT = SPREADSHEET.getSheetByName(SHEETS.META)
-      .getRange(META_FILTER_ROW, META_FILTER_COL)
-      .getValue(),
-  ): ALIGNMENT {
+  export function currentAlignment(event = currentEvent()): ALIGNMENT {
     return isDarkSide_(event) ? ALIGNMENT.DARKSIDE : isLightSide_(event) ? ALIGNMENT.LIGHTSIDE : ALIGNMENT.UNSPECIFIED;
   }
 
   /** get current event */
   export function currentEvent(): EVENT {
-    const value = SPREADSHEET.getSheetByName(SHEETS.META)
-      .getRange(META_FILTER_ROW, META_FILTER_COL)
-      .getValue() as EVENT;
+    const META_CURRENTEVENT_ROW = 2;
+    const META_CURRENTEVENT_COL = 2;
+    return SPREADSHEET.getSheetByName(SHEETS.META)
+      .getRange(META_CURRENTEVENT_ROW, META_CURRENTEVENT_COL)
+      .getValue();
+  }
 
-    return value;
+  /** get current Territory Battles phase */
+  export function currentPhase(): TerritoryBattles.phaseIdx {
+    return +SPREADSHEET.getSheetByName(SHEETS.PLATOON)
+      .getRange(PLATOON_CURRENTPHASE_ROW, PLATOON_CURRENTPHASE_COL)
+      .getValue() as TerritoryBattles.phaseIdx;
   }
 
   /** get the tag/faction of current event */
   export function tagFilter(): string {
-    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+    const META_TAG_ROW = 2;
+    const META_TAG_COL = 3;
+    return SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_TAG_ROW, META_TAG_COL)
-      .getValue() as string;
-
-    return value;
+      .getValue();
   }
 
   /** get required minimum player level */
   export function requiredHeroGp(): number {
-    const value = +SPREADSHEET.getSheetByName(SHEETS.META)
+    const META_MIN_GP_ROW = 8;
+    const META_MIN_GP_COL = 4;
+    return +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_MIN_GP_ROW, META_MIN_GP_COL)
       .getValue();
-
-    return value;
   }
 
   /** get required minimum player level */
   export function requiredMemberLevel(): number {
-    const value = +SPREADSHEET.getSheetByName(SHEETS.META)
+    const META_MIN_LEVEL_ROW = 5;
+    const META_MIN_LEVEL_COL = 4;
+    return +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
       .getValue();
-
-    return value;
   }
 
   /** get maximum allowed donation per territory */
   export function maxDonationsPerTerritory(): number {
-    const value = +SPREADSHEET.getSheetByName(SHEETS.META)
+    const META_UNIT_PER_MEMBER_ROW = 11;
+    const META_UNIT_PER_MEMBER_COL = 4;
+    return +SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_UNIT_PER_MEMBER_ROW, META_UNIT_PER_MEMBER_COL)
       .getValue();
-
-    return value;
   }
 
   /** get roster sorting setting */
   export function sortRoster(): boolean {
-    const value = SPREADSHEET.getSheetByName(SHEETS.META)
-      .getRange(META_SORT_ROSTER_ROW, META_SORT_ROSTER_COL)
-      .getValue() as string;
-
-    return value === 'Yes';
+    const META_SORT_ROSTER_ROW = 2;
+    const META_SORT_ROSTER_COL = 5;
+    return (
+      SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(META_SORT_ROSTER_ROW, META_SORT_ROSTER_COL)
+        .getValue() === 'Yes'
+    );
   }
 
   /** get Id of exclusions */
   export function exclusionId(): string {
-    const value = SPREADSHEET.getSheetByName(SHEETS.META)
+    const META_EXCLUSSIONS_ROW = 7;
+    const META_EXCLUSSIONS_COL = 1;
+    return SPREADSHEET.getSheetByName(SHEETS.META)
       .getRange(META_EXCLUSSIONS_ROW, META_EXCLUSSIONS_COL)
-      .getValue() as string;
-
-    return value;
+      .getValue();
   }
 
   /** get count of members in the roster */
   export function memberCount(): number {
-    const value = +SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    const META_GUILD_SIZE_ROW = 5;
+    const META_GUILD_SIZE_COL = 12;
+    return +SPREADSHEET.getSheetByName(SHEETS.ROSTER)
       .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
       .getValue();
-
-    return value;
   }
 
   /** data source related settings */
@@ -373,20 +307,24 @@ namespace config {
 
     /** get selected data source */
     export function getDataSource(): string {
-      const value = SPREADSHEET.getSheetByName(SHEETS.META)
+      const META_DATASOURCE_ROW = 14;
+      const META_DATASOURCE_COL = 4;
+      return SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
-        .getValue() as string;
-
-      return value;
+        .getValue();
     }
 
     export function setGuildDataDate(): void {
+      const META_GUILDDATADATE_ROW = 24;
+      const META_GUILDDATADATE_COL = 1;
       SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_GUILDDATADATE_ROW, META_GUILDDATADATE_COL)
         .setValue(new Date());
     }
 
     export function setUnitDefinitionsDate(): void {
+      const META_UNITDEFINITIONSDATE_ROW = 26;
+      const META_UNITDEFINITIONSDATE_COL = 1;
       SPREADSHEET.getSheetByName(SHEETS.META)
         .getRange(META_UNITDEFINITIONSDATE_ROW, META_UNITDEFINITIONSDATE_COL)
         .setValue(new Date());
@@ -397,13 +335,13 @@ namespace config {
   export namespace SwgohGgApi {
     /** Get the guild id */
     export function guild(): number {
-      const metaSWGOHLinkCol = 1;
-      const metaSWGOHLinkRow = 2;
+      const META_DOTGG_LINK_ROW = 2;
+      const META_DOTGG_LINK_COL = 1;
       const guildLink = SPREADSHEET.getSheetByName(SHEETS.META)
-        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
+        .getRange(META_DOTGG_LINK_ROW, META_DOTGG_LINK_COL)
         .getValue() as string;
-      const parts = guildLink.split('/');
       // TODO: input check
+      const parts = guildLink.split('/');
       const guildId = +parts[4];
 
       return guildId;
@@ -412,67 +350,71 @@ namespace config {
 
   /** SwgohHelp related settings */
   export namespace SwgohHelpApi {
-    const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
-    function helper(row: number, col: number): string {
-      return metaSheet.getRange(row, col).getValue() as string;
-    }
-
     /** Get the SwgohHelp API username */
     export function username(): string {
-      return helper(16, 1);
+      const META_DOTHELP_USERNAME_ROW = 16;
+      const META_DOTHELP_USERNAME_COL = 1;
+      return SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(META_DOTHELP_USERNAME_ROW, META_DOTHELP_USERNAME_COL)
+        .getValue();
     }
 
     /** Get the SwgohHelp API password */
     export function password(): string {
-      return helper(18, 1);
+      const META_DOTHELP_PASSWORD_ROW = 16;
+      const META_DOTHELP_PASSWORD_COL = 1;
+      return SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(META_DOTHELP_PASSWORD_ROW, META_DOTHELP_PASSWORD_COL)
+        .getValue();
     }
 
     /** Get the guild member ally code */
     export function allyCode(): number {
-      const metaSWGOHLinkCol = 1;
-      const metaSWGOHLinkRow = 20;
-      const result = +SPREADSHEET.getSheetByName(SHEETS.META)
-        .getRange(metaSWGOHLinkRow, metaSWGOHLinkCol)
+      const META_DOTHELP_LINK_ROW = 20;
+      const META_DOTHELP_LINK_COL = 1;
+      return +SPREADSHEET.getSheetByName(SHEETS.META)
+        .getRange(META_DOTHELP_LINK_ROW, META_DOTHELP_LINK_COL)
         .getValue();
-
-      return result;
     }
   }
 
   /** discord related settings */
   export namespace discord {
-    const discordSheet = SPREADSHEET.getSheetByName(SHEETS.DISCORD);
-
-    export function helper(row: number, col: number): string {
-      return discordSheet.getRange(row, col).getValue() as string;
-    }
-
     /** Get the webhook address */
     export function webhookUrl(): string {
-      return helper(1, DISCORD_WEBHOOK_COL);
+      const DISCORD_WEBHOOKURL_ROW = 1;
+      const DISCORD_WEBHOOKURL_COL = DISCORD_WEBHOOK_COL;
+      return SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(DISCORD_WEBHOOKURL_ROW, DISCORD_WEBHOOKURL_COL)
+        .getValue();
     }
 
     /** Get the role to mention */
     export function roleId(): string {
-      return helper(2, DISCORD_WEBHOOK_COL);
+      const DISCORD_ROLEID_ROW = 2;
+      const DISCORD_ROLEID_COL = DISCORD_WEBHOOK_COL;
+      return SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(DISCORD_ROLEID_ROW, DISCORD_ROLEID_COL)
+        .getValue();
     }
 
     /** Get the time and date when the TB started */
     export function startTime(): Date {
-      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-        .getRange(WEBHOOK_TB_START_ROW, DISCORD_WEBHOOK_COL)
-        .getValue() as Date;
-
-      return value;
+      const WEBHOOK_TB_START_ROW = 3;
+      const WEBHOOK_TB_START_COL = DISCORD_WEBHOOK_COL;
+      return SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_TB_START_ROW, WEBHOOK_TB_START_COL)
+        .getValue();
     }
 
     /** Get the number of hours in each phase */
     export function phaseDuration(): number {
-      const value = +SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-        .getRange(WEBHOOK_PHASE_HOURS_ROW, DISCORD_WEBHOOK_COL)
+      const columnOffset = isGeoDS_() ? 2 : isHothLS_() ? 0 : isHothDS_() ? 1 : NaN;
+      const WEBHOOK_PHASE_HOURS_ROW = 4;
+      const WEBHOOK_PHASE_HOURS_COL = DISCORD_WEBHOOK_COL + columnOffset;
+      return +SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_PHASE_HOURS_ROW, WEBHOOK_PHASE_HOURS_COL)
         .getValue();
-
-      return value;
     }
 
     /** Get the template for a webhooks */
@@ -486,30 +428,33 @@ namespace config {
 
     /** Get the Description for the phase */
     export function webhookDescription(phase: TerritoryBattles.phaseIdx): string {
-      const columnOffset = isHothLS_() ? 0 : 1;
-      const text = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-        .getRange(WEBHOOK_DESC_ROW + phase - 1, DISCORD_WEBHOOK_COL + columnOffset)
-        .getValue() as string;
-
-      return `\n\n${text}`;
+      const columnOffset = isGeoDS_() ? 2 : isHothLS_() ? 0 : isHothDS_() ? 1 : NaN;
+      const WEBHOOK_DESC_ROW = 9;
+      const META_WEBHOOKDESC_ROW = WEBHOOK_DESC_ROW + phase - 1;
+      const META_WEBHOOKDESC_COL = DISCORD_WEBHOOK_COL + columnOffset;
+      return `\n\n${SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(META_WEBHOOKDESC_ROW, META_WEBHOOKDESC_COL)
+        .getValue()}`;
     }
 
     /** See if the platoons should be cleared */
     export function resetPlatoons(): boolean {
-      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-        .getRange(WEBHOOK_CLEAR_ROW, DISCORD_WEBHOOK_COL)
-        .getValue() as string;
-
-      return value === 'Yes';
+      const WEBHOOK_CLEAR_ROW = 15;
+      const WEBHOOK_CLEAR_COL = DISCORD_WEBHOOK_COL;
+      return (
+        SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+          .getRange(WEBHOOK_CLEAR_ROW, WEBHOOK_CLEAR_COL)
+          .getValue() === 'Yes'
+      );
     }
 
     /** See if the slot number should be displayed */
     export function displaySlots(): string {
-      const value = SPREADSHEET.getSheetByName(SHEETS.DISCORD)
-        .getRange(WEBHOOK_DISPLAY_SLOT_ROW, DISCORD_WEBHOOK_COL)
+      const WEBHOOK_DISPLAY_SLOT_ROW = 16;
+      const WEBHOOK_DISPLAY_SLOT_COL = DISCORD_WEBHOOK_COL;
+      return SPREADSHEET.getSheetByName(SHEETS.DISCORD)
+        .getRange(WEBHOOK_DISPLAY_SLOT_ROW, WEBHOOK_DISPLAY_SLOT_COL)
         .getValue() as string;
-
-      return value;
     }
   }
 }

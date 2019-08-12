@@ -193,11 +193,17 @@ function getSettingsHash_() {
 
 /** process the Rename, Add and Remove columns */
 function renameAddRemove_(members: PlayerData[]): PlayerData[] {
+  const ROSTER_RENAME_ADD_PLAYER_ROW = 2;
+  const ROSTER_RENAME_ADD_PLAYER_COL = 16;
+  const ROSTER_REMOVE_PLAYER_ROW = 2;
+  const ROSTER_REMOVE_PLAYER_COL = 18;
   const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  const add = sheet.getRange(2, META_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2).getValues() as Array<
-    [string, number]
-  >;
-  const remove = sheet.getRange(2, META_REMOVE_PLAYER_COL, sheet.getLastRow(), 1).getValues() as number[][];
+  const add = sheet
+    .getRange(ROSTER_RENAME_ADD_PLAYER_ROW, ROSTER_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2)
+    .getValues() as Array<[string, number]>;
+  const remove = sheet
+    .getRange(ROSTER_REMOVE_PLAYER_ROW, ROSTER_REMOVE_PLAYER_COL, sheet.getLastRow(), 1)
+    .getValues() as number[][];
 
   const definitions = Units.getDefinitions();
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
@@ -332,7 +338,6 @@ function setupEvent(): void {
     SHEETS.SQUADRONAUDIT,
     SHEETS.NEEDEDUNITS,
     SHEETS.BREAKDOWN,
-    // SHEETS.ESTIMATE,
     SHEETS.GEODSMISSIONS,
     SHEETS.DSMISSIONS,
     SHEETS.LSMISSIONS,
@@ -493,9 +498,7 @@ function setupEvent(): void {
     phaseList.push([e.phase, tbRow]);
     tbRow += 2;
 
-    // lastPhase = e.phase;
     total += phaseCount;
-    // phaseCount = 0;
   }
 
   const lastHeroRow = tbRow;
@@ -544,9 +547,11 @@ function setupEvent(): void {
   );
 
   // store the table of member data
+  const TB_OFFSET_ROW = 1;
+  const TB_OFFSET_COL = 10;
   const width = table.reduce((a: number, e) => Math.max(a, e.length), 0);
   table = table.map((e) => (e.length !== width ? [...e, ...Array(width).fill(null)].slice(0, width) : e));
-  tbSheet.getRange(1, META_TB_COL_OFFSET, table.length, table[0].length).setValues(table);
+  tbSheet.getRange(TB_OFFSET_ROW, TB_OFFSET_COL, table.length, table[0].length).setValues(table);
 
   if (isHothDS_(event)) {
     [
