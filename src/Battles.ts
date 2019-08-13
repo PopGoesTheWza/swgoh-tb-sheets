@@ -117,7 +117,7 @@ function populateEventTable_(
  * @returns array of PlayerData
  */
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
+  const sheet = SPREADSHEET.getSheetByName(SHEET.ROSTER);
 
   const sortFunction = config.sortRoster()
     ? // sort roster by member name
@@ -131,9 +131,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
     members.splice(MAX_MEMBERS);
     SpreadsheetApp.getUi().alert(`Guild roster was truncated to the first ${MAX_MEMBERS} members.`);
   }
-
-  // get the filter & tag
-  // var POWER_TARGET = requiredHeroGp()
 
   // cleanup the header
   const header = [['Name', 'Ally Code', 'GP', 'GP Heroes', 'GP Ships']];
@@ -151,8 +148,8 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
 /** compute a hash of current settings */
 function getSettingsHash_() {
-  const roster = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
-  const meta = SPREADSHEET.getSheetByName(SHEETS.META);
+  const roster = SPREADSHEET.getSheetByName(SHEET.ROSTER);
+  const meta = SPREADSHEET.getSheetByName(SHEET.META);
 
   // members name & ally code
   const members = (roster.getRange(2, 2, 50, 2).getValues() as Array<[string, number]>)
@@ -197,7 +194,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   const ROSTER_RENAME_ADD_PLAYER_COL = 16;
   const ROSTER_REMOVE_PLAYER_ROW = 2;
   const ROSTER_REMOVE_PLAYER_COL = 18;
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.ROSTER);
+  const sheet = SPREADSHEET.getSheetByName(SHEET.ROSTER);
   const add = sheet
     .getRange(ROSTER_RENAME_ADD_PLAYER_ROW, ROSTER_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2)
     .getValues() as Array<[string, number]>;
@@ -327,28 +324,29 @@ function getMembers_(): PlayerData[] {
 /** setup the current event */
 function setupEvent(): void {
   const event = config.currentEvent();
+  const currentSheet = utils.getActiveSheet();
 
   [
-    SHEETS.ASSIGNMENTS,
-    SHEETS.GEODSPLATOONAUDIT,
-    SHEETS.GEOSQUADRONAUDIT,
-    SHEETS.GEONEEDEDUNITS,
-    SHEETS.DSPLATOONAUDIT,
-    SHEETS.LSPLATOONAUDIT,
-    SHEETS.SQUADRONAUDIT,
-    SHEETS.NEEDEDUNITS,
-    SHEETS.BREAKDOWN,
-    SHEETS.GEODSMISSIONS,
-    SHEETS.DSMISSIONS,
-    SHEETS.LSMISSIONS,
-    SHEETS.HEROES,
-    SHEETS.SHIPS,
-    SHEETS.STATICSLICES,
-    SHEETS.GEODSPLATOON,
-    SHEETS.GEOSQUADRON,
-    SHEETS.HOTHDSPLATOON,
-    SHEETS.HOTHLSPLATOON,
-    SHEETS.HOTHSQUADRON,
+    SHEET.ASSIGNMENTS,
+    SHEET.GEODSPLATOONAUDIT,
+    SHEET.GEOSQUADRONAUDIT,
+    SHEET.GEONEEDEDUNITS,
+    SHEET.DSPLATOONAUDIT,
+    SHEET.LSPLATOONAUDIT,
+    SHEET.SQUADRONAUDIT,
+    SHEET.NEEDEDUNITS,
+    SHEET.BREAKDOWN,
+    SHEET.GEODSMISSIONS,
+    SHEET.DSMISSIONS,
+    SHEET.LSMISSIONS,
+    SHEET.HEROES,
+    SHEET.SHIPS,
+    SHEET.STATICSLICES,
+    SHEET.GEODSPLATOON,
+    SHEET.GEOSQUADRON,
+    SHEET.HOTHDSPLATOON,
+    SHEET.HOTHLSPLATOON,
+    SHEET.HOTHSQUADRON,
   ].forEach((e) => SPREADSHEET.getSheetByName(e).hideSheet());
 
   // // make sure the roster is up-to-date
@@ -377,7 +375,7 @@ function setupEvent(): void {
 
   // clear the hero data
   SPREADSHEET.toast('Rebuilding...', 'TB sheet', 3);
-  const tbSheet = SPREADSHEET.getSheetByName(SHEETS.TB);
+  const tbSheet = SPREADSHEET.getSheetByName(SHEET.TB);
   spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS)).clearContent();
   spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_MEMBERS)).clearContent();
 
@@ -399,7 +397,7 @@ function setupEvent(): void {
     : isHothDS_(event)
     ? META_SQUADS_HOTHDS_COL
     : META_SQUADS_GEODS_COL;
-  const metaSheet = SPREADSHEET.getSheetByName(SHEETS.META);
+  const metaSheet = SPREADSHEET.getSheetByName(SHEET.META);
   const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8).getValues() as EventData[];
 
   interface EventUnit {
@@ -555,34 +553,35 @@ function setupEvent(): void {
 
   if (isHothDS_(event)) {
     [
-      SHEETS.DSPLATOONAUDIT,
-      SHEETS.SQUADRONAUDIT,
-      SHEETS.NEEDEDUNITS,
-      SHEETS.DSMISSIONS,
-      SHEETS.ESTIMATE,
-      SHEETS.HEROES,
-      SHEETS.SHIPS,
+      SHEET.DSPLATOONAUDIT,
+      SHEET.SQUADRONAUDIT,
+      SHEET.NEEDEDUNITS,
+      SHEET.DSMISSIONS,
+      SHEET.ESTIMATE,
+      SHEET.HEROES,
+      SHEET.SHIPS,
     ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
   } else if (isHothLS_(event)) {
     [
-      SHEETS.LSPLATOONAUDIT,
-      SHEETS.SQUADRONAUDIT,
-      SHEETS.NEEDEDUNITS,
-      SHEETS.LSMISSIONS,
-      SHEETS.ESTIMATE,
-      SHEETS.HEROES,
-      SHEETS.SHIPS,
+      SHEET.LSPLATOONAUDIT,
+      SHEET.SQUADRONAUDIT,
+      SHEET.NEEDEDUNITS,
+      SHEET.LSMISSIONS,
+      SHEET.ESTIMATE,
+      SHEET.HEROES,
+      SHEET.SHIPS,
     ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
   } else if (isGeoDS_(event)) {
     [
-      SHEETS.GEODSPLATOONAUDIT,
-      SHEETS.GEOSQUADRONAUDIT,
-      SHEETS.GEONEEDEDUNITS,
-      SHEETS.GEODSMISSIONS,
-      SHEETS.HEROES,
-      SHEETS.SHIPS,
+      SHEET.GEODSPLATOONAUDIT,
+      SHEET.GEOSQUADRONAUDIT,
+      SHEET.GEONEEDEDUNITS,
+      SHEET.GEODSMISSIONS,
+      SHEET.HEROES,
+      SHEET.SHIPS,
     ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
   }
+  utils.setActiveSheet(currentSheet, SHEET.TB);
 
   SPREADSHEET.toast('Ready', 'TB sheet', 3);
 }
