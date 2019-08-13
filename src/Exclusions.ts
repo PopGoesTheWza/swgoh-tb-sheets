@@ -12,7 +12,7 @@ namespace Exclusions {
       const m = s.match(re);
       return m && hasPhase(m[1]);
     };
-    const data = SPREADSHEET.getSheetByName(SHEETS.EXCLUSIONS)
+    const data = SPREADSHEET.getSheetByName(SHEET.EXCLUSIONS)
       .getDataRange()
       .getValues() as string[][];
     const filtered = data.map((row, rowIndex) => {
@@ -78,6 +78,6 @@ namespace Exclusions {
       }
     }
 
-    return data; // TODO: go unmutable
+    return data; // TODO: go immutable
   }
 }

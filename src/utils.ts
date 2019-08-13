@@ -1,6 +1,25 @@
 // tslint:disable: max-classes-per-file
 
 namespace utils {
+  export function getActiveSheet() {
+    return SPREADSHEET.getActiveSheet();
+  }
+
+  export function setActiveSheet(sheet: Spreadsheet.Sheet | string, failover?: Spreadsheet.Sheet | string) {
+    const target = typeof sheet === 'string' ? SPREADSHEET.getSheetByName(sheet) : sheet;
+    const current = SPREADSHEET.getActiveSheet();
+    if (target !== current) {
+      if (target && !target.isSheetHidden()) {
+        target.activate();
+      } else if (typeof failover === 'object' && failover.activate && typeof failover.activate === 'function') {
+        failover.activate();
+      } else if (typeof failover === 'string') {
+        SPREADSHEET.getSheetByName(failover).activate();
+      }
+    }
+    return current;
+  }
+
   /** string[] callback for case insensitive alphabetical sort */
   export function caseInsensitive(a: string, b: string): number {
     return a.toLowerCase().localeCompare(b.toLowerCase());

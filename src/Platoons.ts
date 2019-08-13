@@ -202,6 +202,78 @@ function filterUnits_(data: UnitMemberInstances, filter: (member: string, u: Uni
 
 /** Territory Battles related classes and functions */
 namespace TerritoryBattles {
+  export const SKIPPED_PLATOON_LABEL = '🚫';
+  export const SKIP_BUTTON_CHECKED = 'SKIP';
+
+  /** Get the formatted zone name with location descriptor */
+  export function getZoneName(zoneNum: number, full: boolean): string {
+    const PLATOON_ZONE_ROW = zoneNum * PLATOON_ZONE_ROW_OFFSET + 4;
+    const PLATOON_ZONE_COL = 1;
+    const name = `${SPREADSHEET.getSheetByName(SHEET.PLATOON)
+      .getRange(PLATOON_ZONE_ROW, PLATOON_ZONE_COL)
+      .getValue()}`;
+
+    const loc = zoneNum === 0 ? '(Top)' : zoneNum === 1 ? '(Bottom)' : zoneNum === 2 ? '(Middle)' : '(???)';
+
+    return name.length === 0
+      ? ''
+      : full
+      ? `${name} ${loc} ${zoneNum === 0 ? 'Squadrons' : 'Platoons'}`
+      : `${loc} ${name}`;
+  }
+
+  export function getPlatoonData(
+    zoneNum: number,
+    platoonNum: number,
+    sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON),
+  ) {
+    const PLATOON_DATA_ROW = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
+    const PLATOON_DATA_COL = 4 + platoonNum * 4;
+    const PLATOON_DATA_NUMROWS = MAX_PLATOON_UNITS;
+    const PLATOON_DATA_NUMCOLS = 2;
+    return sheet
+      .getRange(PLATOON_DATA_ROW, PLATOON_DATA_COL, PLATOON_DATA_NUMROWS, PLATOON_DATA_NUMCOLS)
+      .getValues() as string[][];
+  }
+
+  export function getPlatoonRules(
+    zoneNum: number,
+    platoonNum: number,
+    sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON),
+  ) {
+    const PLATOON_DATA_ROW = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
+    const PLATOON_DATA_COL = 4 + platoonNum * 4;
+    const PLATOON_DATA_NUMROWS = MAX_PLATOON_UNITS;
+    const PLATOON_DATA_NUMCOLS = 1;
+    return sheet
+      .getRange(PLATOON_DATA_ROW, PLATOON_DATA_COL, PLATOON_DATA_NUMROWS, PLATOON_DATA_NUMCOLS)
+      .getDataValidations();
+  }
+
+  export function getNotAvailableList(sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON)): string[] {
+    const PLATOON_NOTAVAILABLE_ROW = 56;
+    const PLATOON_NOTAVAILABLE_COL = 4;
+    const PLATOON_NOTAVAILABLE_NUMROWS = MAX_MEMBERS;
+    const PLATOON_NOTAVAILABLE_NUMCOLS = 1;
+    const notAvailable = sheet
+      .getRange(
+        PLATOON_NOTAVAILABLE_ROW,
+        PLATOON_NOTAVAILABLE_COL,
+        PLATOON_NOTAVAILABLE_NUMROWS,
+        PLATOON_NOTAVAILABLE_NUMCOLS,
+      )
+      .getValues()
+      .reduce((acc: string[], e: string[]) => {
+        const name = `${e}`.trim();
+        if (name.length > 0 && acc.indexOf(name) === -1) {
+          acc.push(name);
+        }
+        return acc;
+      }, []);
+    //
+    return notAvailable;
+  }
+
   /** supported events for TB */
   export type event = EVENT.GEONOSISDS | EVENT.GEONOSISLS | EVENT.HOTHDS | EVENT.HOTHLS;
   /** TB phases */
@@ -248,18 +320,7 @@ namespace TerritoryBattles {
       // if (this.useExclusions) {
       // }
 
-      const notAvailable: string[] = [];
-      const data = SPREADSHEET.getSheetByName(SHEETS.PLATOON)
-        .getRange(56, 4, MAX_MEMBERS)
-        .getValues() as Array<[string]>;
-      for (const e of data) {
-        const name = e[0];
-        if (name.length > 0) {
-          notAvailable.push(name);
-        }
-      }
-      // if (this.useNotAvailable) {
-      // }
+      const notAvailable = getNotAvailableList();
 
       let shipsPool: ShipsPool;
       let heroesPool: HeroesPool;
@@ -323,7 +384,7 @@ namespace TerritoryBattles {
   abstract class Territory {
     public readonly index: territoryIdx;
     public platoons: Platoon[] = [];
-    protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+    protected readonly sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
     protected readonly phase: Phase;
     protected readonly name: string;
 
@@ -355,7 +416,7 @@ namespace TerritoryBattles {
 
       const row = 3 + this.index * MAX_PLATOON_UNITS * MAX_PLATOONS;
       const column = (isHothDS_(ev) ? 2 : isHothLS_(ev) ? 8 : isGeoDS_(ev) ? 14 : -1) + this.phase.index;
-      const data = SPREADSHEET.getSheetByName(SHEETS.STATICSLICES)
+      const data = SPREADSHEET.getSheetByName(SHEET.STATICSLICES)
         .getRange(row, column, MAX_PLATOON_UNITS * MAX_PLATOONS, 1)
         .getValues() as string[][];
       const result: slices = [[], [], [], [], [], []];
@@ -450,7 +511,7 @@ namespace TerritoryBattles {
     protected readonly unitsRange: Spreadsheet.Range;
     protected readonly donorsRange: Spreadsheet.Range;
     protected readonly skipButtonRange: Spreadsheet.Range;
-    // protected readonly sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOONS);
+    // protected readonly sheet = SPREADSHEET.getSheetByName(SHEET.PLATOONS);
     protected slice: slice;
 
     constructor(territory: Territory, index: platoonIdx, value: number) {
@@ -458,7 +519,7 @@ namespace TerritoryBattles {
       this.territory = territory;
       const row = territory.index * PLATOON_ZONE_ROW_OFFSET + 2;
       const column = index * PLATOON_ZONE_COLUMN_OFFSET + 4;
-      const range = SPREADSHEET.getSheetByName(SHEETS.PLATOON).getRange(row, column, MAX_PLATOON_UNITS);
+      const range = SPREADSHEET.getSheetByName(SHEET.PLATOON).getRange(row, column, MAX_PLATOON_UNITS);
       this.unitsRange = range;
       this.donorsRange = range.offset(0, 1);
       this.skipButtonRange = range.offset(MAX_PLATOON_UNITS, 1, 1, 1);
@@ -491,7 +552,7 @@ namespace TerritoryBattles {
     }
 
     public getSkipButton(): boolean {
-      return (this.skipButtonRange.getValue() as string) === 'SKIP';
+      return (this.skipButtonRange.getValue() as string) === SKIP_BUTTON_CHECKED;
     }
 
     public setSlice(sl: slice): void {
@@ -566,7 +627,7 @@ namespace TerritoryBattles {
       this.platoon = platoon;
       // const row = platoon.territory.index * PLATOON_ZONE_ROW_OFFSET + index + 2;
       // const column = platoon.index * PLATOON_ZONE_COLUMN_OFFSET + 4;
-      // const range = SPREADSHEET.getSheetByName(SHEETS.PLATOONS)
+      // const range = SPREADSHEET.getSheetByName(SHEET.PLATOONS)
       //   .getRange(row, column);
       // this.unitRange = range;
       // this.donorRange = range.offset(0, 1);
@@ -815,8 +876,7 @@ function loop1_(
 
   if (cur.exist) {
     /** skip this checkbox */
-    const skip = range.offset(15, 1, 1, 1).getValue() === 'SKIP';
-    if (skip) {
+    if (range.offset(15, 1, 1, 1).getValue() === TerritoryBattles.SKIP_BUTTON_CHECKED) {
       cur.possible = false;
       // return;
     }
@@ -844,7 +904,6 @@ function loop1_(
 
       platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
 
-      // TODO: investigate bad color
       if (rec.length > 0) {
         dropdowns.push([buildDropdown_(rec)]);
 
@@ -870,9 +929,8 @@ function loop2_(spooler: utils.Spooler, cur: PlatoonDetails, sheet: Spreadsheet.
 
     spooler
       .attach(sheet.getRange(row, column + 1, MAX_PLATOON_UNITS))
-      .setValue('Skip')
-      .clearDataValidations()
-      .setFontColor(COLOR.RED); // Recommended is 'Skip'
+      .setValue(TerritoryBattles.SKIPPED_PLATOON_LABEL)
+      .clearDataValidations();
   }
 }
 
@@ -886,57 +944,50 @@ function loop3_(
   maxMemberDonations: number,
   used: UnitMemberBooleans,
 ) {
-  if (cur.exist) {
-    if (!cur.possible) {
-      // skip this platoon
-      // tslint:disable-next-line:no-parameter-reassignment
-      matrixIdx += MAX_PLATOON_UNITS;
-    } else {
-      const baseCol = 4; // TODO: should it be a setting
+  if (cur.exist && cur.possible) {
+    const baseCol = 4; // TODO: should it be a setting
+    const row = cur.row;
+    const column = cur.getOffset() + baseCol;
 
-      const row = cur.row;
-      const column = cur.getOffset() + baseCol;
+    // cycle through the heroes
+    const donors: Array<[string]> = [];
+    const colors: Array<[COLOR, COLOR]> = [];
+    for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
+      let defaultValue;
+      const count = placementCount[cur.zone];
 
-      // cycle through the heroes
-      const donors: Array<[string]> = [];
-      const colors: Array<[COLOR, COLOR]> = [];
-      for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
-        let defaultValue;
-        const count = placementCount[cur.zone];
+      const unit = platoonMatrix[matrixIdx].name;
+      for (const member of platoonMatrix[matrixIdx].members) {
+        const current = count[(member as unknown) as number] as number;
+        const available = current == null || current < maxMemberDonations;
+        if (available) {
+          // see if the recommended member's hero has been used
+          if (used[unit] && used[unit].hasOwnProperty(member) && !used[unit][member]) {
+            used[unit][member] = true;
+            defaultValue = member;
+            count[(member as unknown) as number] = (typeof current === 'number' ? current : 0) + 1;
 
-        const unit = platoonMatrix[matrixIdx].name;
-        for (const member of platoonMatrix[matrixIdx].members) {
-          const current = count[(member as unknown) as number] as number;
-          const available = current == null || current < maxMemberDonations;
-          if (available) {
-            // see if the recommended member's hero has been used
-            if (used[unit] && used[unit].hasOwnProperty(member) && !used[unit][member]) {
-              used[unit][member] = true;
-              defaultValue = member;
-              count[(member as unknown) as number] = (typeof current === 'number' ? current : 0) + 1;
-
-              break;
-            }
+            break;
           }
         }
-
-        donors.push([defaultValue || '']);
-
-        // see if we should highlight rare units
-        if (platoonMatrix[matrixIdx].isMissing()) {
-          colors.push([COLOR.RED, COLOR.RED]); // More needed than ready unit
-        } else if (defaultValue && platoonMatrix[matrixIdx].isRare()) {
-          colors.push([COLOR.BLUE, COLOR.BLUE]);
-        } else {
-          colors.push([COLOR.BLACK, COLOR.BLACK]);
-        }
-
-        // tslint:disable-next-line:no-parameter-reassignment
-        matrixIdx += 1;
       }
-      spooler.attach(sheet.getRange(row, column + 1, MAX_PLATOON_UNITS)).setValues(donors);
-      spooler.attach(sheet.getRange(row, column, MAX_PLATOON_UNITS, 2)).setFontColors(colors);
+
+      donors.push([defaultValue || '']);
+
+      // see if we should highlight rare units
+      if (platoonMatrix[matrixIdx].isMissing()) {
+        colors.push([COLOR.RED, COLOR.RED]); // More needed than ready unit
+      } else if (defaultValue && platoonMatrix[matrixIdx].isRare()) {
+        colors.push([COLOR.BLUE, COLOR.BLUE]);
+      } else {
+        colors.push([COLOR.BLACK, COLOR.BLACK]);
+      }
+
+      // tslint:disable-next-line:no-parameter-reassignment
+      matrixIdx += 1;
     }
+    spooler.attach(sheet.getRange(row, column + 1, MAX_PLATOON_UNITS)).setValues(donors);
+    spooler.attach(sheet.getRange(row, column, MAX_PLATOON_UNITS, 2)).setFontColors(colors);
   }
 
   return matrixIdx;
@@ -952,22 +1003,11 @@ function recommendPlatoons() {
   const spooler = new utils.Spooler();
 
   // setup platoon phases
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
-  const PLATOON_NOTAVAILABLE_ROW = 56;
-  const PLATOON_NOTAVAILABLE_COL = 4;
-  const PLATOON_NOTAVAILABLE_NUMROWS = MAX_MEMBERS;
-  const PLATOON_NOTAVAILABLE_NUMCOLS = 1;
+  const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
   const phase = config.currentPhase();
   const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
 
-  const notAvailable = sheet
-    .getRange(
-      PLATOON_NOTAVAILABLE_ROW,
-      PLATOON_NOTAVAILABLE_COL,
-      PLATOON_NOTAVAILABLE_NUMROWS,
-      PLATOON_NOTAVAILABLE_NUMCOLS,
-    )
-    .getValues() as Array<[string]>;
+  const notAvailable = TerritoryBattles.getNotAvailableList(sheet);
 
   SPREADSHEET.toast(
     `Using units of rarity ${rarityThreshold + 1}⭐ for ${event} phase ${phase} ready.`,
@@ -982,14 +1022,10 @@ function recommendPlatoons() {
   const allShips = shipsTable.getAllInstancesByUnits();
 
   filterUnits_(allHeroes, (member: string, u: UnitInstance) => {
-    return (
-      u.tags!.indexOf(alignment) !== -1 &&
-      u.rarity > rarityThreshold &&
-      notAvailable.findIndex((e) => e[0] === member) === -1
-    );
+    return u.tags!.indexOf(alignment) !== -1 && u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1;
   });
   filterUnits_(allShips, (member: string, u: UnitInstance) => {
-    return u.rarity > rarityThreshold && notAvailable.findIndex((e) => e[0] === member) === -1;
+    return u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1;
   });
 
   // remove heroes listed on Exclusions sheet
@@ -1072,7 +1108,7 @@ function recommendPlatoons() {
   let matrixIdx = 0;
 
   for (const cur of platoonOrder) {
-    matrixIdx = loop3_(
+    loop3_(
       spooler,
       cur,
       sheet,
@@ -1082,6 +1118,7 @@ function recommendPlatoons() {
       maxMemberDonations,
       cur.isGround ? usedHeroes : usedShips,
     );
+    matrixIdx += MAX_PLATOON_UNITS;
   }
 
   spooler.commit();

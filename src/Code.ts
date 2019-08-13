@@ -6,14 +6,14 @@
 namespace Members {
   /** get a row/cell array of members name */
   export function getNames(): Array<[string]> {
-    return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    return SPREADSHEET.getSheetByName(SHEET.ROSTER)
       .getRange(2, 2, config.memberCount(), 1)
       .getValues() as Array<[string]>;
   }
 
   /** get a row/cell array of members name and ally code */
   export function getAllycodes(): Array<[string, number]> {
-    return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    return SPREADSHEET.getSheetByName(SHEET.ROSTER)
       .getRange(2, 2, config.memberCount(), 2)
       .getValues() as Array<[string, number]>;
   }
@@ -23,7 +23,7 @@ namespace Members {
    * [name, ally code, gp, heroes gp, ships gp]
    */
   export function getBaseAttributes(): Array<[string, number, number, number, number]> {
-    return SPREADSHEET.getSheetByName(SHEETS.ROSTER)
+    return SPREADSHEET.getSheetByName(SHEET.ROSTER)
       .getRange(2, 2, config.memberCount(), 5)
       .getValues() as Array<[string, number, number, number, number]>;
   }
@@ -79,7 +79,7 @@ namespace Player {
     if (playerData) {
       const units = playerData.units;
       const filteredUnits: UnitInstances = {};
-      const filter = tag.toLowerCase();
+      const categories = tag.toLowerCase();
 
       for (const baseId of Object.keys(units)) {
         const u = units[baseId];
@@ -93,7 +93,7 @@ namespace Player {
           // try again... once
           d = unitsIndex.find((e) => e.baseId === baseId);
         }
-        if (d && d.tags.indexOf(filter) > -1) {
+        if (d && d.tags.indexOf(categories) > -1) {
           u.name = d.name;
           u.stats = `${u.rarity}⭐ G${u.gearLevel} L${u.level} P${u.power}`;
           u.tags = d.tags;
@@ -121,11 +121,11 @@ namespace Player {
         shipsGp: p[4],
         units: {},
       };
-      const filter = tag.toLowerCase();
+      const categories = tag.toLowerCase();
       const addToPlayerData = (e: UnitInstances) => {
         for (const baseId of Object.keys(e)) {
           const u = e[baseId];
-          if (filter.length === 0 || u.tags!.indexOf(filter) > -1) {
+          if (categories.length === 0 || u.tags!.indexOf(categories) > -1) {
             playerData.units[baseId] = u;
             playerData.level = Math.max(playerData.level!, u.level);
           }
@@ -145,42 +145,42 @@ namespace Player {
 }
 
 /** is alignment 'Dark Side' */
-function isDarkSide_(filter: string = config.currentAlignment()): boolean {
-  return filter === ALIGNMENT.DARKSIDE || filter === EVENT.HOTHDS || filter === EVENT.GEONOSISDS;
+function isDarkSide_(alignment: string = config.currentAlignment()): boolean {
+  return alignment === ALIGNMENT.DARKSIDE || alignment === EVENT.HOTHDS || alignment === EVENT.GEONOSISDS;
 }
 
 /** is alignment 'Light Side' */
-function isLightSide_(filter: string = config.currentAlignment()): boolean {
-  return filter === ALIGNMENT.LIGHTSIDE || filter === EVENT.HOTHLS;
+function isLightSide_(alignment: string = config.currentAlignment()): boolean {
+  return alignment === ALIGNMENT.LIGHTSIDE || alignment === EVENT.HOTHLS;
 }
 
-function isGeonosis_(filter: string = config.currentEvent()): boolean {
-  return filter === EVENT.GEONOSISDS || filter === EVENT.GEONOSISLS;
+function isGeonosis_(event: string = config.currentEvent()): boolean {
+  return event === EVENT.GEONOSISDS || event === EVENT.GEONOSISLS;
 }
 
-function isGeoDS_(filter: string = config.currentEvent()): boolean {
-  return filter === EVENT.GEONOSISDS;
+function isGeoDS_(event: string = config.currentEvent()): boolean {
+  return event === EVENT.GEONOSISDS;
 }
 
-function isGeoLS_(filter: string = config.currentEvent()): boolean {
-  return filter === EVENT.GEONOSISLS;
+function isGeoLS_(event: string = config.currentEvent()): boolean {
+  return event === EVENT.GEONOSISLS;
 }
 
-function isHoth_(filter: string = config.currentEvent()): boolean {
-  return filter === EVENT.HOTHDS || filter === EVENT.HOTHLS;
+function isHoth_(event: string = config.currentEvent()): boolean {
+  return event === EVENT.HOTHDS || event === EVENT.HOTHLS;
 }
 
-function isHothDS_(filter: string = config.currentEvent()): boolean {
-  return filter === EVENT.HOTHDS;
+function isHothDS_(event: string = config.currentEvent()): boolean {
+  return event === EVENT.HOTHDS;
 }
 
-function isHothLS_(filter: string = config.currentEvent()): boolean {
-  return filter === EVENT.HOTHLS;
+function isHothLS_(event: string = config.currentEvent()): boolean {
+  return event === EVENT.HOTHLS;
 }
 
 /** get the current event definition */
 function getEventDefinition_(event: string = config.currentEvent()): Array<[string, string]> {
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.META);
+  const sheet = SPREADSHEET.getSheetByName(SHEET.META);
   const row = 2;
   const col =
     2 + (isHothLS_(event) ? META_SQUADS_HOTHLS_COL : isHothDS_(event) ? META_SQUADS_HOTHDS_COL : META_SQUADS_GEODS_COL);
@@ -269,7 +269,7 @@ function playerSnapshot(): void {
   let countTagged = 0;
   const characterTag = config.tagFilter(); // TODO: potentially broken if TB not sync
   const powerTarget = config.requiredHeroGp();
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.SNAPSHOT);
+  const sheet = SPREADSHEET.getSheetByName(SHEET.SNAPSHOT);
   const playerData = Snapshot.getData(sheet, alignment, unitsIndex);
   if (playerData) {
     for (const baseId of Object.keys(playerData.units)) {

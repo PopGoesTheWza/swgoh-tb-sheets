@@ -68,7 +68,11 @@ function sendMicroByMemberWebhook(): void {
   const displaySetting = config.discord.displaySlots();
   const displaySlot = displaySetting !== DISPLAYSLOT.NEVER;
   const forceDisplay = displaySetting === DISPLAYSLOT.ALWAYS;
-  const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
+
+  const SKIPPED_PLATOON_LABEL = TerritoryBattles.SKIPPED_PLATOON_LABEL;
+  const getZoneName = TerritoryBattles.getZoneName;
+  const getPlatoonData = TerritoryBattles.getPlatoonData;
+  const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
   const event = config.currentEvent();
   const phase = config.currentPhase();
 
@@ -84,26 +88,25 @@ function sendMicroByMemberWebhook(): void {
 
   // get data from the platoons
   let entries: PlatoonAssignment[] = [];
-  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
+  for (let z: TerritoryBattles.territoryIdx = 0; z < MAX_PLATOON_ZONES; z += 1) {
     if (!discord.isTerritory(z, phase, event)) {
       // skip this zone
       continue;
     }
 
     // for each zone
-    const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
-    const label = discord.getZoneName(phase, z as TerritoryBattles.territoryIdx, false);
+    const label = getZoneName(z, false);
     const type = z === 0 ? 'squadron' : 'platoon';
 
     // cycle throught the platoons in a zone
     for (let p = 0; p < MAX_PLATOONS; p += 1) {
-      const platoonData = sheet.getRange(platoonRow, 4 + p * 4, MAX_PLATOON_UNITS, 2).getValues() as string[][];
+      const platoonData = getPlatoonData(z, p, sheet);
 
       // cycle through the heroes
       for (let index = 0; index < platoonData.length; index += 1) {
         const e = platoonData[index];
         let member = e[1];
-        if (member.length === 0 || member === 'Skip') {
+        if (member.length === 0 || member === SKIPPED_PLATOON_LABEL) {
           break;
         }
 

@@ -85,8 +85,8 @@ namespace Units {
   /** return an array of all units definition (name, baseId, tags) */
   export function getDefinitions(): UnitsDefinitions {
     const definitions = getDefinitionsFromCache() || {
-      heroes: getDefinitionsFromSheet(SHEETS.HEROES),
-      ships: getDefinitionsFromSheet(SHEETS.SHIPS),
+      heroes: getDefinitionsFromSheet(SHEET.HEROES),
+      ships: getDefinitionsFromSheet(SHEET.SHIPS),
     };
 
     return definitions;
@@ -96,9 +96,8 @@ namespace Units {
   abstract class UnitsTable {
     /** zone: 0, 1 or 2 */
     public static getUniquePlatoonUnits(zone: number): string[] {
-      const platoonRow = zone * 18 + 2;
-      const sheet = SPREADSHEET.getSheetByName(SHEETS.PLATOON);
-      const PLATOON_UNITS_ROW = platoonRow;
+      const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+      const PLATOON_UNITS_ROW = zone * 18 + 2;
       const PLATOON_UNITS_NUMROWS = MAX_PLATOON_UNITS;
       const PLATOON_UNITS_NUMCOLS = 1;
 
@@ -368,14 +367,14 @@ namespace Units {
   export class Heroes extends UnitsTable {
     constructor() {
       const HERO_MEMBER_COL_OFFSET = 11;
-      super(HERO_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.HEROES));
+      super(HERO_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEET.HEROES));
     }
 
     /** return the number of heroes defined */
     public getCount(): number {
       const META_HEROES_COUNT_ROW = 5;
       const META_HEROES_COUNT_COL = 5;
-      return +SPREADSHEET.getSheetByName(SHEETS.META)
+      return +SPREADSHEET.getSheetByName(SHEET.META)
         .getRange(META_HEROES_COUNT_ROW, META_HEROES_COUNT_COL)
         .getValue();
     }
@@ -407,9 +406,10 @@ namespace Units {
 
     /** set the hero definitions and phase count formulas */
     public setDefinitions(units: UnitDefinition[]): void {
+      const sheetName = SHEET.PLATOON;
       // tslint:disable-next-line:max-line-length
       const formula = (row: number) =>
-        `=COUNTIF({${SHEETS.PLATOON}!$D$20:$D$34,${SHEETS.PLATOON}!$H$20:$H$34,${SHEETS.PLATOON}!$L$20:$L$34,${SHEETS.PLATOON}!$P$20:$P$34,${SHEETS.PLATOON}!$T$20:$T$34,${SHEETS.PLATOON}!$X$20:$X$34,${SHEETS.PLATOON}!$D$38:$D$52,${SHEETS.PLATOON}!$H$38:$H$52,${SHEETS.PLATOON}!$L$38:$L$52,${SHEETS.PLATOON}!$P$38:$P$52,${SHEETS.PLATOON}!$T$38:$T$52,${SHEETS.PLATOON}!$X$38:$X$52},A${row})`;
+        `=COUNTIF({${sheetName}!$D$20:$D$34,${sheetName}!$H$20:$H$34,${sheetName}!$L$20:$L$34,${sheetName}!$P$20:$P$34,${sheetName}!$T$20:$T$34,${sheetName}!$X$20:$X$34,${sheetName}!$D$38:$D$52,${sheetName}!$H$38:$H$52,${sheetName}!$L$38:$L$52,${sheetName}!$P$38:$P$52,${sheetName}!$T$38:$T$52,${sheetName}!$X$38:$X$52},A${row})`;
 
       return super.setDefinitions(units, formula);
     }
@@ -431,14 +431,14 @@ namespace Units {
   export class Ships extends UnitsTable {
     constructor() {
       const SHIP_MEMBER_COL_OFFSET = 11;
-      super(SHIP_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEETS.SHIPS));
+      super(SHIP_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEET.SHIPS));
     }
 
     /** return the number of ships defined */
     public getCount(): number {
       const META_SHIPS_COUNT_ROW = 8;
       const META_SHIPS_COUNT_COL = 5;
-      return +SPREADSHEET.getSheetByName(SHEETS.META)
+      return +SPREADSHEET.getSheetByName(SHEET.META)
         .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
         .getValue();
     }
@@ -468,9 +468,10 @@ namespace Units {
 
     /** set the ship definitions and phase count formulas */
     public setDefinitions(units: UnitDefinition[]): void {
+      const sheetName = SHEET.PLATOON;
       // tslint:disable-next-line:max-line-length
       const formula = (row: number) =>
-        `=COUNTIF({${SHEETS.PLATOON}!$D$2:$D$16,${SHEETS.PLATOON}!$H$2:$H$16,${SHEETS.PLATOON}!$L$2:$L$16,${SHEETS.PLATOON}!$P$2:$P$16,${SHEETS.PLATOON}!$T$2:$T$16,${SHEETS.PLATOON}!$X$2:$X$16},A${row})`;
+        `=COUNTIF({${sheetName}!$D$2:$D$16,${sheetName}!$H$2:$H$16,${sheetName}!$L$2:$L$16,${sheetName}!$P$2:$P$16,${sheetName}!$T$2:$T$16,${sheetName}!$X$2:$X$16},A${row})`;
 
       return super.setDefinitions(units, formula);
     }
