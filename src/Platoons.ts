@@ -1,7 +1,7 @@
 // tslint:disable: max-classes-per-file
 
 let PLATOON_PHASES: Array<[string, string, string]> = [];
-let PLATOON_NEEDED_COUNT: KeyedNumbers = {};
+// let PLATOON_NEEDED_COUNT: KeyedNumbers = {};
 
 /** Custom object for creating custom order to walk through platoons */
 class PlatoonDetails {
@@ -32,24 +32,25 @@ class PlatoonDetails {
  */
 class PlatoonUnit {
   public readonly name: string;
-  public count: number;
+  public needed: number;
   public members: string[];
-  private readonly pCount: number;
+  private readonly available: number;
 
-  constructor(name: string, count: number, pCount: number) {
+  constructor(name: string, needed: number, available: number) {
     this.name = name;
-    this.count = count;
-    this.pCount = pCount;
+    this.needed = needed;
+    this.available = available;
     this.members = [];
   }
 
   public isMissing(): boolean {
-    return this.count > this.pCount;
+    return this.needed > this.available;
   }
 
-  // TODO: define RARE
   public isRare(): boolean {
-    return this.count + 3 > this.pCount;
+    // TODO: rarity threshold
+    // ! Not Available accounted for
+    return this.needed + 5 > this.available;
   }
 }
 
@@ -127,9 +128,9 @@ function resetPlatoonsNoUI(): void {
   new TerritoryBattles.Phase(event, phase).reset();
 }
 
-function getNeededCount_(unitName: string) {
-  PLATOON_NEEDED_COUNT[unitName] = (PLATOON_NEEDED_COUNT[unitName] || 0) + 1;
-}
+// function getNeededCount_(unitName: string) {
+//   PLATOON_NEEDED_COUNT[unitName] = (PLATOON_NEEDED_COUNT[unitName] || 0) + 1;
+// }
 
 /** Get a sorted list of recommended members */
 function getRecommendedMembers_(
@@ -236,13 +237,37 @@ namespace TerritoryBattles {
       .getValues() as string[][];
   }
 
+  export function getNeededUnits(
+    ev = config.currentEvent(),
+    phase = config.currentPhase(),
+    sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON),
+  ) {
+    const neededUnits: KeyedNumbers = {};
+    for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
+      if (discord.isTerritory(zoneNum, phase, ev)) {
+        // cycle throught the platoons in a zone
+        for (let phaseNum = 0; phaseNum < MAX_PLATOONS; phaseNum += 1) {
+          getPlatoonData(zoneNum, phaseNum, sheet).forEach((e) => {
+            const unitName = e[0];
+            if (neededUnits[unitName]) {
+              neededUnits[unitName] += 1;
+            } else {
+              neededUnits[unitName] = 1;
+            }
+          });
+        }
+      }
+    }
+    return neededUnits;
+  }
+
   export function getPlatoonRules(
     zoneNum: number,
     platoonNum: number,
     sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON),
   ) {
     const PLATOON_DATA_ROW = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
-    const PLATOON_DATA_COL = 4 + platoonNum * 4;
+    const PLATOON_DATA_COL = 5 + platoonNum * 4;
     const PLATOON_DATA_NUMROWS = MAX_PLATOON_UNITS;
     const PLATOON_DATA_NUMCOLS = 1;
     return sheet
@@ -821,12 +846,12 @@ namespace TerritoryBattles {
     }
 
     protected filter() {
-      const alignment = config.currentAlignment().toLowerCase();
+      const alignment = config.currentAlignment();
       const rarityThreshold = isGeoDS_() ? (this.phase.index < 3 ? 6 : 7) : this.phase.index + 1;
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
-        u.rarity >= rarityThreshold && u.tags!.indexOf(alignment) !== -1;
+        u.rarity >= rarityThreshold && u.tags!.indexOf(alignment.toLowerCase()) !== -1;
       // && this.notAvailable.findIndex(e => e[0] === member) === -1
 
       super.filter(filter);
@@ -892,13 +917,13 @@ function loop1_(
 
       if (unitName.length === 0) {
         // no unit was entered, so skip it
-        platoonMatrix.push(new PlatoonUnit(unitName, 0, 0));
+        platoonMatrix.push(new PlatoonUnit('', 0, 0));
         dropdowns.push([(null as unknown) as Spreadsheet.DataValidation]);
 
         continue;
       }
 
-      getNeededCount_(unitName);
+      // getNeededCount_(unitName);
 
       const rec = getRecommendedMembers_(unitName, phase, allUnits);
 
@@ -1038,8 +1063,10 @@ function recommendPlatoons() {
 
   initPlatoonPhases_();
 
+  const neededUnits = TerritoryBattles.getNeededUnits(event, phase, sheet);
+
   // reset the needed counts
-  PLATOON_NEEDED_COUNT = {};
+  // PLATOON_NEEDED_COUNT = {};
 
   // reset the used heroes
   const usedHeroes = resetUsedUnits_(allHeroes);
@@ -1086,9 +1113,12 @@ function recommendPlatoons() {
     const unit = p.name;
 
     // find the unit's count
-    if (PLATOON_NEEDED_COUNT[unit]) {
-      p.count = PLATOON_NEEDED_COUNT[unit];
+    if (neededUnits[unit]) {
+      p.needed = neededUnits[unit];
     }
+    // if (PLATOON_NEEDED_COUNT[unit]) {
+    //   p.count = PLATOON_NEEDED_COUNT[unit];
+    // }
   }
 
   // make sure the platoon is possible to fill

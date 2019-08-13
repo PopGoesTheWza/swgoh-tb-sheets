@@ -414,8 +414,8 @@ namespace config {
     }
 
     /** Get the number of hours in each phase */
-    export function phaseDuration(): number {
-      const columnOffset = isGeoDS_() ? 2 : isHothLS_() ? 0 : isHothDS_() ? 1 : NaN;
+    export function phaseDuration(event = config.currentEvent()): number {
+      const columnOffset = isGeoDS_(event) ? 2 : isHothLS_(event) ? 0 : isHothDS_(event) ? 1 : NaN;
       const WEBHOOK_PHASE_HOURS_ROW = 4;
       const WEBHOOK_PHASE_HOURS_COL = DISCORD_WEBHOOK_COL + columnOffset;
       return +SPREADSHEET.getSheetByName(SHEET.DISCORD)
@@ -433,8 +433,8 @@ namespace config {
     }
 
     /** Get the Description for the phase */
-    export function webhookDescription(phase: TerritoryBattles.phaseIdx): string {
-      const columnOffset = isGeoDS_() ? 2 : isHothLS_() ? 0 : isHothDS_() ? 1 : NaN;
+    export function webhookDescription(phase: TerritoryBattles.phaseIdx, event = config.currentEvent()): string {
+      const columnOffset = isGeoDS_(event) ? 2 : isHothLS_(event) ? 0 : isHothDS_(event) ? 1 : NaN;
       const WEBHOOK_DESC_ROW = 9;
       const META_WEBHOOKDESC_ROW = WEBHOOK_DESC_ROW + phase - 1;
       const META_WEBHOOKDESC_COL = DISCORD_WEBHOOK_COL + columnOffset;

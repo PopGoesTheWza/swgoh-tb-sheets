@@ -94,29 +94,6 @@ namespace Units {
 
   /** abstract class for unit sheets (Heroes & Ships) */
   abstract class UnitsTable {
-    /** zone: 0, 1 or 2 */
-    public static getUniquePlatoonUnits(zone: number): string[] {
-      const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
-      const PLATOON_UNITS_ROW = zone * 18 + 2;
-      const PLATOON_UNITS_NUMROWS = MAX_PLATOON_UNITS;
-      const PLATOON_UNITS_NUMCOLS = 1;
-
-      let units: string[][] = [];
-      for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
-        const PLATOON_UNITS_COL = platoon * 4 + 4;
-        const range = sheet.getRange(
-          PLATOON_UNITS_ROW,
-          PLATOON_UNITS_COL,
-          PLATOON_UNITS_NUMROWS,
-          PLATOON_UNITS_NUMCOLS,
-        );
-        const values = range.getValues() as string[][];
-        units = [...units, ...values];
-      }
-
-      // flatten the array and keep only unique values
-      return units.map((e) => e[0]).unique();
-    }
     /** name of the sheet on which the units are stored */
     protected sheet: Spreadsheet.Sheet;
     /** column which holds units for the first member */
@@ -248,42 +225,34 @@ namespace Units {
       return units;
     }
 
-    /** return the UnitInstance object for the cell value */
-    protected abstract toUnitInstance(stats: string): UnitInstance | undefined;
-
-    /** return a list of Rare units for a phase */
-    protected getRareList(phase: TerritoryBattles.phaseIdx): string[] {
+    /** return a list of Rare units needed for a phase */
+    public getNeededRareList(phase: TerritoryBattles.phaseIdx, neededUnits: KeyedNumbers): string[] {
       const data = this.sheet.getRange(2, 1, this.getCount() + 1, this.columnOffset - 2).getValues() as Array<
         [string, number]
       >;
 
-      const column = discord.requiredRarity(1, phase) + 2; // HEROES/SHIPS, column D to I
+      const column = discord.requiredRarity(1, phase) + 1; // HEROES/SHIPS, column D to I
 
-      // cycle through each unit
-      const units: string[] = data
-        .reduce((acc: string[], row) => {
-          const name = row[0];
-          const available = row[column];
-          // TODO: define RARE
-          if (name.length > 0 && available < RARE_MAX) {
-            acc.push(name);
+      const result: string[] = [];
+
+      for (const unitName of Object.keys(neededUnits)) {
+        const needed = neededUnits[unitName];
+        const row = data.find((e) => e[0] === unitName);
+        if (row) {
+          const available = +row[column];
+          // TODO: rarity threshold
+          // ! Not Available not accounted for
+          if (needed + 5 > available) {
+            result.push(unitName);
           }
-          return acc;
-        }, []) // keep only the unit's name
-        .sort(); // sort the list of units
+        }
+      }
 
-      return units;
+      return result;
     }
 
-    /** return a list of Rare units needed for a phase */
-    protected getNeededRareList(phase: TerritoryBattles.phaseIdx, platoonUnits: string[]): string[] {
-      const units = this.getRareList(phase);
-
-      // filter out rare units that do not appear in platoons
-      const list = units.filter((u) => platoonUnits.some((e) => e === u));
-
-      return list;
-    }
+    /** return the UnitInstance object for the cell value */
+    protected abstract toUnitInstance(stats: string): UnitInstance | undefined;
 
     /** set the unit instances for all members */
     protected setInstances(
@@ -379,15 +348,6 @@ namespace Units {
         .getValue();
     }
 
-    /** return a list of Rare heroes needed for a phase */
-    public getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
-      const hgupu = Heroes.getUniquePlatoonUnits;
-      // if Hoth LS phase 1: only Middle territory
-      const platoonUnits: string[] = isHothLS_() && phase === 1 ? hgupu(1) : [...hgupu(1), ...hgupu(2)];
-
-      return super.getNeededRareList(phase, platoonUnits);
-    }
-
     /** set the hero instances for all members */
     public setInstances(members: PlayerData[]): void {
       const toString = (u: UnitInstance) => (u && `${u.rarity}*L${u.level}G${u.gearLevel}P${u.power}`) || '';
@@ -441,13 +401,6 @@ namespace Units {
       return +SPREADSHEET.getSheetByName(SHEET.META)
         .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
         .getValue();
-    }
-
-    /** return a list of Rare ships needed for a phase */
-    public getNeededRareList(phase: TerritoryBattles.phaseIdx): string[] {
-      const platoonUnits: string[] = Ships.getUniquePlatoonUnits(0);
-
-      return super.getNeededRareList(phase, platoonUnits);
     }
 
     /** set the ship instances for all members */

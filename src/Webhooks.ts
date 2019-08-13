@@ -20,9 +20,9 @@ namespace discord {
   ): boolean {
     return isGeoDS_(event)
       ? territory !== 0 || phase > 1
-      : isHothDS_()
+      : isHothDS_(event)
       ? territory !== 0 || phase > 2
-      : isHothLS_()
+      : isHothLS_(event)
       ? (territory !== 0 || phase > 2) && (territory !== 2 || phase > 1)
       : false;
   }
@@ -32,7 +32,7 @@ namespace discord {
     phase = config.currentPhase(),
     event = config.currentEvent(),
   ): number {
-    return isGeoDS_(event) ? (phase < 3 ? 6 : 7) : isHothDS_() ? phase + 1 : isHothLS_() ? phase + 1 : NaN;
+    return isGeoDS_(event) ? (phase < 3 ? 6 : 7) : isHothDS_(event) ? phase + 1 : isHothLS_(event) ? phase + 1 : NaN;
   }
 
   // export function getSimplifiedPlatoons(phase: TerritoryBattles.phaseIdx) {
@@ -112,28 +112,34 @@ namespace discord {
 
   /** Get an array representing the new platoon assignements */
   function getPlatoonDonations(
-    platoon: string[][],
+    platoonData: string[][],
     donations: string[][],
     rules: Spreadsheet.DataValidation[][],
     memberMentions: KeyedStrings,
+    neededUnits: KeyedNumbers,
   ): string[][] | undefined {
     const SKIPPED_PLATOON_LABEL = TerritoryBattles.SKIPPED_PLATOON_LABEL;
     const result: string[][] = [];
 
     // cycle through the heroes
     for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
-      if (platoon[h][1].length === 0 || platoon[h][1] === SKIPPED_PLATOON_LABEL) {
+      const row = platoonData[h];
+      const playerName = row[1].trim();
+      const unitName = row[0];
+
+      if (playerName.length === 0 || playerName === SKIPPED_PLATOON_LABEL) {
         return undefined; // impossible platoon
       }
 
-      if (platoon[h][0].length === 0) {
+      // ? should incomplete platoon be considered impossible ?
+      if (unitName.length === 0) {
         continue; // no unit needed here
       }
 
       // see if the hero is already in donations
-      const heroDonated = donations.some((e) => e[0] === platoon[h][0]) || result.some((e) => e[0] === platoon[h][0]);
+      const unitDonated = donations.some((e) => e[0] === unitName) || result.some((e) => e[0] === unitName);
 
-      if (!heroDonated) {
+      if (!unitDonated) {
         type RequireValueInListCriteria = [
           [string], // Array of members name
           boolean, // true for dropdown
@@ -142,8 +148,9 @@ namespace discord {
         const criteria = rules[h][0].getCriteriaValues() as RequireValueInListCriteria;
 
         // only add rare donations
-        // TODO: define RARE
-        if (criteria[0].length < RARE_MAX) {
+        // TODO: rarity threshold
+        // ! Not Available accounted for
+        if (neededUnits[unitName] + 5 > criteria[0].length) {
           const sorted = criteria[0].sort(utils.caseInsensitive);
           const names: string[] = [];
           for (const name of sorted) {
@@ -151,7 +158,7 @@ namespace discord {
             names.push(mention ? `${name} (${mention})` : `${name}`);
           }
           // add the recommendations
-          result.push([platoon[h][0], names.join(', ')]);
+          result.push([unitName, names.join(', ')]);
         }
       }
     }
@@ -240,6 +247,7 @@ namespace discord {
     const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
     const event = config.currentEvent();
     const phase = config.currentPhase();
+    const neededUnits = TerritoryBattles.getNeededUnits(event, phase, sheet);
     let platoons: string;
 
     // mentions only works if you get the ID
@@ -254,23 +262,24 @@ namespace discord {
     let donations: string[][] = [];
     let groundStart = -1;
 
-    for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
+    for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
       // for each zone
       const validPlatoons: number[] = [];
-      const zone = getZoneName(z, true);
+      const zone = getZoneName(zoneNum, true);
 
-      if (z === 1) {
+      if (zoneNum === 1) {
         groundStart = donations.length;
       }
 
-      if (discord.isTerritory(z, phase, event)) {
+      if (discord.isTerritory(zoneNum, phase, event)) {
         // cycle throught the platoons in a zone
         for (let p = 0; p < MAX_PLATOONS; p += 1) {
           const platoon = getPlatoonDonations(
-            getPlatoonData(z, p, sheet),
+            getPlatoonData(zoneNum, p, sheet),
             donations,
-            getPlatoonRules(z, p, sheet),
+            getPlatoonRules(zoneNum, p, sheet),
             memberMentions,
+            neededUnits,
           );
 
           if (platoon) {
@@ -286,7 +295,10 @@ namespace discord {
       }
 
       // see if all platoons are valid
-      platoons = validPlatoons.length === MAX_PLATOONS ? 'All' : validPlatoons.map((e) => `#${e + 1}`).join(', ');
+      platoons =
+        validPlatoons.length === MAX_PLATOONS
+          ? 'All'
+          : validPlatoons.map((e) => `${utils.EMOJI_KEYCAP_DIGITS[e + 1]}`).join(', ');
 
       // format the needed platoons
       if (validPlatoons.length > 0) {
@@ -349,9 +361,10 @@ namespace discord {
 
   /** Figure out what phase the TB is in */
   export function setCurrentPhase(): void {
+    const event = config.currentEvent();
     // get the guild's TB start date/time and phase length in hours
     const startTime = config.discord.startTime();
-    const phaseHours = config.discord.phaseDuration();
+    const phaseHours = config.discord.phaseDuration(event);
     if (startTime && phaseHours) {
       const msPerHour = 1000 * 60 * 60;
       const now = new Date();
@@ -407,7 +420,7 @@ function sendPlatoonDepthWebhook(): void {
       if (typeof platoon === 'string' && platoon.length > 0) {
         fields.push({
           inline: true,
-          name: `${zone}: #${p + 1}`,
+          name: `${zone}: ${utils.EMOJI_KEYCAP_DIGITS[p + 1]}`,
           value: platoon,
         });
       }
@@ -447,12 +460,13 @@ function allRareUnitsWebhook(): void {
 
   const event = config.currentEvent();
   const phase = config.currentPhase();
+  const neededUnits = TerritoryBattles.getNeededUnits(event, phase);
   const fields: discord.RichEmbedOptionsField[] = [];
 
   if (discord.isTerritory(0, phase, event)) {
     // get the ships list
     const shipsTable = new Units.Ships();
-    const ships = shipsTable.getNeededRareList(phase);
+    const ships = shipsTable.getNeededRareList(phase, neededUnits);
     if (ships.length > 0) {
       fields.push({
         inline: true,
@@ -464,7 +478,7 @@ function allRareUnitsWebhook(): void {
 
   // get the hero list
   const heroesTable = new Units.Heroes();
-  const heroes = heroesTable.getNeededRareList(phase);
+  const heroes = heroesTable.getNeededRareList(phase, neededUnits);
   if (heroes.length > 0) {
     fields.push({
       inline: true,
@@ -489,7 +503,7 @@ function allRareUnitsWebhook(): void {
   // type: \@rolename, copy the value <@$####>
   const mentions = config.discord.roleId();
   const warnIntro = discord.getWarnIntro(phase, mentions);
-  const desc = config.discord.webhookDescription(phase);
+  const desc = config.discord.webhookDescription(phase, event);
 
   const options = urlFetchMakeParam_({
     content: `${title}${warnIntro}${desc}`,
@@ -512,9 +526,10 @@ function sendTimedWebhook(): void {
 
 /** Try to create a webhook trigger */
 function registerWebhookTimer(): void {
+  const event = config.currentEvent();
   // get the guild's TB start date/time and phase length in hours
   const startTime = config.discord.startTime();
-  const phaseHours = config.discord.phaseDuration();
+  const phaseHours = config.discord.phaseDuration(event);
   if (startTime && phaseHours) {
     const msPerHour = 1000 * 60 * 60;
     const phaseMs = phaseHours * msPerHour;
