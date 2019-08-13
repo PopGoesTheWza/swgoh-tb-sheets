@@ -10,10 +10,10 @@ function memberLabel_(member: string, mention: string) {
 }
 
 /** output platoon numner as discord icon */
-function platoonAsIcon_(label: string, type: string, platoon: number) {
-  const platoonIcon = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'][platoon];
+function platoonAsKeycapDigit_(label: string, type: string, platoon: number) {
+  const keycapDigit = utils.EMOJI_KEYCAP_DIGITS[platoon + 1];
 
-  return `__${label}__ · ${type} ${platoonIcon}`;
+  return `__${label}__ · ${type} ${keycapDigit}`;
 }
 
 /** check if the unit can be difficult to identify */
@@ -150,7 +150,7 @@ function sendMicroByMemberWebhook(): void {
     currentEmbed.fields = [];
     let currentField: DiscordEmbeddedField = {};
     currentEmbed.fields.push(currentField);
-    currentField.name = platoonAsIcon_(currentZone.label, currentZone.type, currentPlatoon);
+    currentField.name = platoonAsKeycapDigit_(currentZone.label, currentZone.type, currentPlatoon);
     currentField.value = '';
     if (currentZone.label.indexOf('Top') !== -1) {
       currentEmbed.color = 3447003;
@@ -170,7 +170,7 @@ function sendMicroByMemberWebhook(): void {
         currentPlatoon = currentValue.platoon;
         currentField = {};
         currentEmbed.fields.push(currentField);
-        currentField.name = platoonAsIcon_(currentZone.label, currentZone.type, currentPlatoon);
+        currentField.name = platoonAsKeycapDigit_(currentZone.label, currentZone.type, currentPlatoon);
         currentField.value = '';
         if (currentZone.label.indexOf('Top') !== -1) {
           currentEmbed.color = 3447003;

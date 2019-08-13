@@ -1,6 +1,8 @@
 // tslint:disable: max-classes-per-file
 
 namespace utils {
+  export const EMOJI_KEYCAP_DIGITS = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+
   export function getActiveSheet() {
     return SPREADSHEET.getActiveSheet();
   }
