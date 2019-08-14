@@ -1,7 +1,6 @@
 // tslint:disable: max-classes-per-file
 
 let PLATOON_PHASES: Array<[string, string, string]> = [];
-// let PLATOON_NEEDED_COUNT: KeyedNumbers = {};
 
 /** Custom object for creating custom order to walk through platoons */
 class PlatoonDetails {
@@ -127,10 +126,6 @@ function resetPlatoonsNoUI(): void {
   const phase = config.currentPhase();
   new TerritoryBattles.Phase(event, phase).reset();
 }
-
-// function getNeededCount_(unitName: string) {
-//   PLATOON_NEEDED_COUNT[unitName] = (PLATOON_NEEDED_COUNT[unitName] || 0) + 1;
-// }
 
 /** Get a sorted list of recommended members */
 function getRecommendedMembers_(
@@ -328,7 +323,7 @@ namespace TerritoryBattles {
       this.event = ev;
       this.index = index;
 
-      type tDef = Array<(p: Phase, i: territoryIdx) => Territory>;
+      type tDef = Array<(phase: Phase, index: territoryIdx) => Territory>;
       const territories: tDef = definitions[ev][index];
       territories.forEach((e, i) => (this.territories[i] = e(this, i as territoryIdx)));
     }
@@ -469,21 +464,21 @@ namespace TerritoryBattles {
 
     public writerResetDonors(): utils.SpooledTask[] {
       const platoons = this.platoons;
-      const result = platoons.map((p) => p.writerResetDonors());
+      const result = platoons.map((platoon) => platoon.writerResetDonors());
 
       return result;
     }
 
     public writerResetButtons(): utils.SpooledTask[] {
       const platoons = this.platoons;
-      const result = platoons.map((p) => p.writerResetSkipButton());
+      const result = platoons.map((platoon) => platoon.writerResetSkipButton());
 
       return result;
     }
 
     public writerSlices(): utils.SpooledTask[] {
       const platoons = this.platoons;
-      const result = platoons.map((p) => p.writerSlice());
+      const result = platoons.map((platoon) => platoon.writerSlice());
 
       return result;
     }
@@ -662,10 +657,12 @@ namespace TerritoryBattles {
     }
   }
 
-  type TerritoryConstructor = (p: Phase, i: territoryIdx) => Territory;
-  const closed = (p: Phase, i: territoryIdx) => new ClosedTerritory(p, i);
-  const airspace = (n: string, tp: number[]) => (p: Phase, i: territoryIdx) => new AirspaceTerritory(p, i, n, tp);
-  const ground = (n: string, tp: number[]) => (p: Phase, i: territoryIdx) => new GroundTerritory(p, i, n, tp);
+  type TerritoryConstructor = (phase: Phase, index: territoryIdx) => Territory;
+  const closed = (phase: Phase, index: territoryIdx) => new ClosedTerritory(phase, index);
+  const airspace = (n: string, tp: number[]) => (phase: Phase, index: territoryIdx) =>
+    new AirspaceTerritory(phase, index, n, tp);
+  const ground = (n: string, tp: number[]) => (phase: Phase, index: territoryIdx) =>
+    new GroundTerritory(phase, index, n, tp);
 
   interface Definitions {
     [key: string]: {
@@ -1065,9 +1062,6 @@ function recommendPlatoons() {
 
   const neededUnits = TerritoryBattles.getNeededUnits(event, phase, sheet);
 
-  // reset the needed counts
-  // PLATOON_NEEDED_COUNT = {};
-
   // reset the used heroes
   const usedHeroes = resetUsedUnits_(allHeroes);
   const usedShips = resetUsedUnits_(allShips);
@@ -1083,17 +1077,17 @@ function recommendPlatoons() {
   }
 
   // set the zone names and show/hide rows
-  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
+  for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
     // for each zone
-    const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
+    const platoonRow = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
 
     // set the zone name
-    const zoneName = setZoneName_(spooler, phase, z, sheet, platoonRow);
+    const zoneName = setZoneName_(spooler, phase, zoneNum, sheet, platoonRow);
 
     // see if we should skip the zone
-    if (z !== 1) {
+    if (zoneNum !== 1) {
       if (zoneName.length === 0) {
-        const hideOffset = z === 0 ? 1 : 0;
+        const hideOffset = zoneNum === 0 ? 1 : 0;
         sheet.hideRows(platoonRow + hideOffset, MAX_PLATOON_UNITS - hideOffset);
       } else {
         sheet.showRows(platoonRow, MAX_PLATOON_UNITS);
@@ -1109,16 +1103,13 @@ function recommendPlatoons() {
   }
 
   // update the unit counts
-  for (const p of platoonMatrix) {
-    const unit = p.name;
+  for (const platoonUnit of platoonMatrix) {
+    const unit = platoonUnit.name;
 
     // find the unit's count
     if (neededUnits[unit]) {
-      p.needed = neededUnits[unit];
+      platoonUnit.needed = neededUnits[unit];
     }
-    // if (PLATOON_NEEDED_COUNT[unit]) {
-    //   p.count = PLATOON_NEEDED_COUNT[unit];
-    // }
   }
 
   // make sure the platoon is possible to fill
@@ -1128,8 +1119,8 @@ function recommendPlatoons() {
 
   // initialize the placement counts
   const placementCount: number[][] = [];
-  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-    placementCount[z] = [];
+  for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
+    placementCount[zoneNum] = [];
   }
 
   const maxMemberDonations = config.maxDonationsPerTerritory();

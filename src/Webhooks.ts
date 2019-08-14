@@ -35,26 +35,28 @@ namespace discord {
     return isGeoDS_(event) ? (phase < 3 ? 6 : 7) : isHothDS_(event) ? phase + 1 : isHothLS_(event) ? phase + 1 : NaN;
   }
 
-  // export function getSimplifiedPlatoons(phase: TerritoryBattles.phaseIdx) {
-  //   const UNAVAILABLE = '⛔';
-  //   const CLOSED = '🚫';
-  //   const OPEN = '✅';
-  //   const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
-  //   for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-  //     const zone = getZoneName(phase, z, true);
-  //     if (zone.length > 0) {
-  //       // for each zone
-  //       const platoonRow = 2 + z * PLATOON_ZONE_ROW_OFFSET;
-  //       const type = z === 0 ? 'squadron' : 'platoon';
-  //       for (let p = 0; p < MAX_PLATOONS; p += 1) {
-  //         const platoonData = sheet.getRange(platoonRow, 4 + p * 4, MAX_PLATOON_UNITS, 2).getValues() as string[][];
-  //         // const status = platoonData.map((e, i) => {
-  //         //   e[0].length > 0 && e[1].length > 0 && e[1].length !== TerritoryBattles.SKIPPED_PLATOON_LABEL
-  //         // });
-  //       }
-  //     }
-  //   }
-  // }
+  export function getSimplifiedPlatoons(phase: TerritoryBattles.phaseIdx) {
+    // const UNAVAILABLE = '⛔';
+    // const CLOSED = '🚫';
+    // const OPEN = '✅';
+    const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+    for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
+      const zone = TerritoryBattles.getZoneName(zoneNum, false);
+      if (zone.length > 0) {
+        // for each zone
+        const platoonRow = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
+        const type = zoneNum === 0 ? 'squadron' : 'platoon';
+        for (let platoonNum = 0; platoonNum < MAX_PLATOONS; platoonNum += 1) {
+          const platoonData = sheet
+            .getRange(platoonRow, 4 + platoonNum * 4, MAX_PLATOON_UNITS, 2)
+            .getValues() as string[][];
+          // const status = platoonData.map((e, i) => {
+          //   e[0].length > 0 && e[1].length > 0 && e[1].length !== TerritoryBattles.SKIPPED_PLATOON_LABEL
+          // });
+        }
+      }
+    }
+  }
 
   /** Get a string representing the platoon assignements */
   export function getPlatoonString(platoonData: string[][]): string | undefined {
@@ -273,17 +275,17 @@ namespace discord {
 
       if (discord.isTerritory(zoneNum, phase, event)) {
         // cycle throught the platoons in a zone
-        for (let p = 0; p < MAX_PLATOONS; p += 1) {
+        for (let platoonNum = 0; platoonNum < MAX_PLATOONS; platoonNum += 1) {
           const platoon = getPlatoonDonations(
-            getPlatoonData(zoneNum, p, sheet),
+            getPlatoonData(zoneNum, platoonNum, sheet),
             donations,
-            getPlatoonRules(zoneNum, p, sheet),
+            getPlatoonRules(zoneNum, platoonNum, sheet),
             memberMentions,
             neededUnits,
           );
 
           if (platoon) {
-            validPlatoons.push(p);
+            validPlatoons.push(platoonNum);
             if (platoon.length > 0) {
               // add the new donations to the list
               for (const e of platoon) {
@@ -405,22 +407,22 @@ function sendPlatoonDepthWebhook(): void {
 
   // get data from the platoons
   const fields: discord.RichEmbedOptionsField[] = [];
-  for (let z = 0; z < MAX_PLATOON_ZONES; z += 1) {
-    if (!discord.isTerritory(z, phase, event)) {
+  for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
+    if (!discord.isTerritory(zoneNum, phase, event)) {
       continue; // skip this zone
     }
 
     // for each zone
-    const zone = getZoneName(z, false);
+    const zone = getZoneName(zoneNum, false);
 
     // cycle throught the platoons in a zone
-    for (let p = 0; p < MAX_PLATOONS; p += 1) {
-      const platoon = discord.getPlatoonString(getPlatoonData(z, p, sheet));
+    for (let platoonNum = 0; platoonNum < MAX_PLATOONS; platoonNum += 1) {
+      const platoon = discord.getPlatoonString(getPlatoonData(zoneNum, platoonNum, sheet));
 
       if (typeof platoon === 'string' && platoon.length > 0) {
         fields.push({
           inline: true,
-          name: `${zone}: ${utils.EMOJI_KEYCAP_DIGITS[p + 1]}`,
+          name: `${zone}: ${utils.EMOJI_KEYCAP_DIGITS[platoonNum + 1]}`,
           value: platoon,
         });
       }

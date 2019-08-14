@@ -88,19 +88,19 @@ function sendMicroByMemberWebhook(): void {
 
   // get data from the platoons
   let entries: PlatoonAssignment[] = [];
-  for (let z: TerritoryBattles.territoryIdx = 0; z < MAX_PLATOON_ZONES; z += 1) {
-    if (!discord.isTerritory(z, phase, event)) {
+  for (let zoneNum: TerritoryBattles.territoryIdx = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
+    if (!discord.isTerritory(zoneNum, phase, event)) {
       // skip this zone
       continue;
     }
 
     // for each zone
-    const label = getZoneName(z, false);
-    const type = z === 0 ? 'squadron' : 'platoon';
+    const label = getZoneName(zoneNum, false);
+    const type = zoneNum === 0 ? 'squadron' : 'platoon';
 
     // cycle throught the platoons in a zone
-    for (let p = 0; p < MAX_PLATOONS; p += 1) {
-      const platoonData = getPlatoonData(z, p, sheet);
+    for (let platoonNum = 0; platoonNum < MAX_PLATOONS; platoonNum += 1) {
+      const platoonData = getPlatoonData(zoneNum, platoonNum, sheet);
 
       // cycle through the heroes
       for (let index = 0; index < platoonData.length; index += 1) {
@@ -118,11 +118,11 @@ function sendMicroByMemberWebhook(): void {
         const unit = e[0];
         const entry = {
           member,
-          platoon: p,
+          platoon: platoonNum,
           slot: index,
           unit,
           zone: {
-            index: z,
+            index: zoneNum,
             label,
             type,
           },
