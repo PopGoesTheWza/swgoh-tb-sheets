@@ -36,26 +36,29 @@ namespace discord {
   }
 
   export function getSimplifiedPlatoons(phase: TerritoryBattles.phaseIdx) {
-    // const UNAVAILABLE = '⛔';
-    // const CLOSED = '🚫';
-    // const OPEN = '✅';
     const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
-    for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
-      const zone = TerritoryBattles.getZoneName(zoneNum, false);
-      if (zone.length > 0) {
-        // for each zone
-        const platoonRow = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
-        const type = zoneNum === 0 ? 'squadron' : 'platoon';
-        for (let platoonNum = 0; platoonNum < MAX_PLATOONS; platoonNum += 1) {
-          const platoonData = sheet
-            .getRange(platoonRow, 4 + platoonNum * 4, MAX_PLATOON_UNITS, 2)
-            .getValues() as string[][];
-          // const status = platoonData.map((e, i) => {
-          //   e[0].length > 0 && e[1].length > 0 && e[1].length !== TerritoryBattles.SKIPPED_PLATOON_LABEL
-          // });
-        }
+    const grid: string[][] = [];
+
+    for (let zone = 0; zone < MAX_PLATOON_ZONES; zone += 1) {
+      const platoons: string[] = [];
+      grid[zone] = platoons;
+      for (let platoon = 0; platoon < MAX_PLATOONS; platoon += 1) {
+        const cur = new PlatoonDetails(phase, zone, platoon);
+
+        const unitRange = sheet.getRange(cur.row, cur.column, MAX_PLATOON_UNITS);
+        platoons[platoon] = cur.exist
+          ? /** forbidden */ unitRange.offset(15, 1, 1, 1).getValue() === TerritoryBattles.SKIP_BUTTON_CHECKED ||
+            /** incomplete */ unitRange
+              .offset(0, 1, MAX_PLATOON_UNITS)
+              .getValues()
+              .findIndex((e) => `${e[0]}`.trim().length === 0) !== -1
+            ? '🚫' // or UNAVAILABLE ⛔
+            : utils.EMOJI_KEYCAP_DIGITS[platoon + 1] // or OPEN ✅
+          : '';
       }
     }
+
+    return grid.map((platoons) => platoons.join('')).join('\n');
   }
 
   /** Get a string representing the platoon assignements */
@@ -250,7 +253,6 @@ namespace discord {
     const event = config.currentEvent();
     const phase = config.currentPhase();
     const neededUnits = TerritoryBattles.getNeededUnits(event, phase, sheet);
-    let platoons: string;
 
     // mentions only works if you get the ID
     // on your Discord server, type: \@rolename, copy the value <@#######>
@@ -266,7 +268,7 @@ namespace discord {
 
     for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
       // for each zone
-      const validPlatoons: number[] = [];
+      const validPlatoons: string[] = [];
       const zone = getZoneName(zoneNum, true);
 
       if (zoneNum === 1) {
@@ -285,26 +287,20 @@ namespace discord {
           );
 
           if (platoon) {
-            validPlatoons.push(platoonNum);
+            validPlatoons.push(utils.EMOJI_KEYCAP_DIGITS[platoonNum + 1]);
             if (platoon.length > 0) {
               // add the new donations to the list
               for (const e of platoon) {
                 donations.push([e[0], e[1]]);
               }
             }
+          } else {
+            validPlatoons.push('🚫');
           }
         }
       }
-
-      // see if all platoons are valid
-      platoons =
-        validPlatoons.length === MAX_PLATOONS
-          ? 'All'
-          : validPlatoons.map((e) => `${utils.EMOJI_KEYCAP_DIGITS[e + 1]}`).join(', ');
-
-      // format the needed platoons
       if (validPlatoons.length > 0) {
-        fields.push(`**${zone}**\n${platoons}`);
+        fields.push(`**${zone}**\n${validPlatoons.join('')}`);
       }
     }
 
@@ -464,6 +460,12 @@ function allRareUnitsWebhook(): void {
   const phase = config.currentPhase();
   const neededUnits = TerritoryBattles.getNeededUnits(event, phase);
   const fields: discord.RichEmbedOptionsField[] = [];
+
+  fields.push({
+    inline: true,
+    name: 'Platoons overview',
+    value: discord.getSimplifiedPlatoons(phase),
+  });
 
   if (discord.isTerritory(0, phase, event)) {
     // get the ships list
