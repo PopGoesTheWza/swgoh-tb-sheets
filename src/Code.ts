@@ -7,7 +7,7 @@ namespace Members {
   /** get a row/cell array of members name */
   export function getNames(): Array<[string]> {
     return SPREADSHEET.getSheetByName(SHEET.ROSTER)
-      .getRange(2, 2, config.memberCount(), 1)
+      .getRange(2, 2, config.memberCount())
       .getValues() as Array<[string]>;
   }
 

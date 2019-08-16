@@ -261,17 +261,17 @@ namespace Units {
       toString: (u: UnitInstance) => string,
     ): void {
       // Build a Member index by Name
-      const memberList = Members.getNames();
+      const memberNames = Members.getNames();
 
       // This will hold all our data
-      const data = definitions.map((e) => Array(memberList.length).fill(null));
+      const data = definitions.map((e) => Array(memberNames.length).fill(null));
 
       const headers: string[] = [];
       const nameIndex: KeyedNumbers = {};
       definitions.forEach((e, i) => (nameIndex[e.baseId] = i));
 
       const memberIndex: KeyedNumbers = {};
-      memberList.forEach((e, i) => (memberIndex[e[0]] = i));
+      memberNames.forEach((e, i) => (memberIndex[e[0]] = i));
 
       for (const m of members) {
         headers.push(m.name);
@@ -288,7 +288,7 @@ namespace Units {
 
       // Write our data
       this.sheet
-        .getRange(1, this.columnOffset, definitions.length + 1, memberList.length)
+        .getRange(1, this.columnOffset, definitions.length + 1, memberNames.length)
         .setValues([...[headers], ...data]);
     }
 

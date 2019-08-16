@@ -7,6 +7,7 @@ class PlatoonDetails {
   public readonly zone: number;
   public readonly platoon: number;
   public readonly row: number;
+  public readonly column: number;
   public possible: boolean;
   public readonly isGround: boolean;
   public readonly exist: boolean;
@@ -14,14 +15,11 @@ class PlatoonDetails {
   constructor(phase: number, zone: number, platoon: number) {
     this.zone = zone;
     this.platoon = platoon;
-    this.row = 2 + zone * PLATOON_ZONE_ROW_OFFSET;
+    this.row = PLATOON_ZONE_ROW_ORIGIN + zone * PLATOON_ZONE_ROW_OFFSET;
+    this.column = PLATOON_ZONE_COLUMN_ORIGIN + platoon * PLATOON_ZONE_COLUMN_OFFSET;
     this.possible = true;
     this.isGround = zone > 0;
     this.exist = discord.isTerritory(zone, phase as TerritoryBattles.phaseIdx);
-  }
-
-  public getOffset() {
-    return this.platoon * 4;
   }
 }
 
@@ -58,14 +56,14 @@ function initPlatoonPhases_(): void {
   const event = config.currentEvent();
 
   // Names of Territories, # of Platoons
-  if (isHothLS_(event)) {
+  if (isGeoDS_(event)) {
     PLATOON_PHASES = [
-      ['', 'Rebel Base', ''],
-      ['', 'Ion Cannon', 'Overlook'],
-      ['Rear Airspace', 'Rear Trenches', 'Power Generator'],
-      ['Forward Airspace', 'Forward Trenches', 'Outer Pass'],
-      ['Contested Airspace', 'Snowfields', 'Forward Stronghold'],
-      ['Imperial Fleet Staging Area', 'Imperial Flank', 'Imperial Landing'],
+      ['', 'Droid Factory', 'Canyons'],
+      ['Core Ship Yards', 'Separatist Command', 'Petranaki Arena'],
+      ['Contested Airspace', 'Battleground', 'Sand Dunes'],
+      ['Republic Fleet', 'Count Dooku Hangar', 'Rear Flank'],
+      ['???', '???', '???'],
+      ['???', '???', '???'],
     ];
   } else if (isHothDS_(event)) {
     PLATOON_PHASES = [
@@ -76,14 +74,14 @@ function initPlatoonPhases_(): void {
       ['Forward Airspace', 'Forward Trenches', 'Overlook'],
       ['Rear Airspace', 'Rebel Base Main Entrance', 'Rebel Base South Entrance'],
     ];
-  } else if (isGeoDS_(event)) {
+  } else if (isHothLS_(event)) {
     PLATOON_PHASES = [
-      ['', 'Droid Factory', 'Canyons'],
-      ['Core Ship Yards', 'Separatist Command', 'Petranaki Arena'],
-      ['Contested Airspace', 'Battleground', 'Sand Dunes'],
-      ['Republic Fleet', 'Count Dooku Hangar', 'Rear Flank'],
-      ['???', '???', '???'],
-      ['???', '???', '???'],
+      ['', 'Rebel Base', ''],
+      ['', 'Ion Cannon', 'Overlook'],
+      ['Rear Airspace', 'Rear Trenches', 'Power Generator'],
+      ['Forward Airspace', 'Forward Trenches', 'Outer Pass'],
+      ['Contested Airspace', 'Snowfields', 'Forward Stronghold'],
+      ['Imperial Fleet Staging Area', 'Imperial Flank', 'Imperial Landing'],
     ];
   } else {
     PLATOON_PHASES = [
@@ -209,7 +207,7 @@ namespace TerritoryBattles {
       .getRange(PLATOON_ZONE_ROW, PLATOON_ZONE_COL)
       .getValue()}`;
 
-    const loc = zoneNum === 0 ? '(Top)' : zoneNum === 1 ? '(Bottom)' : zoneNum === 2 ? '(Middle)' : '(???)';
+    const loc = zoneNum === 0 ? '(Top)' : zoneNum === 1 ? '(Middle)' : zoneNum === 2 ? '(Bottom)' : '(???)';
 
     return name.length === 0
       ? ''
@@ -537,8 +535,8 @@ namespace TerritoryBattles {
     constructor(territory: Territory, index: platoonIdx, value: number) {
       this.index = index;
       this.territory = territory;
-      const row = territory.index * PLATOON_ZONE_ROW_OFFSET + 2;
-      const column = index * PLATOON_ZONE_COLUMN_OFFSET + 4;
+      const row = PLATOON_ZONE_ROW_ORIGIN + territory.index * PLATOON_ZONE_ROW_OFFSET;
+      const column = PLATOON_ZONE_COLUMN_ORIGIN + index * PLATOON_ZONE_COLUMN_OFFSET;
       const range = SPREADSHEET.getSheetByName(SHEET.PLATOON).getRange(row, column, MAX_PLATOON_UNITS);
       this.unitsRange = range;
       this.donorsRange = range.offset(0, 1);
@@ -645,8 +643,10 @@ namespace TerritoryBattles {
     constructor(platoon: Platoon, index: number) {
       this.index = index;
       this.platoon = platoon;
-      // const row = platoon.territory.index * PLATOON_ZONE_ROW_OFFSET + index + 2;
-      // const column = platoon.index * PLATOON_ZONE_COLUMN_OFFSET + 4;
+
+      // const row = PLATOON_ZONE_ROW_ORIGIN + territory.index * PLATOON_ZONE_ROW_OFFSET;
+      // const column = PLATOON_ZONE_COLUMN_ORIGIN + index * PLATOON_ZONE_COLUMN_OFFSET;
+
       // const range = SPREADSHEET.getSheetByName(SHEET.PLATOONS)
       //   .getRange(row, column);
       // this.unitRange = range;
@@ -882,10 +882,8 @@ function loop1_(
   phase: TerritoryBattles.phaseIdx,
   allUnits: UnitMemberInstances,
 ) {
-  const baseCol = 4; // TODO: should it be a setting
-
   const row = cur.row;
-  const column = cur.getOffset() + baseCol;
+  const column = cur.column;
   const range = sheet.getRange(row, column, MAX_PLATOON_UNITS);
 
   // clear previous contents
@@ -944,10 +942,8 @@ function loop1_(
 
 function loop2_(spooler: utils.Spooler, cur: PlatoonDetails, sheet: Spreadsheet.Sheet) {
   if (cur.exist && !cur.possible) {
-    const baseCol = 4; // TODO: should it be a setting
-
     const row = cur.row;
-    const column = cur.getOffset() + baseCol;
+    const column = cur.column;
 
     spooler
       .attach(sheet.getRange(row, column + 1, MAX_PLATOON_UNITS))
@@ -967,9 +963,8 @@ function loop3_(
   used: UnitMemberBooleans,
 ) {
   if (cur.exist && cur.possible) {
-    const baseCol = 4; // TODO: should it be a setting
     const row = cur.row;
-    const column = cur.getOffset() + baseCol;
+    const column = cur.column;
 
     // cycle through the heroes
     const donors: Array<[string]> = [];
@@ -1019,15 +1014,14 @@ function loop3_(
 function recommendPlatoons() {
   const event = config.currentEvent();
   const alignment = config.currentAlignment(event).toLowerCase();
+  const phase = config.currentPhase();
+  const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
+  const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+  const spooler = new utils.Spooler();
 
   // const p = new TerritoryBattles.Phase(event(), config.currentPhase());
 
-  const spooler = new utils.Spooler();
-
   // setup platoon phases
-  const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
-  const phase = config.currentPhase();
-  const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
 
   const notAvailable = TerritoryBattles.getNotAvailableList(sheet);
 
@@ -1043,12 +1037,15 @@ function recommendPlatoons() {
   const shipsTable = new Units.Ships();
   const allShips = shipsTable.getAllInstancesByUnits();
 
-  filterUnits_(allHeroes, (member: string, u: UnitInstance) => {
-    return u.tags!.indexOf(alignment) !== -1 && u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1;
-  });
-  filterUnits_(allShips, (member: string, u: UnitInstance) => {
-    return u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1;
-  });
+  filterUnits_(
+    allHeroes,
+    (member: string, u: UnitInstance) =>
+      u.tags!.indexOf(alignment) !== -1 && u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1,
+  );
+  filterUnits_(
+    allShips,
+    (member: string, u: UnitInstance) => u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1,
+  );
 
   // remove heroes listed on Exclusions sheet
   const exclusionsId = config.exclusionId();
@@ -1061,10 +1058,6 @@ function recommendPlatoons() {
   initPlatoonPhases_();
 
   const neededUnits = TerritoryBattles.getNeededUnits(event, phase, sheet);
-
-  // reset the used heroes
-  const usedHeroes = resetUsedUnits_(allHeroes);
-  const usedShips = resetUsedUnits_(allShips);
 
   // setup a custom order for walking the platoons
   const platoonOrder: PlatoonDetails[] = [];
@@ -1128,6 +1121,10 @@ function recommendPlatoons() {
   // try to find an unused member to default to
   let matrixIdx = 0;
 
+  // reset the used heroes
+  const usedHeroes = resetUsedUnits_(allHeroes);
+  const usedShips = resetUsedUnits_(allShips);
+
   for (const cur of platoonOrder) {
     loop3_(
       spooler,
@@ -1141,6 +1138,8 @@ function recommendPlatoons() {
     );
     matrixIdx += MAX_PLATOON_UNITS;
   }
+
+  // discord.getSimplifiedPlatoons(phase);
 
   spooler.commit();
   SPREADSHEET.toast(`Platoons for ${event} phase ${phase} ready.`, 'Recommend platoons', 3);
