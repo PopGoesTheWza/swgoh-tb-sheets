@@ -5,10 +5,28 @@
       {
         "userSymbol": "swgohhelpapi",
         "libraryId": "1bMXMdwJmhTBxb4tBMEyEtw3jPVTzMZQz6NZ9Wm5-5b2MPWWFfqJVGa6n",
-        "version": "21",
-        "developmentMode": false
+        "version": "21"
       }
     ]
   },
-  "exceptionLogging": "STACKDRIVER"
+  "exceptionLogging": "STACKDRIVER",
+  "sheets": {
+    "macros": [
+      {
+        "menuName": "Refresh Geonosis DS ",
+        "functionName": "RefreshGeoDS",
+        "defaultShortcut": "Ctrl+Alt+Shift+6"
+      },
+      {
+        "menuName": "Refresh Hoth DS ",
+        "functionName": "RefreshHothDS",
+        "defaultShortcut": "Ctrl+Alt+Shift+8"
+      },
+      {
+        "menuName": "Refresh Hoth LS ",
+        "functionName": "RefreshHothLS",
+        "defaultShortcut": "Ctrl+Alt+Shift+9"
+      }
+    ]
+  }
 }
