@@ -1,32 +1,44 @@
-/** set the value and style in a cell */
+/** (Spooler) Set the value and style in a cell */
 function spooledSetCellValue_(
-  spooler: utils.Spooler,
+  spoolerInstance: utils.Spooler,
   range: Spreadsheet.Range | utils.SpooledRange,
   value: boolean | number | string | Date,
-  bold: boolean,
+  isBold: boolean,
   align: 'left' | 'center' | 'right' = 'left',
 ): utils.SpooledRange {
-  const spooled = range instanceof utils.SpooledRange ? range : spooler.attach(range);
+  const spooledRange = range instanceof utils.SpooledRange ? range : spoolerInstance.attach(range);
 
-  spooled
-    .setFontWeight(bold ? 'bold' : 'normal')
+  spooledRange
+    .setFontWeight(isBold ? 'bold' : 'normal')
     .setHorizontalAlignment(align)
     .setValue(value);
 
-  return spooled;
+  return spooledRange;
 }
 
-/** process and output members data for current event */
+/** Process and output members data for current event */
 function populateEventTable_(
-  data: string[][],
+  eventLines: string[][],
   members: PlayerData[],
-  unitsIndex: UnitDefinition[],
+  unitDefinitions: UnitDefinition[],
 ): Array<Array<string | number>> {
-  const memberNames = Members.getNames();
-  const nameToBaseId: KeyedStrings = {};
-  for (const e of unitsIndex) {
-    nameToBaseId[e.name] = e.baseId;
+  const unitNameToBaseId: KeyedStrings = {};
+  for (const unitDefinition of unitDefinitions) {
+    unitNameToBaseId[unitDefinition.name] = unitDefinition.baseId;
   }
+
+  const getBaseId = (unitname: string) => {
+    let result = unitNameToBaseId[unitname];
+    if (!result) {
+      // refresh from data source and refresh unitDefinitions & unitNameToBaseId
+      const definitions = Units.getDefinitionsFromDataSource();
+      unitDefinitions
+        .splice(0, unitDefinitions.length, ...[...definitions.heroes, ...definitions.ships])
+        .forEach((e) => (unitNameToBaseId[e.name] = e.baseId));
+      result = unitNameToBaseId[unitname];
+    }
+    return result;
+  };
 
   let total = 0;
   let requiredUnits = 0;
@@ -34,79 +46,73 @@ function populateEventTable_(
   let squadCount = 0;
   let lastSquad = 0;
 
+  const resetCounts = () => {
+    requiredUnits = 0;
+    missingRequiredUnits = 0;
+    squadCount = 0;
+  };
+
   const table: Array<Array<string | number>> = [[]];
 
-  for (let c = 0; c < memberNames.length; c += 1) {
-    const m = members[c]; // weak
-    table[0][c] = m.name;
+  members.forEach((member, memberIndex) => {
+    table[0][memberIndex] = member.name;
 
-    for (let r = 0; r < data.length; r += 1) {
-      const curHero = data[r];
+    eventLines.forEach((eventLine, eventLinesIndex) => {
+      const event = {
+        gear: +eventLine[3],
+        level: +eventLine[2],
+        rarity: +eventLine[1],
+        required: eventLine[5],
+        squad: +eventLine[4],
+        unitname: eventLine[0],
+      };
 
-      if (table[r + 1] == null) {
-        table[r + 1] = [];
+      const tableIndex = eventLinesIndex + 1;
+      if (!Array.isArray(table[tableIndex])) {
+        table[tableIndex] = [];
       }
+      const tableRow = table[tableIndex];
 
-      if (curHero[0] === 'Phase Count:') {
-        const phaseUnits = +curHero[1];
+      if (event.unitname === 'Phase Count:') {
+        const phaseUnits = event.rarity; // incontext, # of required units
         const readyUnits = requiredUnits - missingRequiredUnits + Math.min(phaseUnits - requiredUnits, squadCount);
-        table[r + 1][c] = readyUnits;
+        tableRow[memberIndex] = readyUnits;
         total += readyUnits;
-        requiredUnits = 0;
-        missingRequiredUnits = 0;
-        squadCount = 0;
-        continue;
-      } else if (curHero[0] === 'Total:') {
-        table[r + 1][c] = total;
+        resetCounts();
+      } else if (event.unitname === 'Total:') {
+        tableRow[memberIndex] = total;
         total = 0;
-        requiredUnits = 0;
-        missingRequiredUnits = 0;
-        squadCount = 0;
-        continue;
-      } else if (curHero[0].length === 0) {
-        table[r + 1][c] = '';
-        continue;
+        resetCounts();
+      } else if (event.unitname.length === 0) {
+        tableRow[memberIndex] = '';
       } else {
-        table[r + 1][c] = '';
-      }
-      const squad = +curHero[4];
-      if (squad !== lastSquad) {
-        requiredUnits = 0;
-        missingRequiredUnits = 0;
-        squadCount = 0;
-      }
-      lastSquad = squad;
+        if (lastSquad !== event.squad) {
+          lastSquad = event.squad;
+          resetCounts();
+        }
 
-      // Get Hero for member
-      let baseId = nameToBaseId[curHero[0]];
-      if (!baseId) {
-        // refresh from data source
-        const definitions = Units.getDefinitionsFromDataSource();
-        // replace content of unitsIndex with definitions
-        unitsIndex.splice(0, unitsIndex.length, ...[...definitions.heroes, ...definitions.ships]);
-        // refresh nameToBaseId with updated unitsIndex
-        for (const e of unitsIndex) {
-          nameToBaseId[e.name] = e.baseId;
+        const unitInstance = member.units[getBaseId(event.unitname)];
+        const requirementsMet =
+          unitInstance &&
+          (unitInstance.rarity >= event.rarity &&
+            unitInstance.gearLevel! >= event.level &&
+            unitInstance.level >= event.gear);
+        if (event.required === 'R') {
+          requiredUnits += 1;
+          if (!requirementsMet) {
+            missingRequiredUnits += 1;
+          }
+        } else if (requirementsMet) {
+          squadCount += 1;
         }
-        // try again... once
-        baseId = nameToBaseId[curHero[0]];
+        tableRow[memberIndex] = unitInstance
+          ? requirementsMet
+            ? `${unitInstance.rarity}`
+            : `${unitInstance.rarity}*L${unitInstance.level}G${unitInstance.gearLevel}`
+          : '';
       }
-      const o = m.units[baseId];
-      const requirementsMet = o && (o.rarity >= +curHero[1] && o.gearLevel! >= +curHero[2] && o.level >= +curHero[3]);
-      const unitIsRequired = curHero[5] === 'R';
-      if (unitIsRequired) {
-        requiredUnits += 1;
-        if (!requirementsMet) {
-          missingRequiredUnits += 1;
-        }
-      } else if (requirementsMet) {
-        squadCount += 1;
-      }
-      if (o) {
-        table[r + 1][c] = requirementsMet ? `${o.rarity}` : `${o.rarity}*L${o.level}G${o.gearLevel}`;
-      }
-    }
-  }
+    });
+  });
   return table;
 }
 
@@ -119,13 +125,13 @@ function populateEventTable_(
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const sheet = SPREADSHEET.getSheetByName(SHEET.ROSTER);
 
-  const sortFunction = config.sortRoster()
-    ? // sort roster by member name
-      (a: PlayerData, b: PlayerData) => utils.caseInsensitive(a.name, b.name)
-    : // sort roster by GP
-      (a: PlayerData, b: PlayerData) => b.gp - a.gp;
-
-  members.sort(sortFunction);
+  members.sort(
+    config.sortRoster()
+      ? // sort roster by member name
+        (a: PlayerData, b: PlayerData) => utils.caseInsensitive(a.name, b.name)
+      : // sort roster by GP
+        (a: PlayerData, b: PlayerData) => b.gp - a.gp,
+  );
 
   if (members.length > MAX_MEMBERS) {
     members.splice(MAX_MEMBERS);
@@ -134,7 +140,6 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
 
   // cleanup the header
   const header = [['Name', 'Ally Code', 'GP', 'GP Heroes', 'GP Ships']];
-
   const result = members.map((e) => [[e.name], [e.allyCode], [e.gp], [e.heroesGp], [e.shipsGp]]);
 
   // write the roster
@@ -151,37 +156,26 @@ function getSettingsHash_() {
   const roster = SPREADSHEET.getSheetByName(SHEET.ROSTER);
   const meta = SPREADSHEET.getSheetByName(SHEET.META);
 
-  // members name & ally code
+  /** members name & ally code */
   const members = (roster.getRange(2, 2, 50, 2).getValues() as Array<[string, number]>)
-    .reduce((acc: Array<[string, number]>, e) => {
-      if (e[1] > 0) {
-        acc.push(e);
-      }
-      return acc;
-    }, [])
+    .filter((e) => e[1] > 0)
     .sort((a, b) => a[1] - b[1]);
 
-  // rename/add/remove settings
+  /** rename/add/remove settings */
   const rar = (roster.getRange(2, 16, roster.getMaxRows(), 3).getValues() as Array<[string, number, number]>)
-    .reduce((acc: Array<[string, number, number]>, e) => {
-      if (e[1] > 0 || e[2] > 0) {
-        acc.push(e);
-      }
-      return acc;
-    }, [])
+    .filter((e) => e[1] > 0 || e[2] > 0)
     .sort((a, b) => (a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]));
-
-  // data source
-  const dataSource = meta.getRange(14, 4).getValue();
-  // SwgohGg settings
-  const swgohGg = meta.getRange(2, 1).getValue();
-  // SwgohGg settings
-  const swgohHelp = meta.getRange(16, 1, 5).getValues();
 
   const hash = String(
     Utilities.computeDigest(
       Utilities.DigestAlgorithm.SHA_256,
-      JSON.stringify({ members, rar, dataSource, swgohGg, swgohHelp }),
+      JSON.stringify({
+        dataSource: /** data source */ meta.getRange(14, 4).getValue(),
+        members,
+        rar,
+        swgohGg: /** SwgohGg settings */ meta.getRange(2, 1).getValue(),
+        swgohHelp: /** SwgohHelp settings */ meta.getRange(16, 1, 5).getValues(),
+      }),
     ),
   );
 
@@ -300,6 +294,8 @@ function getMembers_(): PlayerData[] {
   }
   cds.setGuildDataDate();
 
+  SPREADSHEET.toast(`Processing data from ${cds.getDataSource()}`, 'Get guild members', 3);
+
   const definitions = Units.getDefinitions();
   const unitsIndex = [...definitions.heroes, ...definitions.ships];
   const missingUnit = members.some((m: PlayerData) => {
@@ -327,18 +323,19 @@ function setupEvent(): void {
   const currentSheet = utils.getActiveSheet();
 
   [
-    SHEET.ASSIGNMENTS,
-    SHEET.GEODSPLATOONAUDIT,
-    SHEET.GEOSQUADRONAUDIT,
-    SHEET.GEONEEDEDUNITS,
-    SHEET.DSPLATOONAUDIT,
-    SHEET.LSPLATOONAUDIT,
-    SHEET.SQUADRONAUDIT,
-    SHEET.NEEDEDUNITS,
     SHEET.BREAKDOWN,
+    SHEET.GEONEEDEDUNITS,
+    SHEET.HOTHNEEDEDUNITS,
+    SHEET.GEOSQUADRONAUDIT,
+    SHEET.HOTHSQUADRONAUDIT,
+    SHEET.GEODSPLATOONAUDIT,
+    SHEET.HOTHDSPLATOONAUDIT,
+    SHEET.HOTHLSPLATOONAUDIT,
+    SHEET.TB,
+    SHEET.ASSIGNMENTS,
     SHEET.GEODSMISSIONS,
-    SHEET.DSMISSIONS,
-    SHEET.LSMISSIONS,
+    SHEET.HOTHDSMISSIONS,
+    SHEET.HOTHLSMISSIONS,
     SHEET.HEROES,
     SHEET.SHIPS,
     SHEET.STATICSLICES,
@@ -551,36 +548,7 @@ function setupEvent(): void {
   table = table.map((e) => (e.length !== width ? [...e, ...Array(width).fill(null)].slice(0, width) : e));
   tbSheet.getRange(TB_OFFSET_ROW, TB_OFFSET_COL, table.length, table[0].length).setValues(table);
 
-  if (isHothDS_(event)) {
-    [
-      SHEET.DSPLATOONAUDIT,
-      SHEET.SQUADRONAUDIT,
-      SHEET.NEEDEDUNITS,
-      SHEET.DSMISSIONS,
-      SHEET.ESTIMATE,
-      SHEET.HEROES,
-      SHEET.SHIPS,
-    ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
-  } else if (isHothLS_(event)) {
-    [
-      SHEET.LSPLATOONAUDIT,
-      SHEET.SQUADRONAUDIT,
-      SHEET.NEEDEDUNITS,
-      SHEET.LSMISSIONS,
-      SHEET.ESTIMATE,
-      SHEET.HEROES,
-      SHEET.SHIPS,
-    ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
-  } else if (isGeoDS_(event)) {
-    [
-      SHEET.GEODSPLATOONAUDIT,
-      SHEET.GEOSQUADRONAUDIT,
-      SHEET.GEONEEDEDUNITS,
-      SHEET.GEODSMISSIONS,
-      SHEET.HEROES,
-      SHEET.SHIPS,
-    ].forEach((e) => SPREADSHEET.getSheetByName(e).showSheet());
-  }
+  config.hideShowSheets(event);
   utils.setActiveSheet(currentSheet, SHEET.TB);
 
   SPREADSHEET.toast('Ready', 'TB sheet', 3);

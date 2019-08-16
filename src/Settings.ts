@@ -30,6 +30,8 @@ const MAX_PLATOONS = 6;
 const MAX_PLATOON_ZONES = 3;
 const PLATOON_ZONE_ROW_OFFSET = 18; // MAX_PLATOON_UNITS + 3;
 const PLATOON_ZONE_COLUMN_OFFSET = 4;
+const PLATOON_ZONE_ROW_ORIGIN = 2;
+const PLATOON_ZONE_COLUMN_ORIGIN = 4;
 
 const HIGHLY_NEEDED = 8;
 const DISCORD_WEBHOOK_COL = 5;
@@ -168,36 +170,38 @@ enum DISPLAYSLOT {
 /** Constants for sheets name */
 enum SHEET {
   ROSTER = 'Roster',
+  BREAKDOWN = 'Breakdown',
+  GEONEEDEDUNITS = 'GeoNeededUnits',
+  HOTHNEEDEDUNITS = 'HothNeededUnits',
+  GEOSQUADRONAUDIT = 'GeoSquadronAudit',
+  HOTHSQUADRONAUDIT = 'HothSquadronAudit',
+  GEODSPLATOONAUDIT = 'GeoDSPlatoonAudit',
+  HOTHDSMISSIONS = 'HothDSMissions',
+  HOTHLSMISSIONS = 'HothLSMissions',
   TB = 'TB',
   PLATOON = 'Platoon',
+  SEARCHUNITS = 'Search Units',
   ASSIGNMENTS = 'Assignments',
-  GEODSPLATOONAUDIT = 'GeoDSPlatoonAudit',
-  GEOSQUADRONAUDIT = 'GeoSquadronAudit',
-  GEONEEDEDUNITS = 'GeoNeededUnits',
-  DSPLATOONAUDIT = 'HothDSPlatoonAudit',
-  LSPLATOONAUDIT = 'HothLSPlatoonAudit',
-  SQUADRONAUDIT = 'HothSquadronAudit',
-  NEEDEDUNITS = 'HothNeededUnits',
-  BREAKDOWN = 'Breakdown',
+  EXCLUSIONS = 'Exclusions',
   ESTIMATE = 'Estimate',
   GEODSMISSIONS = 'GeoDSMissions',
-  DSMISSIONS = 'HothDSMissions',
-  LSMISSIONS = 'HothLSMissions',
+  HOTHDSPLATOONAUDIT = 'HothDSPlatoonAudit',
+  HOTHLSPLATOONAUDIT = 'HothLSPlatoonAudit',
+  RAREUNITS = 'Rare Units',
   SNAPSHOT = 'Snapshot',
-  EXCLUSIONS = 'Exclusions',
   HEROES = 'Heroes',
   SHIPS = 'Ships',
-  RAREUNITS = 'Rare Units',
-  SEARCHUNITS = 'Search Units',
   DISCORD = 'Discord',
   META = 'Meta',
   INSTRUCTIONS = 'Instructions',
+  CHANGELOG = 'Change log',
+  ISSUES = 'Issues',
   STATICSLICES = 'StaticSlices',
-  GEODSPLATOON = 'GeoDSPlatoon',
   GEOSQUADRON = 'GeoSquadron',
+  GEODSPLATOON = 'GeoDSPlatoon',
+  HOTHSQUADRON = 'HothSquadron',
   HOTHDSPLATOON = 'HothDSPlatoon',
   HOTHLSPLATOON = 'HothLSPlatoon',
-  HOTHSQUADRON = 'HothSquadron',
 }
 
 /** settings related functions */
@@ -290,11 +294,29 @@ namespace config {
 
   /** get count of members in the roster */
   export function memberCount(): number {
-    const META_GUILD_SIZE_ROW = 5;
-    const META_GUILD_SIZE_COL = 12;
+    const ROSTER_GUILD_SIZE_ROW = 5;
+    const ROSTER_GUILD_SIZE_COL = 12;
     return +SPREADSHEET.getSheetByName(SHEET.ROSTER)
-      .getRange(META_GUILD_SIZE_ROW, META_GUILD_SIZE_COL)
+      .getRange(ROSTER_GUILD_SIZE_ROW, ROSTER_GUILD_SIZE_COL)
       .getValue();
+  }
+
+  export function hideShowSheets(event = config.currentEvent()) {
+    const META_HIDESHOWSHEETS_ROW = 28;
+    const META_HIDESHOWSHEETS_COL = 1;
+    const data = SPREADSHEET.getSheetByName(SHEET.META)
+      .getRange(META_HIDESHOWSHEETS_ROW, META_HIDESHOWSHEETS_COL, 33, 4)
+      .getValues() as string[][];
+
+    const headers = data.shift();
+    const eventIndex = headers!.findIndex((e) => e === event);
+    data.forEach((row) => {
+      const m = row[0].match(/([^(:]+)/);
+      const sheet = m ? SPREADSHEET.getSheetByName(m[1].trim()) : null;
+      if (sheet) {
+        row[eventIndex] === 'Yes' ? sheet.showSheet() : sheet.hideSheet();
+      }
+    });
   }
 
   /** data source related settings */
