@@ -1,6 +1,21 @@
 {
-  "scriptId":"18e1zu8Og3Lc96O9AHiaLDt77qVHkTq-0-T9WKytHp4Z7sECLYCEDR78_",
-  "scriptIdRelease":"18e1zu8Og3Lc96O9AHiaLDt77qVHkTq-0-T9WKytHp4Z7sECLYCEDR78_",
-  "scriptIdDev":"1bzS-XpNZh1UjbIWqDmYMd5TIX0BGTeijL3Wv4ktVwe8YMEZ_lyILcYUF",
-  "rootDir": "src"
+  "scriptId": "1XeaejG1UKCwhVkmFbDs53jFD1Ivs88cI2bfyJXdT5MQWTyEfl_axWGv-",
+  "scriptIdRelease": "1XeaejG1UKCwhVkmFbDs53jFD1Ivs88cI2bfyJXdT5MQWTyEfl_axWGv-",
+  "rootDir": "src",
+  "filePushOrder": [
+    "src/Code.ts",
+    "src/Settings.ts",
+    "src/Units.ts",
+    "src/Battles.ts",
+    "src/Platoons.ts",
+    "src/Exclusions.ts",
+    "src/Webhooks.ts",
+    "src/Micromanage.ts",
+    "src/SwgohGg.ts",
+    "src/SwgohHelp.ts",
+    "src/utils.ts",
+    "src/macros.ts",
+    "src/lib.ts"
+  ],
+  "projectId": "project-id-3007062589864693060"
 }
