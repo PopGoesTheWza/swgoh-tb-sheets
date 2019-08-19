@@ -894,50 +894,48 @@ function loop1_(
     .offset(0, -1, MAX_PLATOON_UNITS, 2)
     .setFontColor(COLOR.BLACK);
 
-  if (cur.exist) {
-    /** skip this checkbox */
-    if (range.offset(15, 1, 1, 1).getValue() === TerritoryBattles.SKIP_BUTTON_CHECKED) {
-      cur.possible = false;
-      // return;
-    }
-
-    // cycle through the units
-    const units = range.getValues() as string[][];
-
-    const dropdowns: Array<[Spreadsheet.DataValidation]> = [];
-    const dropdownsRange = range.offset(0, 1);
-    for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
-      const unitName = units[h][0];
-      const idx = platoonMatrix.length;
-
-      if (unitName.length === 0) {
-        // no unit was entered, so skip it
-        platoonMatrix.push(new PlatoonUnit('', 0, 0));
-        dropdowns.push([(null as unknown) as Spreadsheet.DataValidation]);
-
-        continue;
-      }
-
-      // getNeededCount_(unitName);
-
-      const rec = getRecommendedMembers_(unitName, phase, allUnits);
-
-      platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
-
-      if (rec.length > 0) {
-        dropdowns.push([buildDropdown_(rec)]);
-
-        // add the members to the matrix
-        platoonMatrix[idx].members = rec.map((r) => r[0]); // member name
-      } else {
-        dropdowns.push([(null as unknown) as Spreadsheet.DataValidation]);
-        // impossible to fill the platoon if no one can donate
-        cur.possible = false;
-        spooler.attach(sheet.getRange(row + h, column)).setFontColor(COLOR.RED); // Impossible to fill
-      }
-    }
-    spooler.attach(dropdownsRange).setDataValidations(dropdowns);
+  /** skip this checkbox */
+  if (range.offset(15, 1, 1, 1).getValue() === TerritoryBattles.SKIP_BUTTON_CHECKED) {
+    cur.possible = false;
+    // return;
   }
+
+  // cycle through the units
+  const units = range.getValues() as string[][];
+
+  const dropdowns: Array<[Spreadsheet.DataValidation]> = [];
+  const dropdownsRange = range.offset(0, 1);
+  for (let h = 0; h < MAX_PLATOON_UNITS; h += 1) {
+    const unitName = units[h][0];
+    const idx = platoonMatrix.length;
+
+    if (unitName.length === 0) {
+      // no unit was entered, so skip it
+      platoonMatrix.push(new PlatoonUnit('', 0, 0));
+      dropdowns.push([(null as unknown) as Spreadsheet.DataValidation]);
+
+      continue;
+    }
+
+    // getNeededCount_(unitName);
+
+    const rec = getRecommendedMembers_(unitName, phase, allUnits);
+
+    platoonMatrix.push(new PlatoonUnit(unitName, 0, rec.length));
+
+    if (rec.length > 0) {
+      dropdowns.push([buildDropdown_(rec)]);
+
+      // add the members to the matrix
+      platoonMatrix[idx].members = rec.map((r) => r[0]); // member name
+    } else {
+      dropdowns.push([(null as unknown) as Spreadsheet.DataValidation]);
+      // impossible to fill the platoon if no one can donate
+      cur.possible = false;
+      spooler.attach(sheet.getRange(row + h, column)).setFontColor(COLOR.RED); // Impossible to fill
+    }
+  }
+  spooler.attach(dropdownsRange).setDataValidations(dropdowns);
 }
 
 function loop2_(spooler: utils.Spooler, cur: PlatoonDetails, sheet: Spreadsheet.Sheet) {
