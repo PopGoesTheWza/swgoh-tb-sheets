@@ -26,8 +26,7 @@
     "swgoh"
   ],
   "dependencies": {
-    "@google/clasp": "^2.2.1",
-    "typescript": "^3.5.3"
+    "@google/clasp": "^2.2.1"
   },
   "devDependencies": {
     "@types/google-apps-script": "^0.0.56",
