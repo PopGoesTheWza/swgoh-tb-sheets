@@ -322,6 +322,19 @@ function setupEvent(): void {
   const event = config.currentEvent();
   const currentSheet = utils.getActiveSheet();
 
+  // // make sure the roster is up-to-date
+  const definitions = Units.getDefinitions();
+  const unitsIndex = [...definitions.heroes, ...definitions.ships];
+
+  let members = getMembers_();
+
+  if (!members) {
+    const UI = SpreadsheetApp.getUi();
+    UI.alert('Parsing Error', 'Unable to parse guild data. Check source links in Meta Tab', UI.ButtonSet.OK);
+
+    return;
+  }
+
   [
     SHEET.BREAKDOWN,
     SHEET.GEONEEDEDUNITS,
@@ -345,19 +358,6 @@ function setupEvent(): void {
     SHEET.HOTHLSPLATOON,
     SHEET.HOTHSQUADRON,
   ].forEach((e) => SPREADSHEET.getSheetByName(e).hideSheet());
-
-  // // make sure the roster is up-to-date
-  const definitions = Units.getDefinitions();
-  const unitsIndex = [...definitions.heroes, ...definitions.ships];
-
-  let members = getMembers_();
-
-  if (!members) {
-    const UI = SpreadsheetApp.getUi();
-    UI.alert('Parsing Error', 'Unable to parse guild data. Check source links in Meta Tab', UI.ButtonSet.OK);
-
-    return;
-  }
 
   // This will update Roster Sheet with names and GPs,
   // will also return a new members array with added/deleted from sheet
