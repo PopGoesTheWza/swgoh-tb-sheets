@@ -396,11 +396,22 @@ namespace config {
 
     /** Get the guild member ally code */
     export function allyCode(): number {
-      const META_DOTHELP_LINK_ROW = 20;
-      const META_DOTHELP_LINK_COL = 1;
-      return +SPREADSHEET.getSheetByName(SHEET.META)
-        .getRange(META_DOTHELP_LINK_ROW, META_DOTHELP_LINK_COL)
+      let result: number;
+      const META_DOTHELP_ALLYCODE_ROW = 20;
+      const META_DOTHELP_ALLYCODE_COL = 1;
+      let data = SPREADSHEET.getSheetByName(SHEET.META)
+        .getRange(META_DOTHELP_ALLYCODE_ROW, META_DOTHELP_ALLYCODE_COL)
         .getValue();
+
+      if (typeof data === 'string') {
+        data = +data.replace(/-/g, '');
+      }
+      if (typeof data === 'number' && !Number.isNaN(data) && data >= 100000000 && data <= 999999999) {
+        result = data;
+      } else {
+        throw new Error('SwgohHelp API: invalid Allycode');
+      }
+      return result;
     }
   }
 
