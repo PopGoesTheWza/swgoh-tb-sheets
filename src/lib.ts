@@ -22,6 +22,10 @@ declare interface NumberConstructor {
   parseRoman(roman: string): number;
 }
 
+Number.isNaN = Number.isNaN || function(value) {
+  return value !== value;
+}
+
 Number.parseRoman =
   Number.parseRoman ||
   (() => {
