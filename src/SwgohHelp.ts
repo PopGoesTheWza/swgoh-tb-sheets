@@ -90,8 +90,11 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
         baseId: true,
         categoryIdList: true,
         combatType: true,
+        crewList: false,
+        descKey: false,
         forceAlignment: true,
         nameKey: true,
+        skillReferenceList: false,
       },
     });
 
@@ -147,8 +150,10 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
     const allycode = config.SwgohHelpApi.allyCode();
     const guild: swgohhelpapi.exports.GuildResponse[] = client.fetchGuild({
       allycode,
+      enums: true,
       language: swgohhelpapi.Languages.eng_us,
       project: {
+        gp: false,
         members: true,
         name: true,
         roster: {
@@ -156,11 +161,10 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
           gp: true,
           gpChar: true,
           gpShip: true,
-          level: true, // TODO: store and process member level minimun requirement
+          guildMemberLevel: false,
+          level: true,
           name: true,
-          updated: true,
         },
-        updated: true,
       },
     });
 
@@ -195,14 +199,19 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
       if (red.allyCodes.length > 0) {
         const units = client.fetchUnits({
           allycodes: red.allyCodes,
+          enums: true,
           language: swgohhelpapi.Languages.eng_us,
           project: {
             allyCode: true,
+            gear: false,
             gearLevel: true,
             gp: true,
             level: true,
+            mods: false,
+            player: false,
             starLevel: true,
-            type: true,
+            type: false,
+            zetas: true,
           },
         });
 
@@ -257,20 +266,30 @@ https://github.com/PopGoesTheWza/swgoh-help-api/blob/master/README.md`,
 
     const json = client.fetchPlayer({
       allycodes: [allyCode],
+      enums: true,
       language: swgohhelpapi.Languages.eng_us,
       project: {
         allyCode: true,
-        guildName: true,
+        arena: false,
+        // grandArena: false,
+        // grandArenaLifeTime: false,
+        guildName: false,
         level: true,
         name: true,
         roster: {
           combatType: true,
+          crew: false,
           defId: true,
+          equipped: false,
           gear: true,
           gp: true,
           level: true,
+          mods: false,
           nameKey: true,
+          primaryUnitStat: false,
           rarity: true,
+          skills: false,
+          xp: false,
         },
         stats: true,
         updated: true,
