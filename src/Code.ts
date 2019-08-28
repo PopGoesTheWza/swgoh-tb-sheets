@@ -6,14 +6,16 @@
 namespace Members {
   /** get a row/cell array of members name */
   export function getNames(): Array<[string]> {
-    return SPREADSHEET.getSheetByName(SHEET.ROSTER)
+    return utils
+      .getSheetByNameOrDie(SHEET.ROSTER)
       .getRange(2, 2, config.memberCount())
       .getValues() as Array<[string]>;
   }
 
   /** get a row/cell array of members name and ally code */
   export function getAllycodes(): Array<[string, number]> {
-    return SPREADSHEET.getSheetByName(SHEET.ROSTER)
+    return utils
+      .getSheetByNameOrDie(SHEET.ROSTER)
       .getRange(2, 2, config.memberCount(), 2)
       .getValues() as Array<[string, number]>;
   }
@@ -23,7 +25,8 @@ namespace Members {
    * [name, ally code, gp, heroes gp, ships gp]
    */
   export function getBaseAttributes(): Array<[string, number, number, number, number]> {
-    return SPREADSHEET.getSheetByName(SHEET.ROSTER)
+    return utils
+      .getSheetByNameOrDie(SHEET.ROSTER)
       .getRange(2, 2, config.memberCount(), 5)
       .getValues() as Array<[string, number, number, number, number]>;
   }
@@ -180,7 +183,7 @@ function isHothLS_(event: string = config.currentEvent()): boolean {
 
 /** get the current event definition */
 function getEventDefinition_(event: string = config.currentEvent()): Array<[string, string]> {
-  const sheet = SPREADSHEET.getSheetByName(SHEET.META);
+  const sheet = utils.getSheetByNameOrDie(SHEET.META);
   const row = 2;
   const col =
     2 + (isHothLS_(event) ? META_SQUADS_HOTHLS_COL : isHothDS_(event) ? META_SQUADS_HOTHDS_COL : META_SQUADS_GEODS_COL);
@@ -256,6 +259,7 @@ namespace Snapshot {
 
 /** create a snapshot of a player or guild member */
 function playerSnapshot(): void {
+  const sheet = utils.getSheetByNameOrDie(SHEET.SNAPSHOT);
   const event = config.currentEvent();
   const alignment = config.currentAlignment(event);
 
@@ -269,7 +273,6 @@ function playerSnapshot(): void {
   let countTagged = 0;
   const characterTag = config.tagFilter(); // TODO: potentially broken if TB not sync
   const powerTarget = config.requiredHeroGp();
-  const sheet = SPREADSHEET.getSheetByName(SHEET.SNAPSHOT);
   const playerData = Snapshot.getData(sheet, alignment, unitsIndex);
   if (playerData) {
     for (const baseId of Object.keys(playerData.units)) {
@@ -280,7 +283,7 @@ function playerSnapshot(): void {
       if (u.rarity >= 7 && u.power >= powerTarget) {
         countFiltered += 1;
         // does the hero meet the tagged requirements?
-        if (u.tags!.indexOf(characterTag) !== -1) {
+        if (u.tags!.indexOf(characterTag) > -1) {
           // the hero was tagged with the characterTag we're looking for
           countTagged += 1;
         }
@@ -334,6 +337,8 @@ function onOpen(): void {
     )
     .addItem('Player Snapshot', playerSnapshot.name)
     .addToUi();
+
+  utils.shrinkAllSheets();
 }
 
 /** statistical functions */

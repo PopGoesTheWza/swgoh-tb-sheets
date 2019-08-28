@@ -123,8 +123,7 @@ function populateEventTable_(
  * @returns array of PlayerData
  */
 function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
-  const sheet = SPREADSHEET.getSheetByName(SHEET.ROSTER);
-
+  const sheet = utils.getSheetByNameOrDie(SHEET.ROSTER);
   members.sort(
     config.sortRoster()
       ? // sort roster by member name
@@ -143,19 +142,23 @@ function updateGuildRoster_(members: PlayerData[]): PlayerData[] {
   const result = members.map((e) => [[e.name], [e.allyCode], [e.gp], [e.heroesGp], [e.shipsGp]]);
 
   // write the roster
-  sheet.getRange(1, 2, 60, result[0].length).clearContent();
-  sheet.getRange(1, 2, header.length, header[0].length).setValues(header);
-  sheet.getRange(2, 2, result.length, result[0].length).setValues(result);
+  sheet
+    .getRange(1, 2, 60, result[0].length)
+    .clearContent()
+    .offset(0, 0, header.length, header[0].length)
+    .setValues(header)
+    .offset(1, 0, result.length, result[0].length)
+    .setValues(result);
+  // sheet.getRange(1, 2, header.length, header[0].length).setValues(header);
+  // sheet.getRange(2, 2, result.length, result[0].length).setValues(result);
   SPREADSHEET.toast('Roster data updated', 'Guild roster', 3);
-
   return members;
 }
 
 /** compute a hash of current settings */
 function getSettingsHash_() {
-  const roster = SPREADSHEET.getSheetByName(SHEET.ROSTER);
-  const meta = SPREADSHEET.getSheetByName(SHEET.META);
-
+  const roster = utils.getSheetByNameOrDie(SHEET.ROSTER);
+  const meta = utils.getSheetByNameOrDie(SHEET.META);
   /** members name & ally code */
   const members = (roster.getRange(2, 2, 50, 2).getValues() as Array<[string, number]>)
     .filter((e) => e[1] > 0)
@@ -188,7 +191,7 @@ function renameAddRemove_(members: PlayerData[]): PlayerData[] {
   const ROSTER_RENAME_ADD_PLAYER_COL = 16;
   const ROSTER_REMOVE_PLAYER_ROW = 2;
   const ROSTER_REMOVE_PLAYER_COL = 18;
-  const sheet = SPREADSHEET.getSheetByName(SHEET.ROSTER);
+  const sheet = utils.getSheetByNameOrDie(SHEET.ROSTER);
   const add = sheet
     .getRange(ROSTER_RENAME_ADD_PLAYER_ROW, ROSTER_RENAME_ADD_PLAYER_COL, sheet.getLastRow(), 2)
     .getValues() as Array<[string, number]>;
@@ -272,7 +275,6 @@ function getMembers_(): PlayerData[] {
   let members: PlayerData[] | undefined;
 
   const settingsHash = getSettingsHash_();
-
   const cacheId = SPREADSHEET.getId();
   const cache = CacheService.getScriptCache();
   const cachedHash = cache.get(cacheId);
@@ -357,7 +359,7 @@ function setupEvent(): void {
     SHEET.HOTHDSPLATOON,
     SHEET.HOTHLSPLATOON,
     SHEET.HOTHSQUADRON,
-  ].forEach((e) => SPREADSHEET.getSheetByName(e).hideSheet());
+  ].forEach((e) => utils.getSheetByNameOrDie(e).hideSheet());
 
   // This will update Roster Sheet with names and GPs,
   // will also return a new members array with added/deleted from sheet
@@ -372,7 +374,8 @@ function setupEvent(): void {
 
   // clear the hero data
   SPREADSHEET.toast('Rebuilding...', 'TB sheet', 3);
-  const tbSheet = SPREADSHEET.getSheetByName(SHEET.TB);
+  const metaSheet = utils.getSheetByNameOrDie(SHEET.META);
+  const tbSheet = utils.getSheetByNameOrDie(SHEET.TB);
   spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS)).clearContent();
   spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_MEMBERS)).clearContent();
 
@@ -394,7 +397,6 @@ function setupEvent(): void {
     : isHothDS_(event)
     ? META_SQUADS_HOTHDS_COL
     : META_SQUADS_GEODS_COL;
-  const metaSheet = SPREADSHEET.getSheetByName(SHEET.META);
   const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8).getValues() as EventData[];
 
   interface EventUnit {

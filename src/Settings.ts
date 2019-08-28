@@ -215,7 +215,8 @@ namespace config {
   export function currentEvent(): EVENT {
     const META_CURRENTEVENT_ROW = 2;
     const META_CURRENTEVENT_COL = 2;
-    return SPREADSHEET.getSheetByName(SHEET.META)
+    return utils
+      .getSheetByNameOrDie(SHEET.META)
       .getRange(META_CURRENTEVENT_ROW, META_CURRENTEVENT_COL)
       .getValue();
   }
@@ -225,13 +226,15 @@ namespace config {
 
   /** get current Territory Battles phase */
   export function currentPhase(): TerritoryBattles.phaseIdx {
-    return +SPREADSHEET.getSheetByName(SHEET.PLATOON)
+    return +utils
+      .getSheetByNameOrDie(SHEET.PLATOON)
       .getRange(PLATOON_CURRENTPHASE_ROW, PLATOON_CURRENTPHASE_COL)
       .getValue() as TerritoryBattles.phaseIdx;
   }
 
   export function setPhase(phase: TerritoryBattles.phaseIdx) {
-    SPREADSHEET.getSheetByName(SHEET.PLATOON)
+    utils
+      .getSheetByNameOrDie(SHEET.PLATOON)
       .getRange(PLATOON_CURRENTPHASE_ROW, PLATOON_CURRENTPHASE_COL)
       .setValue(phase);
   }
@@ -240,7 +243,8 @@ namespace config {
   export function tagFilter(): string {
     const META_TAG_ROW = 2;
     const META_TAG_COL = 3;
-    return SPREADSHEET.getSheetByName(SHEET.META)
+    return utils
+      .getSheetByNameOrDie(SHEET.META)
       .getRange(META_TAG_ROW, META_TAG_COL)
       .getValue();
   }
@@ -249,7 +253,8 @@ namespace config {
   export function requiredHeroGp(): number {
     const META_MIN_GP_ROW = 8;
     const META_MIN_GP_COL = 4;
-    return +SPREADSHEET.getSheetByName(SHEET.META)
+    return +utils
+      .getSheetByNameOrDie(SHEET.META)
       .getRange(META_MIN_GP_ROW, META_MIN_GP_COL)
       .getValue();
   }
@@ -258,7 +263,8 @@ namespace config {
   export function requiredMemberLevel(): number {
     const META_MIN_LEVEL_ROW = 5;
     const META_MIN_LEVEL_COL = 4;
-    return +SPREADSHEET.getSheetByName(SHEET.META)
+    return +utils
+      .getSheetByNameOrDie(SHEET.META)
       .getRange(META_MIN_LEVEL_ROW, META_MIN_LEVEL_COL)
       .getValue();
   }
@@ -267,7 +273,8 @@ namespace config {
   export function maxDonationsPerTerritory(): number {
     const META_UNIT_PER_MEMBER_ROW = 11;
     const META_UNIT_PER_MEMBER_COL = 4;
-    return +SPREADSHEET.getSheetByName(SHEET.META)
+    return +utils
+      .getSheetByNameOrDie(SHEET.META)
       .getRange(META_UNIT_PER_MEMBER_ROW, META_UNIT_PER_MEMBER_COL)
       .getValue();
   }
@@ -277,7 +284,8 @@ namespace config {
     const META_SORT_ROSTER_ROW = 2;
     const META_SORT_ROSTER_COL = 5;
     return (
-      SPREADSHEET.getSheetByName(SHEET.META)
+      utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_SORT_ROSTER_ROW, META_SORT_ROSTER_COL)
         .getValue() === 'Yes'
     );
@@ -287,7 +295,8 @@ namespace config {
   export function exclusionId(): string {
     const META_EXCLUSSIONS_ROW = 7;
     const META_EXCLUSSIONS_COL = 1;
-    return SPREADSHEET.getSheetByName(SHEET.META)
+    return utils
+      .getSheetByNameOrDie(SHEET.META)
       .getRange(META_EXCLUSSIONS_ROW, META_EXCLUSSIONS_COL)
       .getValue();
   }
@@ -296,7 +305,8 @@ namespace config {
   export function memberCount(): number {
     const ROSTER_GUILD_SIZE_ROW = 5;
     const ROSTER_GUILD_SIZE_COL = 12;
-    return +SPREADSHEET.getSheetByName(SHEET.ROSTER)
+    return +utils
+      .getSheetByNameOrDie(SHEET.ROSTER)
       .getRange(ROSTER_GUILD_SIZE_ROW, ROSTER_GUILD_SIZE_COL)
       .getValue();
   }
@@ -304,7 +314,8 @@ namespace config {
   export function hideShowSheets(event = config.currentEvent()) {
     const META_HIDESHOWSHEETS_ROW = 28;
     const META_HIDESHOWSHEETS_COL = 1;
-    const data = SPREADSHEET.getSheetByName(SHEET.META)
+    const data = utils
+      .getSheetByNameOrDie(SHEET.META)
       .getRange(META_HIDESHOWSHEETS_ROW, META_HIDESHOWSHEETS_COL, 33, 4)
       .getValues() as string[][];
 
@@ -312,7 +323,7 @@ namespace config {
     const eventIndex = headers!.findIndex((e) => e === event);
     data.forEach((row) => {
       const m = row[0].match(/([^(:]+)/);
-      const sheet = m ? SPREADSHEET.getSheetByName(m[1].trim()) : null;
+      const sheet = m ? utils.getSheetByNameOrDie(m[1].trim()) : null;
       if (sheet) {
         row[eventIndex] === 'Yes' ? sheet.showSheet() : sheet.hideSheet();
       }
@@ -335,7 +346,8 @@ namespace config {
     export function getDataSource(): string {
       const META_DATASOURCE_ROW = 14;
       const META_DATASOURCE_COL = 4;
-      return SPREADSHEET.getSheetByName(SHEET.META)
+      return utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_DATASOURCE_ROW, META_DATASOURCE_COL)
         .getValue();
     }
@@ -343,7 +355,8 @@ namespace config {
     export function setGuildDataDate(): void {
       const META_GUILDDATADATE_ROW = 24;
       const META_GUILDDATADATE_COL = 1;
-      SPREADSHEET.getSheetByName(SHEET.META)
+      utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_GUILDDATADATE_ROW, META_GUILDDATADATE_COL)
         .setValue(new Date());
     }
@@ -351,7 +364,8 @@ namespace config {
     export function setUnitDefinitionsDate(): void {
       const META_UNITDEFINITIONSDATE_ROW = 26;
       const META_UNITDEFINITIONSDATE_COL = 1;
-      SPREADSHEET.getSheetByName(SHEET.META)
+      utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_UNITDEFINITIONSDATE_ROW, META_UNITDEFINITIONSDATE_COL)
         .setValue(new Date());
     }
@@ -363,7 +377,8 @@ namespace config {
     export function guild(): number {
       const META_DOTGG_LINK_ROW = 2;
       const META_DOTGG_LINK_COL = 1;
-      const guildLink = SPREADSHEET.getSheetByName(SHEET.META)
+      const guildLink = utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_DOTGG_LINK_ROW, META_DOTGG_LINK_COL)
         .getValue() as string;
       // TODO: input check
@@ -380,7 +395,8 @@ namespace config {
     export function username(): string {
       const META_DOTHELP_USERNAME_ROW = 16;
       const META_DOTHELP_USERNAME_COL = 1;
-      return SPREADSHEET.getSheetByName(SHEET.META)
+      return utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_DOTHELP_USERNAME_ROW, META_DOTHELP_USERNAME_COL)
         .getValue();
     }
@@ -389,7 +405,8 @@ namespace config {
     export function password(): string {
       const META_DOTHELP_PASSWORD_ROW = 18;
       const META_DOTHELP_PASSWORD_COL = 1;
-      return SPREADSHEET.getSheetByName(SHEET.META)
+      return utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_DOTHELP_PASSWORD_ROW, META_DOTHELP_PASSWORD_COL)
         .getValue();
     }
@@ -399,7 +416,8 @@ namespace config {
       let result: number;
       const META_DOTHELP_ALLYCODE_ROW = 20;
       const META_DOTHELP_ALLYCODE_COL = 1;
-      let data = SPREADSHEET.getSheetByName(SHEET.META)
+      let data = utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_DOTHELP_ALLYCODE_ROW, META_DOTHELP_ALLYCODE_COL)
         .getValue();
 
@@ -421,7 +439,8 @@ namespace config {
     export function webhookUrl(): string {
       const DISCORD_WEBHOOKURL_ROW = 1;
       const DISCORD_WEBHOOKURL_COL = DISCORD_WEBHOOK_COL;
-      return SPREADSHEET.getSheetByName(SHEET.DISCORD)
+      return utils
+        .getSheetByNameOrDie(SHEET.DISCORD)
         .getRange(DISCORD_WEBHOOKURL_ROW, DISCORD_WEBHOOKURL_COL)
         .getValue();
     }
@@ -430,7 +449,8 @@ namespace config {
     export function roleId(): string {
       const DISCORD_ROLEID_ROW = 2;
       const DISCORD_ROLEID_COL = DISCORD_WEBHOOK_COL;
-      return SPREADSHEET.getSheetByName(SHEET.DISCORD)
+      return utils
+        .getSheetByNameOrDie(SHEET.DISCORD)
         .getRange(DISCORD_ROLEID_ROW, DISCORD_ROLEID_COL)
         .getValue();
     }
@@ -439,7 +459,8 @@ namespace config {
     export function startTime(): Date {
       const WEBHOOK_TB_START_ROW = 3;
       const WEBHOOK_TB_START_COL = DISCORD_WEBHOOK_COL;
-      return SPREADSHEET.getSheetByName(SHEET.DISCORD)
+      return utils
+        .getSheetByNameOrDie(SHEET.DISCORD)
         .getRange(WEBHOOK_TB_START_ROW, WEBHOOK_TB_START_COL)
         .getValue();
     }
@@ -449,14 +470,16 @@ namespace config {
       const columnOffset = isGeoDS_(event) ? 2 : isHothLS_(event) ? 0 : isHothDS_(event) ? 1 : NaN;
       const WEBHOOK_PHASE_HOURS_ROW = 4;
       const WEBHOOK_PHASE_HOURS_COL = DISCORD_WEBHOOK_COL + columnOffset;
-      return +SPREADSHEET.getSheetByName(SHEET.DISCORD)
+      return +utils
+        .getSheetByNameOrDie(SHEET.DISCORD)
         .getRange(WEBHOOK_PHASE_HOURS_ROW, WEBHOOK_PHASE_HOURS_COL)
         .getValue();
     }
 
     /** Get the template for a webhooks */
     export function webhookTemplate(phase: TerritoryBattles.phaseIdx, row: number, defaultVal: string): string {
-      const text = SPREADSHEET.getSheetByName(SHEET.DISCORD)
+      const text = utils
+        .getSheetByNameOrDie(SHEET.DISCORD)
         .getRange(row, DISCORD_WEBHOOK_COL)
         .getValue() as string;
 
@@ -469,7 +492,8 @@ namespace config {
       const WEBHOOK_DESC_ROW = 9;
       const META_WEBHOOKDESC_ROW = WEBHOOK_DESC_ROW + phase - 1;
       const META_WEBHOOKDESC_COL = DISCORD_WEBHOOK_COL + columnOffset;
-      return `\n\n${SPREADSHEET.getSheetByName(SHEET.DISCORD)
+      return `\n\n${utils
+        .getSheetByNameOrDie(SHEET.DISCORD)
         .getRange(META_WEBHOOKDESC_ROW, META_WEBHOOKDESC_COL)
         .getValue()}`;
     }
@@ -479,7 +503,8 @@ namespace config {
       const WEBHOOK_CLEAR_ROW = 15;
       const WEBHOOK_CLEAR_COL = DISCORD_WEBHOOK_COL;
       return (
-        SPREADSHEET.getSheetByName(SHEET.DISCORD)
+        utils
+          .getSheetByNameOrDie(SHEET.DISCORD)
           .getRange(WEBHOOK_CLEAR_ROW, WEBHOOK_CLEAR_COL)
           .getValue() === 'Yes'
       );
@@ -489,7 +514,8 @@ namespace config {
     export function displaySlots(): string {
       const WEBHOOK_DISPLAY_SLOT_ROW = 16;
       const WEBHOOK_DISPLAY_SLOT_COL = DISCORD_WEBHOOK_COL;
-      return SPREADSHEET.getSheetByName(SHEET.DISCORD)
+      return utils
+        .getSheetByNameOrDie(SHEET.DISCORD)
         .getRange(WEBHOOK_DISPLAY_SLOT_ROW, WEBHOOK_DISPLAY_SLOT_COL)
         .getValue() as string;
     }

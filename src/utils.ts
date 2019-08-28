@@ -7,6 +7,58 @@ namespace utils {
     return SPREADSHEET.getActiveSheet();
   }
 
+  export function shrinkAllSheets() {
+    SPREADSHEET.getSheets().forEach((sheet) => {
+      const extraRows = 1;
+      const extraColumns = 1;
+      let { lastRow, lastColumn } = getSheetBoundaries(sheet);
+      lastRow += extraRows;
+      lastColumn += extraColumns;
+      const maxRows = sheet.getMaxRows();
+      const maxColumns = sheet.getMaxColumns();
+      if (maxRows > lastRow) {
+        sheet.deleteRows(lastRow + 1, maxRows - lastRow);
+      }
+      if (maxColumns > lastColumn) {
+        sheet.deleteColumns(lastColumn + 1, maxColumns - lastColumn);
+      }
+    });
+  }
+
+  function getSheetBoundaries(sheet: Spreadsheet.Sheet) {
+    const dim = { lastColumn: 1, lastRow: 1 };
+    sheet
+      .getDataRange()
+      .getMergedRanges()
+      .forEach((e) => {
+        const lastColumn = e.getLastColumn();
+        const lastRow = e.getLastRow();
+        if (lastColumn > dim.lastColumn) {
+          dim.lastColumn = lastColumn;
+        }
+        if (lastRow > dim.lastRow) {
+          dim.lastRow = lastRow;
+        }
+      });
+    const rowCount = sheet.getMaxRows();
+    const columnCount = sheet.getMaxColumns();
+    const dataRange = sheet.getRange(1, 1, rowCount, columnCount).getValues();
+    for (let rowIndex = rowCount; rowIndex > 0; rowIndex -= 1) {
+      const row = dataRange[rowIndex - 1];
+      if (row.join('').length > 0) {
+        for (let columnIndex = columnCount; columnIndex > dim.lastColumn; columnIndex -= 1) {
+          if (`${row[columnIndex - 1]}`.length > 0) {
+            dim.lastColumn = columnIndex;
+          }
+        }
+        if (dim.lastRow < rowIndex) {
+          dim.lastRow = rowIndex;
+        }
+      }
+    }
+    return dim;
+  }
+
   export function setActiveSheet(sheet: Spreadsheet.Sheet | string, failover?: Spreadsheet.Sheet | string) {
     const target = typeof sheet === 'string' ? SPREADSHEET.getSheetByName(sheet) : sheet;
     const current = SPREADSHEET.getActiveSheet();
@@ -16,10 +68,22 @@ namespace utils {
       } else if (typeof failover === 'object' && failover.activate && typeof failover.activate === 'function') {
         failover.activate();
       } else if (typeof failover === 'string') {
-        SPREADSHEET.getSheetByName(failover).activate();
+        const someSheet = SPREADSHEET.getSheetByName(failover);
+        if (someSheet) {
+          someSheet.activate();
+        } // TODO: else
       }
     }
-    return current;
+    // return SPREADSHEET.getActiveSheet();
+  }
+
+  export function getSheetByNameOrDie(name: string) {
+    const sheet = SPREADSHEET.getSheetByName(name);
+    if (sheet) {
+      return sheet;
+    } else {
+      throw new Error(`Missing sheet labeled '${name}'`);
+    }
   }
 
   /** string[] callback for case insensitive alphabetical sort */

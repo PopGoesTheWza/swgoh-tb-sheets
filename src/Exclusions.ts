@@ -7,12 +7,13 @@ namespace Exclusions {
   export function getList(phase: TerritoryBattles.phaseIdx): MemberUnitBooleans {
     const anyTerritory = /^(\d+)/;
     const territoryRegEx = isGeonosis_() ? /g(\d+)/i : isHoth_() ? /h(\d+)/i : undefined;
-    const hasPhase = (s: string) => s.indexOf(`${phase}`) !== -1;
+    const hasPhase = (s: string) => s.indexOf(`${phase}`) > -1;
     const hasPhaseRE = (s: string, re: RegExp) => {
       const m = s.match(re);
       return m && hasPhase(m[1]);
     };
-    const data = SPREADSHEET.getSheetByName(SHEET.EXCLUSIONS)
+    const data = utils
+      .getSheetByNameOrDie(SHEET.EXCLUSIONS)
       .getDataRange()
       .getValues() as string[][];
     const filtered = data.map((row, rowIndex) => {
@@ -68,7 +69,7 @@ namespace Exclusions {
       const units = exclusions[member];
       for (const unit in units) {
         if (units[unit] && data[unit] && data[unit][member]) {
-          if (!filter || data[unit][member].tags!.indexOf(filter) !== -1) {
+          if (!filter || data[unit][member].tags!.indexOf(filter) > -1) {
             delete data[unit][member];
           }
         }

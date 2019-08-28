@@ -13,6 +13,7 @@ namespace discord {
     return `${config.discord.webhookTemplate(phase, WEBHOOK_TITLE_ROW, defaultVal)}`;
   }
 
+  // TODO: rework so that it no longer rely on a single `phase` value
   export function isTerritory(
     territory: number,
     phase = config.currentPhase(),
@@ -27,6 +28,7 @@ namespace discord {
       : false;
   }
 
+  // TODO: rework so that it no longer rely on a single `phase` value
   export function requiredRarity(
     territory: number,
     phase = config.currentPhase(),
@@ -36,7 +38,7 @@ namespace discord {
   }
 
   export function getSimplifiedPlatoons(phase: TerritoryBattles.phaseIdx) {
-    const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+    const sheet = utils.getSheetByNameOrDie(SHEET.PLATOON);
     const grid: string[][] = [];
 
     for (let zone = 0; zone < MAX_PLATOON_ZONES; zone += 1) {
@@ -87,7 +89,7 @@ namespace discord {
 
   /** Get the member Discord IDs for mentions */
   export function getMemberMentions(): KeyedStrings {
-    const sheet = SPREADSHEET.getSheetByName(SHEET.DISCORD);
+    const sheet = utils.getSheetByNameOrDie(SHEET.DISCORD);
     const DISCORD_MEMBERMENTIONS_ROW = 2;
     const DISCORD_MEMBERMENTIONS_COL = 1;
     const DISCORD_MEMBERMENTIONS_NUMROWS = sheet.getLastRow();
@@ -249,8 +251,9 @@ namespace discord {
     const getZoneName = TerritoryBattles.getZoneName;
     const getPlatoonData = TerritoryBattles.getPlatoonData;
     const getPlatoonRules = TerritoryBattles.getPlatoonRules;
-    const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+    const sheet = utils.getSheetByNameOrDie(SHEET.PLATOON);
     const event = config.currentEvent();
+    // TODO: rework so that it no longer rely on a single `phase` value
     const phase = config.currentPhase();
     const neededUnits = TerritoryBattles.getNeededUnits(event, phase, sheet);
 
@@ -331,7 +334,7 @@ namespace discord {
           const foundName = acc.some((member) => {
             const found = member[0] === nameTrim;
             if (found) {
-              member[1] += i >= groundStart && member[1].indexOf(heroLabel) < 0 ? `\n${heroLabel}${unit}` : `, ${unit}`;
+              member[1] += i >= groundStart && member[1].indexOf(heroLabel) > 0 ? `, ${unit}` : `\n${heroLabel}${unit}`;
             }
 
             return found;
@@ -393,8 +396,9 @@ function sendPlatoonDepthWebhook(): void {
 
   const getZoneName = TerritoryBattles.getZoneName;
   const getPlatoonData = TerritoryBattles.getPlatoonData;
-  const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+  const sheet = utils.getSheetByNameOrDie(SHEET.PLATOON);
   const event = config.currentEvent();
+  // TODO: rework so that it no longer rely on a single `phase` value
   const phase = config.currentPhase();
 
   // mentions only works if you get the id
@@ -457,6 +461,7 @@ function allRareUnitsWebhook(): void {
   }
 
   const event = config.currentEvent();
+  // TODO: rework so that it no longer rely on a single `phase` value
   const phase = config.currentPhase();
   const neededUnits = TerritoryBattles.getNeededUnits(event, phase);
   const fields: discord.RichEmbedOptionsField[] = [];

@@ -60,7 +60,7 @@ namespace Units {
 
   /** return an array of all units definition (name, baseId, tags) */
   function getDefinitionsFromSheet(sheetName: string): UnitDefinition[] {
-    const sheet = SPREADSHEET.getSheetByName(sheetName);
+    const sheet = utils.getSheetByNameOrDie(sheetName);
     const UNITS_DEFINITIONS_ROW = 2;
     const UNITS_DEFINITIONS_COL = 1;
     const UNITS_DEFINITIONS_NUMROWS = sheet.getMaxRows() - 1;
@@ -336,14 +336,15 @@ namespace Units {
   export class Heroes extends UnitsTable {
     constructor() {
       const HERO_MEMBER_COL_OFFSET = 11;
-      super(HERO_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEET.HEROES));
+      super(HERO_MEMBER_COL_OFFSET, utils.getSheetByNameOrDie(SHEET.HEROES));
     }
 
     /** return the number of heroes defined */
     public getCount(): number {
       const META_HEROES_COUNT_ROW = 5;
       const META_HEROES_COUNT_COL = 5;
-      return +SPREADSHEET.getSheetByName(SHEET.META)
+      return +utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_HEROES_COUNT_ROW, META_HEROES_COUNT_COL)
         .getValue();
     }
@@ -391,14 +392,15 @@ namespace Units {
   export class Ships extends UnitsTable {
     constructor() {
       const SHIP_MEMBER_COL_OFFSET = 11;
-      super(SHIP_MEMBER_COL_OFFSET, SPREADSHEET.getSheetByName(SHEET.SHIPS));
+      super(SHIP_MEMBER_COL_OFFSET, utils.getSheetByNameOrDie(SHEET.SHIPS));
     }
 
     /** return the number of ships defined */
     public getCount(): number {
       const META_SHIPS_COUNT_ROW = 8;
       const META_SHIPS_COUNT_COL = 5;
-      return +SPREADSHEET.getSheetByName(SHEET.META)
+      return +utils
+        .getSheetByNameOrDie(SHEET.META)
         .getRange(META_SHIPS_COUNT_ROW, META_SHIPS_COUNT_COL)
         .getValue();
     }

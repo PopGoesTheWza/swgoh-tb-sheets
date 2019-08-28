@@ -115,12 +115,14 @@ function resetPlatoons(): void {
   const event = config.currentEvent();
   const phase = config.currentPhase();
 
+  // TODO: rework so that it no longer rely on a single `phase` value
   SPREADSHEET.toast(`Platoons for ${event} phase ${phase} reset.`, 'Reset platoons', 3);
   resetPlatoonsNoUI();
 }
 
 function resetPlatoonsNoUI(): void {
   const event = config.currentEvent();
+  // TODO: rework so that it no longer rely on a single `phase` value
   const phase = config.currentPhase();
   new TerritoryBattles.Phase(event, phase).reset();
 }
@@ -203,7 +205,8 @@ namespace TerritoryBattles {
   export function getZoneName(zoneNum: number, full: boolean): string {
     const PLATOON_ZONE_ROW = zoneNum * PLATOON_ZONE_ROW_OFFSET + 4;
     const PLATOON_ZONE_COL = 1;
-    const name = `${SPREADSHEET.getSheetByName(SHEET.PLATOON)
+    const name = `${utils
+      .getSheetByNameOrDie(SHEET.PLATOON)
       .getRange(PLATOON_ZONE_ROW, PLATOON_ZONE_COL)
       .getValue()}`;
 
@@ -219,7 +222,7 @@ namespace TerritoryBattles {
   export function getPlatoonData(
     zoneNum: number,
     platoonNum: number,
-    sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON),
+    sheet = utils.getSheetByNameOrDie(SHEET.PLATOON),
   ) {
     const PLATOON_DATA_ROW = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
     const PLATOON_DATA_COL = 4 + platoonNum * 4;
@@ -233,10 +236,11 @@ namespace TerritoryBattles {
   export function getNeededUnits(
     ev = config.currentEvent(),
     phase = config.currentPhase(),
-    sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON),
+    sheet = utils.getSheetByNameOrDie(SHEET.PLATOON),
   ) {
     const neededUnits: KeyedNumbers = {};
     for (let zoneNum = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
+      // TODO: rework so that it no longer rely on a single `phase` value
       if (discord.isTerritory(zoneNum, phase, ev)) {
         // cycle throught the platoons in a zone
         for (let phaseNum = 0; phaseNum < MAX_PLATOONS; phaseNum += 1) {
@@ -257,7 +261,7 @@ namespace TerritoryBattles {
   export function getPlatoonRules(
     zoneNum: number,
     platoonNum: number,
-    sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON),
+    sheet = utils.getSheetByNameOrDie(SHEET.PLATOON),
   ) {
     const PLATOON_DATA_ROW = 2 + zoneNum * PLATOON_ZONE_ROW_OFFSET;
     const PLATOON_DATA_COL = 5 + platoonNum * 4;
@@ -268,7 +272,7 @@ namespace TerritoryBattles {
       .getDataValidations();
   }
 
-  export function getNotAvailableList(sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON)): string[] {
+  export function getNotAvailableList(sheet = utils.getSheetByNameOrDie(SHEET.PLATOON)): string[] {
     const PLATOON_NOTAVAILABLE_ROW = 56;
     const PLATOON_NOTAVAILABLE_COL = 4;
     const PLATOON_NOTAVAILABLE_NUMROWS = MAX_MEMBERS;
@@ -402,7 +406,7 @@ namespace TerritoryBattles {
   abstract class Territory {
     public readonly index: territoryIdx;
     public platoons: Platoon[] = [];
-    protected readonly sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+    protected readonly sheet = utils.getSheetByNameOrDie(SHEET.PLATOON);
     protected readonly phase: Phase;
     protected readonly name: string;
 
@@ -434,7 +438,8 @@ namespace TerritoryBattles {
 
       const row = 3 + this.index * MAX_PLATOON_UNITS * MAX_PLATOONS;
       const column = (isHothDS_(ev) ? 2 : isHothLS_(ev) ? 8 : isGeoDS_(ev) ? 14 : -1) + this.phase.index;
-      const data = SPREADSHEET.getSheetByName(SHEET.STATICSLICES)
+      const data = utils
+        .getSheetByNameOrDie(SHEET.STATICSLICES)
         .getRange(row, column, MAX_PLATOON_UNITS * MAX_PLATOONS, 1)
         .getValues() as string[][];
       const result: slices = [[], [], [], [], [], []];
@@ -529,7 +534,7 @@ namespace TerritoryBattles {
     protected readonly unitsRange: Spreadsheet.Range;
     protected readonly donorsRange: Spreadsheet.Range;
     protected readonly skipButtonRange: Spreadsheet.Range;
-    // protected readonly sheet = SPREADSHEET.getSheetByName(SHEET.PLATOONS);
+    // protected readonly sheet = utils.getSheetByNameOrDie(SHEET.PLATOONS);
     protected slice: slice;
 
     constructor(territory: Territory, index: platoonIdx, value: number) {
@@ -537,7 +542,7 @@ namespace TerritoryBattles {
       this.territory = territory;
       const row = PLATOON_ZONE_ROW_ORIGIN + territory.index * PLATOON_ZONE_ROW_OFFSET;
       const column = PLATOON_ZONE_COLUMN_ORIGIN + index * PLATOON_ZONE_COLUMN_OFFSET;
-      const range = SPREADSHEET.getSheetByName(SHEET.PLATOON).getRange(row, column, MAX_PLATOON_UNITS);
+      const range = utils.getSheetByNameOrDie(SHEET.PLATOON).getRange(row, column, MAX_PLATOON_UNITS);
       this.unitsRange = range;
       this.donorsRange = range.offset(0, 1);
       this.skipButtonRange = range.offset(MAX_PLATOON_UNITS, 1, 1, 1);
@@ -647,7 +652,7 @@ namespace TerritoryBattles {
       // const row = PLATOON_ZONE_ROW_ORIGIN + territory.index * PLATOON_ZONE_ROW_OFFSET;
       // const column = PLATOON_ZONE_COLUMN_ORIGIN + index * PLATOON_ZONE_COLUMN_OFFSET;
 
-      // const range = SPREADSHEET.getSheetByName(SHEET.PLATOONS)
+      // const range = utils.getSheetByNameOrDie(SHEET.PLATOONS)
       //   .getRange(row, column);
       // this.unitRange = range;
       // this.donorRange = range.offset(0, 1);
@@ -848,7 +853,7 @@ namespace TerritoryBattles {
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
-        u.rarity >= rarityThreshold && u.tags!.indexOf(alignment.toLowerCase()) !== -1;
+        u.rarity >= rarityThreshold && u.tags!.indexOf(alignment.toLowerCase()) > -1;
       // && this.notAvailable.findIndex(e => e[0] === member) === -1
 
       super.filter(filter);
@@ -973,7 +978,7 @@ function loop3_(
 
       const unit = platoonMatrix[matrixIdx].name;
       for (const member of platoonMatrix[matrixIdx].members) {
-        const current = count[(member as unknown) as number] as number;
+        const current = count[(member as unknown) as number];
         const available = current == null || current < maxMemberDonations;
         if (available) {
           // see if the recommended member's hero has been used
@@ -1012,9 +1017,10 @@ function loop3_(
 function recommendPlatoons() {
   const event = config.currentEvent();
   const alignment = config.currentAlignment(event).toLowerCase();
+  // TODO: rework so that it no longer rely on a single `phase` value
   const phase = config.currentPhase();
   const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
-  const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+  const sheet = utils.getSheetByNameOrDie(SHEET.PLATOON);
   const spooler = new utils.Spooler();
 
   // const p = new TerritoryBattles.Phase(event(), config.currentPhase());
@@ -1038,7 +1044,7 @@ function recommendPlatoons() {
   filterUnits_(
     allHeroes,
     (member: string, u: UnitInstance) =>
-      u.tags!.indexOf(alignment) !== -1 && u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1,
+      u.tags!.indexOf(alignment) > -1 && u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1,
   );
   filterUnits_(
     allShips,
