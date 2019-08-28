@@ -72,7 +72,7 @@ function sendMicroByMemberWebhook(): void {
   const SKIPPED_PLATOON_LABEL = TerritoryBattles.SKIPPED_PLATOON_LABEL;
   const getZoneName = TerritoryBattles.getZoneName;
   const getPlatoonData = TerritoryBattles.getPlatoonData;
-  const sheet = SPREADSHEET.getSheetByName(SHEET.PLATOON);
+  const sheet = utils.getSheetByNameOrDie(SHEET.PLATOON);
   const event = config.currentEvent();
   const phase = config.currentPhase();
 
@@ -88,6 +88,7 @@ function sendMicroByMemberWebhook(): void {
 
   // get data from the platoons
   let entries: PlatoonAssignment[] = [];
+  // TODO: rework so that it no longer rely on `phase` value
   for (let zoneNum: TerritoryBattles.territoryIdx = 0; zoneNum < MAX_PLATOON_ZONES; zoneNum += 1) {
     if (!discord.isTerritory(zoneNum, phase, event)) {
       // skip this zone
@@ -152,9 +153,9 @@ function sendMicroByMemberWebhook(): void {
     currentEmbed.fields.push(currentField);
     currentField.name = platoonAsKeycapDigit_(currentZone.label, currentZone.type, currentPlatoon);
     currentField.value = '';
-    if (currentZone.label.indexOf('Top') !== -1) {
+    if (currentZone.label.indexOf('Top') > -1) {
       currentEmbed.color = 3447003;
-    } else if (currentZone.label.indexOf('Bottom') !== -1) {
+    } else if (currentZone.label.indexOf('Bottom') > -1) {
       currentEmbed.color = 15730230;
     } else {
       currentEmbed.color = 4317713;
@@ -172,9 +173,9 @@ function sendMicroByMemberWebhook(): void {
         currentEmbed.fields.push(currentField);
         currentField.name = platoonAsKeycapDigit_(currentZone.label, currentZone.type, currentPlatoon);
         currentField.value = '';
-        if (currentZone.label.indexOf('Top') !== -1) {
+        if (currentZone.label.indexOf('Top') > -1) {
           currentEmbed.color = 3447003;
-        } else if (currentZone.label.indexOf('Bottom') !== -1) {
+        } else if (currentZone.label.indexOf('Bottom') > -1) {
           currentEmbed.color = 15730230;
         } else {
           currentEmbed.color = 4317713;
@@ -192,10 +193,12 @@ function sendMicroByMemberWebhook(): void {
     const content = memberLabel_(member, mention);
     const jsonObject: DiscordPayload = {};
     jsonObject.content = content;
-    jsonObject.embeds = embeds;
-    const options = urlFetchMakeParam_(jsonObject);
-    urlFetchExecute_(webhookURL, options);
-    Utilities.sleep(WAIT_TIME);
+    while (embeds.length > 0) {
+      jsonObject.embeds = embeds.splice(0, 10);
+      const options = urlFetchMakeParam_(jsonObject);
+      urlFetchExecute_(webhookURL, options);
+      Utilities.sleep(WAIT_TIME);
+    }
   }
 }
 
