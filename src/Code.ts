@@ -338,7 +338,7 @@ function onOpen(): void {
     .addItem('Player Snapshot', playerSnapshot.name)
     .addToUi();
 
-  utils.shrinkAllSheets();
+  // utils.shrinkAllSheets();
 }
 
 /** statistical functions */
