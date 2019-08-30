@@ -322,10 +322,8 @@ namespace discord {
 
     // reformat the output if we need by member istead of by unit
     if (byType === 'Player') {
-      const heroLabel = 'Heroes: ';
-      const shipLabel = 'Ships: ';
-
       const reduced = donations.reduce((acc: Array<[string, string]>, e, i) => {
+        const label = `${i >= groundStart ? 'Heroes' : 'Ships'}: `;
         const unit = e[0];
         const names = e[1].split(',');
         for (const name of names) {
@@ -334,14 +332,14 @@ namespace discord {
           const foundName = acc.some((member) => {
             const found = member[0] === nameTrim;
             if (found) {
-              member[1] += i >= groundStart && member[1].indexOf(heroLabel) > 0 ? `, ${unit}` : `\n${heroLabel}${unit}`;
+              member[1] += `${member[1].indexOf(label) > -1 ? ', ' : `\n${label}`}${unit}`;
             }
 
             return found;
           });
 
           if (!foundName) {
-            acc.push([nameTrim, (i >= groundStart ? heroLabel : shipLabel) + unit]);
+            acc.push([nameTrim, `${label}${unit}`]);
           }
         }
 
