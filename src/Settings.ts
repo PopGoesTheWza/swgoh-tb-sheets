@@ -21,8 +21,9 @@ const MAX_MEMBERS = 50;
 // const META_UNDERGEAR_ROW = 2;
 // const META_UNDERGEAR_COL = 4;
 
-const META_SQUADS_GEODS_COL = 25;
-const META_SQUADS_HOTHDS_COL = 16;
+const META_SQUADS_GEODS_COL = 27;
+const META_SQUADS_GEOLS_COL = 37;
+const META_SQUADS_HOTHDS_COL = 17;
 const META_SQUADS_HOTHLS_COL = 7;
 
 const MAX_PLATOON_UNITS = 15;
@@ -176,8 +177,9 @@ enum SHEET {
   GEOSQUADRONAUDIT = 'GeoSquadronAudit',
   HOTHSQUADRONAUDIT = 'HothSquadronAudit',
   GEODSPLATOONAUDIT = 'GeoDSPlatoonAudit',
-  HOTHDSMISSIONS = 'HothDSMissions',
-  HOTHLSMISSIONS = 'HothLSMissions',
+  GEOLSPLATOONAUDIT = 'GeoLSPlatoonAudit',
+  HOTHDSPLATOONAUDIT = 'HothDSPlatoonAudit',
+  HOTHLSPLATOONAUDIT = 'HothLSPlatoonAudit',
   TB = 'TB',
   PLATOON = 'Platoon',
   SEARCHUNITS = 'Search Units',
@@ -185,20 +187,23 @@ enum SHEET {
   EXCLUSIONS = 'Exclusions',
   ESTIMATE = 'Estimate',
   GEODSMISSIONS = 'GeoDSMissions',
-  HOTHDSPLATOONAUDIT = 'HothDSPlatoonAudit',
-  HOTHLSPLATOONAUDIT = 'HothLSPlatoonAudit',
+  GEOLSMISSIONS = 'GeoLSMissions',
+  HOTHDSMISSIONS = 'HothDSMissions',
+  HOTHLSMISSIONS ='HothLSMissions',
   RAREUNITS = 'Rare Units',
   SNAPSHOT = 'Snapshot',
   HEROES = 'Heroes',
   SHIPS = 'Ships',
   DISCORD = 'Discord',
   META = 'Meta',
+  TBINFO ='tbInfo',
   INSTRUCTIONS = 'Instructions',
   CHANGELOG = 'Change log',
   ISSUES = 'Issues',
   STATICSLICES = 'StaticSlices',
   GEOSQUADRON = 'GeoSquadron',
   GEODSPLATOON = 'GeoDSPlatoon',
+  GEOLSPLATOON = 'GeoLSPlatoon',
   HOTHSQUADRON = 'HothSquadron',
   HOTHDSPLATOON = 'HothDSPlatoon',
   HOTHLSPLATOON = 'HothLSPlatoon',
@@ -316,7 +321,7 @@ namespace config {
     const META_HIDESHOWSHEETS_COL = 1;
     const data = utils
       .getSheetByNameOrDie(SHEET.META)
-      .getRange(META_HIDESHOWSHEETS_ROW, META_HIDESHOWSHEETS_COL, 33, 4)
+      .getRange(META_HIDESHOWSHEETS_ROW, META_HIDESHOWSHEETS_COL, 36, 5)
       .getValues() as string[][];
 
     const headers = data.shift();
@@ -467,7 +472,7 @@ namespace config {
 
     /** Get the number of hours in each phase */
     export function phaseDuration(event = config.currentEvent()): number {
-      const columnOffset = isGeoDS_(event) ? 2 : isHothLS_(event) ? 0 : isHothDS_(event) ? 1 : NaN;
+      const columnOffset = isGeoDS_(event) ? 2 : isGeoLS_(event) ? 3 : isHothLS_(event) ? 0 : isHothDS_(event) ? 1 : NaN;
       const WEBHOOK_PHASE_HOURS_ROW = 4;
       const WEBHOOK_PHASE_HOURS_COL = DISCORD_WEBHOOK_COL + columnOffset;
       return +utils
@@ -488,7 +493,7 @@ namespace config {
 
     /** Get the Description for the phase */
     export function webhookDescription(phase: TerritoryBattles.phaseIdx, event = config.currentEvent()): string {
-      const columnOffset = isGeoDS_(event) ? 2 : isHothLS_(event) ? 0 : isHothDS_(event) ? 1 : NaN;
+      const columnOffset = isGeoDS_(event) ? 2 : isGeoLS_(event) ? 3 : isHothLS_(event) ? 0 : isHothDS_(event) ? 1 : NaN;
       const WEBHOOK_DESC_ROW = 9;
       const META_WEBHOOKDESC_ROW = WEBHOOK_DESC_ROW + phase - 1;
       const META_WEBHOOKDESC_COL = DISCORD_WEBHOOK_COL + columnOffset;

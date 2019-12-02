@@ -59,11 +59,12 @@ function populateEventTable_(
 
     eventLines.forEach((eventLine, eventLinesIndex) => {
       const event = {
-        gear: +eventLine[3],
-        level: +eventLine[2],
+        gear: +eventLine[2],
+        level: +eventLine[3],
+        power: +eventLine[4]	,
         rarity: +eventLine[1],
-        required: eventLine[5],
-        squad: +eventLine[4],
+        required: eventLine[6],
+        squad: +eventLine[5],
         unitname: eventLine[0],
       };
 
@@ -92,11 +93,11 @@ function populateEventTable_(
         }
 
         const unitInstance = member.units[getBaseId(event.unitname)];
-        const requirementsMet =
-          unitInstance &&
+        const requirementsMet = unitInstance &&
           (unitInstance.rarity >= event.rarity &&
-            unitInstance.gearLevel! >= event.level &&
-            unitInstance.level >= event.gear);
+            unitInstance.gearLevel! >= event.gear &&
+            unitInstance.level >= event.level &&
+            unitInstance.power >= event.power);
         if (event.required === 'R') {
           requiredUnits += 1;
           if (!requirementsMet) {
@@ -108,7 +109,7 @@ function populateEventTable_(
         tableRow[memberIndex] = unitInstance
           ? requirementsMet
             ? `${unitInstance.rarity}`
-            : `${unitInstance.rarity}*L${unitInstance.level}G${unitInstance.gearLevel}`
+            : `${unitInstance.rarity}*L${unitInstance.level}G${unitInstance.gearLevel}P${unitInstance.power}`
           : '';
       }
     });
@@ -277,7 +278,7 @@ function getMembers_(): PlayerData[] {
   const settingsHash = getSettingsHash_();
   const cacheId = SPREADSHEET.getId();
   const cache = CacheService.getScriptCache();
-  const cachedHash = cache.get(cacheId);
+  const cachedHash = cache!.get(cacheId);
 
   if (cachedHash && cachedHash === settingsHash) {
     SPREADSHEET.toast('Using cached roster data', 'Get guild members', 3);
@@ -315,7 +316,7 @@ function getMembers_(): PlayerData[] {
   }
 
   const seconds = 3600; // 1 hour
-  cache.put(cacheId, settingsHash, seconds);
+  cache!.put(cacheId, settingsHash, seconds);
   return normalizeRoster_(renameAddRemove_(members));
 }
 
@@ -344,17 +345,20 @@ function setupEvent(): void {
     SHEET.GEOSQUADRONAUDIT,
     SHEET.HOTHSQUADRONAUDIT,
     SHEET.GEODSPLATOONAUDIT,
+    SHEET.GEOLSPLATOONAUDIT,
     SHEET.HOTHDSPLATOONAUDIT,
     SHEET.HOTHLSPLATOONAUDIT,
     SHEET.TB,
     SHEET.ASSIGNMENTS,
     SHEET.GEODSMISSIONS,
+    SHEET.GEOLSMISSIONS,
     SHEET.HOTHDSMISSIONS,
     SHEET.HOTHLSMISSIONS,
     SHEET.HEROES,
     SHEET.SHIPS,
     SHEET.STATICSLICES,
     SHEET.GEODSPLATOON,
+    SHEET.GEOLSPLATOON,
     SHEET.GEOSQUADRON,
     SHEET.HOTHDSPLATOON,
     SHEET.HOTHLSPLATOON,
@@ -375,9 +379,11 @@ function setupEvent(): void {
   // clear the hero data
   SPREADSHEET.toast('Rebuilding...', 'TB sheet', 3);
   const metaSheet = utils.getSheetByNameOrDie(SHEET.META);
+  const tbInfoSheet = utils.getSheetByNameOrDie(SHEET.TBINFO);
   const tbSheet = utils.getSheetByNameOrDie(SHEET.TB);
-  spooler.attach(tbSheet.getRange(1, 10, 1, MAX_MEMBERS)).clearContent();
-  spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 9 + MAX_MEMBERS)).clearContent();
+
+  spooler.attach(tbSheet.getRange(1, 11, 1, MAX_MEMBERS)).clearContent();
+  spooler.attach(tbSheet.getRange(2, 1, tbSheet.getMaxRows() - 1, 10 + MAX_MEMBERS)).clearContent();
 
   type EventData = [
     string, // eventType
@@ -392,18 +398,16 @@ function setupEvent(): void {
 
   // collect the meta data for the heroes
   const row = 2;
-  const col = isHothLS_(event)
-    ? META_SQUADS_HOTHLS_COL
-    : isHothDS_(event)
-    ? META_SQUADS_HOTHDS_COL
-    : META_SQUADS_GEODS_COL;
-  const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, 8).getValues() as EventData[];
+
+  const col = tbInfoSheet.getRange(3, 21).getValue();
+  const eventDefinition = metaSheet.getRange(row, col, metaSheet.getLastRow() - row + 1, tbInfoSheet.getRange(3, 22).getValue()).getValues();
 
   interface EventUnit {
     name: string;
     rarity: number;
     gearLevel: number;
     level: number;
+    power: number;
     required: string;
   }
 
@@ -417,7 +421,7 @@ function setupEvent(): void {
   const events = eventDefinition
     .reduce((acc: EventObject[], def) => {
       const phase = def[1];
-      const squad = def[6];
+      const squad = def[7];
       if (typeof phase === 'string' && typeof squad === 'string' && phase.length > 0 && squad.length > 0) {
         let obj = acc.find((o) => o.phase === phase && o.squad === squad);
         if (!obj) {
@@ -434,7 +438,8 @@ function setupEvent(): void {
           level: def[5],
           name: def[2],
           rarity: def[3],
-          required: def[7],
+          power: def[6],
+          required: def[8],
         });
       }
       return acc;
@@ -472,11 +477,12 @@ function setupEvent(): void {
         u.rarity,
         u.gearLevel,
         u.level,
+        u.power,
         e.squad,
         u.required,
-        `=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`,
+        `=COUNTIF(K${tbRow}:BJ${tbRow},CONCAT(">=",D${tbRow}))`,
       ];
-      spooler.attach(tbSheet.getRange(tbRow, 1, 1, 9)).setValues([data]);
+      spooler.attach(tbSheet.getRange(tbRow, 1, 1, 10)).setValues([data]);
       spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), u.name, false, 'left');
       tbRow += 1;
       squadCount += 1;
@@ -489,8 +495,8 @@ function setupEvent(): void {
     spooledSetCellValue_(spooler, tbSheet.getRange(tbRow, 3), 'Phase Count:', true, 'right')
       .offset(0, 1)
       .setValue(Math.min(phaseCount, 5))
-      .offset(0, 5)
-      .setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+      .offset(0, 6)
+      .setFormula(`=COUNTIF(K${tbRow}:BJ${tbRow},CONCAT(">=",D${tbRow}))`);
 
     phaseList.push([e.phase, tbRow]);
     tbRow += 2;
@@ -504,13 +510,13 @@ function setupEvent(): void {
   let curTb = tbSheet.getRange(tbRow, 3);
   spooledSetCellValue_(spooler, curTb, 'Total:', true, 'right');
   spooler.attach(curTb.offset(0, 1)).setValue(total);
-  spooler.attach(curTb.offset(0, 6)).setFormula(`=COUNTIF(J${tbRow}:BI${tbRow},CONCAT(">=",D${tbRow}))`);
+  spooler.attach(curTb.offset(0, 7)).setFormula(`=COUNTIF(K${tbRow}:BJ${tbRow},CONCAT(">=",D${tbRow}))`);
 
   // add the readiness chart
   spooledSetCellValue_(
     spooler,
     tbSheet.getRange(tbRow + 2, 3),
-    `=CONCATENATE("Guild Readiness ",FIXED(100*AVERAGE(J${tbRow}:BI${tbRow})/D${tbRow},1),"%")`,
+    `=CONCATENATE("Guild Readiness ",FIXED(100*AVERAGE(K${tbRow}:BJ${tbRow})/D${tbRow},1),"%")`,
     true,
     'center',
   );
@@ -520,7 +526,7 @@ function setupEvent(): void {
   phaseList.forEach((e, i) => {
     curTb = tbSheet.getRange(tbRow + i, 2);
     spooler.attach(curTb).setValue(e[0]);
-    spooledSetCellValue_(spooler, curTb.offset(0, 1), `=I${e[1]}`, true, 'center');
+    spooledSetCellValue_(spooler, curTb.offset(0, 1), `=J${e[1]}`, true, 'center');
   });
 
   // show the legend
@@ -538,14 +544,14 @@ function setupEvent(): void {
   // setup member columns
   SPREADSHEET.toast('Populating...', 'TB sheet', 3);
   let table = populateEventTable_(
-    tbSheet.getRange(2, 3, lastHeroRow, 6).getValues() as string[][],
+    tbSheet.getRange(2, 3, lastHeroRow, 7).getValues() as string[][],
     members,
     unitsIndex,
   );
 
   // store the table of member data
   const TB_OFFSET_ROW = 1;
-  const TB_OFFSET_COL = 10;
+  const TB_OFFSET_COL = 11;
   const width = table.reduce((a: number, e) => Math.max(a, e.length), 0);
   table = table.map((e) => (e.length !== width ? [...e, ...Array(width).fill(null)].slice(0, width) : e));
   tbSheet.getRange(TB_OFFSET_ROW, TB_OFFSET_COL, table.length, table[0].length).setValues(table);

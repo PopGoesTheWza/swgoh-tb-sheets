@@ -19,13 +19,15 @@ namespace discord {
     phase = config.currentPhase(),
     event = config.currentEvent(),
   ): boolean {
-    return isGeoDS_(event)
+    return isGeoDS_(event) //Could be Static lookup from sheet
       ? territory !== 0 || phase > 1
-      : isHothDS_(event)
-      ? territory !== 0 || phase > 2
-      : isHothLS_(event)
-      ? (territory !== 0 || phase > 2) && (territory !== 2 || phase > 1)
-      : false;
+      : isGeoLS_(event)
+        ? territory !== 0 || phase > 0
+        : isHothDS_(event)
+          ? territory !== 0 || phase > 2
+          : isHothLS_(event)
+            ? (territory !== 0 || phase > 2) && (territory !== 2 || phase > 1)
+            : false;
   }
 
   // TODO: rework so that it no longer rely on a single `phase` value
@@ -34,7 +36,7 @@ namespace discord {
     phase = config.currentPhase(),
     event = config.currentEvent(),
   ): number {
-    return isGeoDS_(event) ? (phase < 3 ? 6 : 7) : isHothDS_(event) ? phase + 1 : isHothLS_(event) ? phase + 1 : NaN;
+    return +utils.getSheetByNameOrDie(SHEET.META).getRange(5, 3).getValue(); //Static lookup from sheet
   }
 
   export function getSimplifiedPlatoons(phase: TerritoryBattles.phaseIdx) {
@@ -121,7 +123,7 @@ namespace discord {
   function getPlatoonDonations(
     platoonData: string[][],
     donations: string[][],
-    rules: Spreadsheet.DataValidation[][],
+    rules: (Spreadsheet.DataValidation | null)[][],
     memberMentions: KeyedStrings,
     neededUnits: KeyedNumbers,
   ): string[][] | undefined {
@@ -152,7 +154,7 @@ namespace discord {
           boolean, // true for dropdown
         ];
 
-        const criteria = rules[h][0].getCriteriaValues() as RequireValueInListCriteria;
+        const criteria = rules[h][0]!.getCriteriaValues() as RequireValueInListCriteria;
 
         // only add rare donations
         // TODO: rarity threshold

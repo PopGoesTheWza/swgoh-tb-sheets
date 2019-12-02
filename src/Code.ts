@@ -154,7 +154,7 @@ function isDarkSide_(alignment: string = config.currentAlignment()): boolean {
 
 /** is alignment 'Light Side' */
 function isLightSide_(alignment: string = config.currentAlignment()): boolean {
-  return alignment === ALIGNMENT.LIGHTSIDE || alignment === EVENT.HOTHLS;
+  return alignment === ALIGNMENT.LIGHTSIDE || alignment === EVENT.HOTHLS || alignment === EVENT.GEONOSISLS;
 }
 
 function isGeonosis_(event: string = config.currentEvent()): boolean {
@@ -185,8 +185,8 @@ function isHothLS_(event: string = config.currentEvent()): boolean {
 function getEventDefinition_(event: string = config.currentEvent()): Array<[string, string]> {
   const sheet = utils.getSheetByNameOrDie(SHEET.META);
   const row = 2;
-  const col =
-    2 + (isHothLS_(event) ? META_SQUADS_HOTHLS_COL : isHothDS_(event) ? META_SQUADS_HOTHDS_COL : META_SQUADS_GEODS_COL);
+
+  const col = 2 + +(utils.getSheetByNameOrDie(SHEET.TBINFO).getRange(3, 21).getValue());
 
   const numRows = sheet.getLastRow() - row + 1;
   const values = sheet.getRange(row, col, numRows).getValues() as Array<[string]>;

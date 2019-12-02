@@ -18,6 +18,11 @@
         "defaultShortcut": "Ctrl+Alt+Shift+6"
       },
       {
+        "menuName": "Refresh Geonosis LS ",
+        "functionName": "RefreshGeoLS",
+        "defaultShortcut": "Ctrl+Alt+Shift+7"
+      },
+      {
         "menuName": "Refresh Hoth DS ",
         "functionName": "RefreshHothDS",
         "defaultShortcut": "Ctrl+Alt+Shift+8"

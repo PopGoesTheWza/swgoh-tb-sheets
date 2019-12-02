@@ -65,6 +65,15 @@ function initPlatoonPhases_(): void {
       ['???', '???', '???'],
       ['???', '???', '???'],
     ];
+  } else if (isGeoLS_(event)) {
+    PLATOON_PHASES = [
+      ['Galactic Republic Fleet', 'Count Dooku Hangar', 'Rear Flank'],
+      ['Contested Airspace (Republic)', 'Battleground', 'Sand Dunes'],
+      ['Contested Airspace (Separatist)', 'Separatist Command', 'Petranaki Arena'],
+      ['Separatist Armada', 'Factory Waste', 'Canyons'],
+      ['???', '???', '???'],
+      ['???', '???', '???'],
+    ];
   } else if (isHothDS_(event)) {
     PLATOON_PHASES = [
       ['', 'Imperial Flank', 'Imperial Landing'],
@@ -134,7 +143,7 @@ function getRecommendedMembers_(
   data: UnitMemberInstances,
 ): Array<[string, number]> {
   // see how many stars are needed
-  const minRarity = isGeoDS_() ? (phase < 3 ? 6 : 7) : phase + 1;
+  const minRarity = SPREADSHEET.getSheetByName('META')!.getRange(5, 3).getValue();        // Changed to this to standardize 1 location on sheet.
 
   const rec: Array<[string, number]> = [];
 
@@ -437,7 +446,7 @@ namespace TerritoryBattles {
       const unitsIndex = [...def.heroes, ...def.ships];
 
       const row = 3 + this.index * MAX_PLATOON_UNITS * MAX_PLATOONS;
-      const column = (isHothDS_(ev) ? 2 : isHothLS_(ev) ? 8 : isGeoDS_(ev) ? 14 : -1) + this.phase.index;
+      const column = (isHothDS_(ev) ? 2 : isHothLS_(ev) ? 8 : isGeoDS_(ev) ? 14 : isGeoLS_(ev) ? 18 : -1) + this.phase.index; // This could be a static lhookup as well
       const data = utils
         .getSheetByNameOrDie(SHEET.STATICSLICES)
         .getRange(row, column, MAX_PLATOON_UNITS * MAX_PLATOONS, 1)
@@ -697,6 +706,28 @@ namespace TerritoryBattles {
         ground('Rear Flank', [250, 250, 250, 250, 250, 250]),
       ],
     },
+    /** EVENT.GEONOSISLS */ 'Geo LS': {
+      1: [
+        airspace('Galactic Republic Fleet', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+        ground('Count Dooku Hangar', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+        ground('Rear Flank', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+      ],
+      2: [
+        airspace('Contested Airspace (Republic)', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+        ground('Battleground', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+        ground('Sand Dunes', [208.3, 208.3, 208.3, 208.3, 208.3, 208.3]),
+      ],
+      3: [
+        airspace('Contested Airspace (Separatist)', [250, 250, 250, 250, 250, 250]),
+        ground('Separatist Command', [250, 250, 250, 250, 250, 250]),
+        ground('Patranaki Arena', [250, 250, 250, 250, 250, 250]),
+      ],
+      4: [
+        airspace('Separatist Armada', [333.3, 333.3, 333.3, 333.3, 333.3, 333.3]),
+        ground('Factory Waste', [333.3, 333.3, 333.3, 333.3, 333.3, 333.3]),
+        ground('Canyons', [333.3, 333.3, 333.3, 333.3, 333.3, 333.3]),
+      ]
+    },
     /** EVENT.HOTHDS */ 'Hoth DS': {
       1: [
         closed,
@@ -730,7 +761,11 @@ namespace TerritoryBattles {
       ],
     },
     /** EVENT.HOTHLS */ 'Hoth LS': {
-      1: [closed, ground('Rebel Base', [100, 100, 100, 100, 150, 150]), closed],
+      1: [
+        closed,
+        ground('Rebel Base', [100, 100, 100, 100, 150, 150]),
+        closed,
+      ],
       2: [
         closed,
         ground('Ion Cannon', [120, 120, 120, 120, 180, 180]),
@@ -848,8 +883,9 @@ namespace TerritoryBattles {
     }
 
     protected filter() {
-      const alignment = config.currentAlignment();
-      const rarityThreshold = isGeoDS_() ? (this.phase.index < 3 ? 6 : 7) : this.phase.index + 1;
+      const meta = utils.getSheetByNameOrDie('META');
+      const alignment = meta.getRange(8, 3).getValue(); // Static lookup from sheet
+      const rarityThreshold = meta.getRange(5, 3).getValue(); // Static lookup from sheet instead of below check
 
       // filter Heroes by rarity and alignment
       const filter = (member: string, u: UnitInstance) =>
@@ -868,10 +904,11 @@ namespace TerritoryBattles {
     }
 
     protected filter() {
-      const phase = this.phase.index;
+      const meta = utils.getSheetByNameOrDie('META');
+      const rarityThreshold = meta.getRange(5, 3).getValue();      //Static lookup from sheet
 
       // filter Ships by rarity
-      const filter = (member: string, u: UnitInstance) => u.rarity > phase;
+      const filter = (member: string, u: UnitInstance) => u.rarity >= rarityThreshold;
       // && this.notAvailable.findIndex(e => e[0] === member) === -1
 
       super.filter(filter);
@@ -1015,11 +1052,12 @@ function loop3_(
 
 /** Recommend members for each Platoon */
 function recommendPlatoons() {
+  const meta = utils.getSheetByNameOrDie('META');
   const event = config.currentEvent();
-  const alignment = config.currentAlignment(event).toLowerCase();
+  const alignment = meta.getRange(8, 3).getValue().toLowerCase(); //Static lookup from sheet
   // TODO: rework so that it no longer rely on a single `phase` value
   const phase = config.currentPhase();
-  const rarityThreshold = isGeoDS_(event) ? (phase < 3 ? 5 : 6) : phase;
+  const rarityThreshold = meta.getRange(5, 3).getValue(); // Static lookup from sheet
   const sheet = utils.getSheetByNameOrDie(SHEET.PLATOON);
   const spooler = new utils.Spooler();
 
@@ -1030,7 +1068,7 @@ function recommendPlatoons() {
   const notAvailable = TerritoryBattles.getNotAvailableList(sheet);
 
   SPREADSHEET.toast(
-    `Using units of rarity ${rarityThreshold + 1}⭐ for ${event} phase ${phase} ready.`,
+    `Using units of rarity ${rarityThreshold}⭐ for ${event} phase ${phase} ready.`,
     'Recommend platoons',
     3,
   );
@@ -1044,11 +1082,11 @@ function recommendPlatoons() {
   filterUnits_(
     allHeroes,
     (member: string, u: UnitInstance) =>
-      u.tags!.indexOf(alignment) > -1 && u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1,
+      u.tags!.indexOf(alignment) > -1 && u.rarity >= rarityThreshold && notAvailable.indexOf(member) === -1,
   );
   filterUnits_(
     allShips,
-    (member: string, u: UnitInstance) => u.rarity > rarityThreshold && notAvailable.indexOf(member) === -1,
+    (member: string, u: UnitInstance) => u.rarity >= rarityThreshold && notAvailable.indexOf(member) === -1,
   );
 
   // remove heroes listed on Exclusions sheet
